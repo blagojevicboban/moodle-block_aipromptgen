@@ -47,7 +47,43 @@ $form->display();
 
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_ai4teachers'));
-    echo html_writer::tag('pre', s($generated), ['style' => 'white-space: pre-wrap;']);
+    // Editable textarea for the generated prompt.
+    echo html_writer::start_tag('div', ['class' => 'ai4t-result']);
+    echo html_writer::tag('textarea', s($generated), [
+        'id' => 'ai4t-generated',
+        'rows' => 12,
+        'class' => 'form-control',
+        'style' => 'width:100%;'
+    ]);
+    echo html_writer::empty_tag('br');
+    echo html_writer::tag('button', get_string('form:copy', 'block_ai4teachers'), [
+        'type' => 'button',
+        'id' => 'ai4t-copy',
+        'class' => 'btn btn-secondary'
+    ]);
+    echo html_writer::tag('span', '', [
+        'id' => 'ai4t-copied',
+        'style' => 'margin-left:8px; display:none;'
+    ]);
+    echo html_writer::end_tag('div');
+
+    // Inline JS for copy-to-clipboard with Moodle's AMD-free minimal approach.
+    $copyjs = "(function(){\n" .
+        "var btn=document.getElementById('ai4t-copy');\n" .
+        "var ta=document.getElementById('ai4t-generated');\n" .
+        "var ok=document.getElementById('ai4t-copied');\n" .
+        "if(!btn||!ta){return;}\n" .
+        "btn.addEventListener('click',function(){\n" .
+        "  ta.select(); ta.setSelectionRange(0, 99999);\n" .
+        "  try{\n" .
+        "    navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : document.execCommand('copy');\n" .
+        "    ok.textContent='" . addslashes(get_string('form:copied', 'block_ai4teachers')) . "';\n" .
+        "    ok.style.display='inline';\n" .
+        "    setTimeout(function(){ ok.style.display='none'; }, 1500);\n" .
+        "  }catch(e){}\n" .
+        "});\n" .
+        "})();";
+    $PAGE->requires->js_amd_inline($copyjs);
 }
 
 echo $OUTPUT->footer();

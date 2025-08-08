@@ -23,6 +23,9 @@ $string['form:course'] = 'Kurs';
 $string['form:submit'] = 'Generiši prompt';
 $string['form:result'] = 'Generisani AI prompt';
 $string['form:audience'] = 'Publika (za nastavnike ili za učenike)';
+// Akcije
+$string['form:copy'] = 'Kopiraj u klipbord';
+$string['form:copied'] = 'Iskopirano!';
 
 // Opcije
 $string['option:lessonplan'] = 'Priprema časa';

@@ -23,6 +23,9 @@ $string['form:course'] = 'Course';
 $string['form:submit'] = 'Generate prompt';
 $string['form:result'] = 'Generated AI prompt';
 $string['form:audience'] = 'Audience (teacher-facing or student-facing)';
+// Actions
+$string['form:copy'] = 'Copy to clipboard';
+$string['form:copied'] = 'Copied!';
 
 // Options
 $string['option:lessonplan'] = 'Lesson plan';
