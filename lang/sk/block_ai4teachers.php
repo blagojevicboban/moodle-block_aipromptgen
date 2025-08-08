@@ -33,6 +33,7 @@ $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Vek/ročník žiakov';
 $string['form:topiclabel'] = 'Vyučovacia téma (oblasť)';
 $string['form:lessonlabel'] = 'Názov lekcie';
+$string['form:lessonbrowse'] = 'Prehliadať…';
 $string['form:class_typelabel'] = 'Typ hodiny';
 $string['form:outcomeslabel'] = 'Výstupy / ciele';
 $string['form:language'] = 'Jazyk promptu';

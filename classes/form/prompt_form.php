@@ -66,22 +66,16 @@ class prompt_form extends \moodleform {
             $mform->addElement('html', \html_writer::tag('datalist', $optionshtml, ['id' => 'ai4t-topiclist']));
         }
 
-        // Lesson title: render as a select with grouped options (sections + activities) and allow typing alternative.
-        $lessonoptions = $this->_customdata['lessonoptions'] ?? [];
-        if (!empty($lessonoptions)) {
-            $select = $mform->createElement('selectgroups', 'lessonselect', get_string('form:lessonlabel', 'block_ai4teachers'), $lessonoptions, ['size' => 12]);
-            $mform->addElement($select);
-            // Make the dropdown scrollable via size attribute and CSS fallback.
-            $mform->addElement('html', '<style>#fitem_id_lessonselect select{max-height:260px;overflow:auto;}</style>');
-            // Also add a free-text input to override/customize the selected value.
-            $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
-            $mform->setType('lesson', PARAM_TEXT);
-            // Small hint: if text is provided, it takes precedence.
-            $mform->addElement('static', 'lessonhint', '', \html_writer::span(get_string('form:lessonhint', 'block_ai4teachers') ?? '')); // Optional string.
-        } else {
-            $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
-            $mform->setType('lesson', PARAM_TEXT);
-        }
+        // Lesson title: keep as textbox, with a Browse button to open a modal picker.
+        $lessonelems = [];
+        $lessonelems[] = $mform->createElement('text', 'lesson', null, ['size' => 60]);
+        $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_ai4teachers'), [
+            'type' => 'button',
+            'id' => 'ai4t-lesson-browse',
+            'class' => 'btn btn-secondary',
+        ]);
+        $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_ai4teachers'), ' ', false);
+        $mform->setType('lesson', PARAM_TEXT);
 
         // Class type as a dropdown (localized via strings).
         $classtypeoptions = [
@@ -140,13 +134,6 @@ class prompt_form extends \moodleform {
 
         $this->add_action_buttons(true, get_string('form:submit', 'block_ai4teachers'));
 
-        // If selectgroups is present, copy its value into the text input when changed, so the text is submitted.
-        $mform->addElement('html', '<script>\n' .
-            '(function(){\n' .
-            'var sel=document.getElementById("id_lessonselect");\n' .
-            'var txt=document.getElementById("id_lesson");\n' .
-            'if(sel && txt){ sel.addEventListener("change", function(){ if(!txt.value){ txt.value=sel.value.replace(/^\s*•\s*/,""); }}); }\n' .
-            '})();\n' .
-            '</script>');
+    // No inline script here; handled on the page to open a modal and populate the textbox.
     }
 }

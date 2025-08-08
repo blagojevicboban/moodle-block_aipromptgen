@@ -32,6 +32,7 @@ $string['privacy:metadata'] = 'O bloco IA para Professores não armazena dados p
 $string['form:subjectlabel'] = 'Disciplina';
 $string['form:agerangelabel'] = 'Idade/série dos alunos';
 $string['form:lessonlabel'] = 'Título da lição';
+$string['form:lessonbrowse'] = 'Procurar…';
 $string['form:class_typelabel'] = 'Tipo de aula';
 $string['form:outcomeslabel'] = 'Resultados / objetivos';
 $string['form:topiclabel'] = 'Tema de ensino (área)';

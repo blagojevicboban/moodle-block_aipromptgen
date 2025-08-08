@@ -243,6 +243,92 @@ if ($defaultlesson !== '') {
 $form->set_data($defaultdata);
 $form->display();
 
+// Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
+// Build the modal markup from $lessonoptions prepared above.
+echo html_writer::tag('style',
+    '.ai4t-modal-backdrop{position:fixed;inset:0;display:none;background:rgba(0,0,0,.4);z-index:1050;}
+     .ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+     .ai4t-modal header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #ddd;}
+     .ai4t-modal header h3{margin:0;font-size:1.1rem;}
+     .ai4t-modal .ai4t-body{padding:8px 16px;overflow:auto;max-height:58vh;}
+     .ai4t-list{list-style:none;margin:0;padding:0;}
+     .ai4t-section{font-weight:600;margin:8px 0 4px;}
+     .ai4t-item{padding:6px 8px;border-radius:4px;cursor:pointer;}
+     .ai4t-item:hover{background:#f2f2f2;}
+     .ai4t-modal footer{padding:10px 16px;border-top:1px solid #ddd;display:flex;justify-content:flex-end;gap:8px;}
+    ');
+
+// Modal backdrop and container.
+echo html_writer::div('', 'ai4t-modal-backdrop', ['id' => 'ai4t-modal-backdrop']);
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-modal-title',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:lessonlabel', 'block_ai4teachers'), ['id' => 'ai4t-modal-title']);
+// Close button (uses a simple × symbol).
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button',
+    'id' => 'ai4t-modal-close',
+    'class' => 'btn btn-link',
+    'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+
+// Render the list of sections and activities.
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($lessonoptions as $group) {
+    $sectionname = trim((string)($group['text'] ?? ''));
+    if ($sectionname !== '') {
+        echo html_writer::tag('li', s($sectionname), ['class' => 'ai4t-section']);
+    }
+    if (!empty($group['options']) && is_array($group['options'])) {
+        foreach ($group['options'] as $display => $value) {
+            // Each item is clickable; data-value holds the clean lesson title to insert.
+            echo html_writer::tag('li', s($display), [
+                'class' => 'ai4t-item',
+                'data-value' => $value,
+                'tabindex' => 0,
+            ]);
+        }
+    }
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button',
+    'class' => 'btn btn-secondary',
+    'id' => 'ai4t-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div'); // .ai4t-modal
+
+// Wire up open/close and selection handlers.
+$browsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-lesson-browse');\n"
+    . "var modal=document.getElementById('ai4t-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-modal-cancel');\n"
+    . "var input=document.getElementById('id_lesson');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($browsejs);
+
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_ai4teachers'));
     // Editable textarea for the generated prompt.

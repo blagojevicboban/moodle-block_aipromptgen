@@ -38,6 +38,7 @@ $string['form:subjectlabel'] = 'Subject';
 $string['form:agerangelabel'] = 'Student age/grade';
 $string['form:topiclabel'] = 'Teaching topic (area)';
 $string['form:lessonlabel'] = 'Lesson title';
+$string['form:lessonbrowse'] = 'Browse…';
 $string['form:class_typelabel'] = 'Class type';
 $string['form:outcomeslabel'] = 'Outcomes / objectives';
 $string['form:language'] = 'Prompt language';

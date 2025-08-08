@@ -38,6 +38,7 @@ $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Uzrast/razred učenika';
 $string['form:topiclabel'] = 'Nastavna tema (oblast)';
 $string['form:lessonlabel'] = 'Naziv lekcije (nastavne jedinice)';
+$string['form:lessonbrowse'] = 'Pregled…';
 $string['form:class_typelabel'] = 'Tip časa';
 $string['form:outcomeslabel'] = 'Ishodi / ciljevi';
 $string['form:language'] = 'Jezik prompta';

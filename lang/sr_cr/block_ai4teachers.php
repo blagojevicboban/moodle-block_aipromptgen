@@ -38,6 +38,7 @@ $string['form:subjectlabel'] = 'Предмет';
 $string['form:agerangelabel'] = 'Узраст/разред ученика';
 $string['form:topiclabel'] = 'Наставна тема (област)';
 $string['form:lessonlabel'] = 'Назив лекције (наставне јединице)';
+$string['form:lessonbrowse'] = 'Преглед…';
 $string['form:class_typelabel'] = 'Тип часа';
 $string['form:outcomeslabel'] = 'Исходи / циљеви';
 $string['form:language'] = 'Језик промпта';
