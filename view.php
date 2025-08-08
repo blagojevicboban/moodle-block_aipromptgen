@@ -28,7 +28,8 @@ if (optional_param('reset', 0, PARAM_BOOL)) {
 }
 
 if ($data = $form->get_data()) {
-    $langcode = clean_param($data->language, PARAM_ALPHA);
+    // Preserve underscores in language code (e.g., sr_cr).
+    $langcode = clean_param($data->language, PARAM_ALPHANUMEXT);
 
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.

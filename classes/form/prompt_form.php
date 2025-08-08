@@ -45,7 +45,8 @@ class prompt_form extends \moodleform {
             'sk' => get_string('lang:sk', 'block_ai4teachers'),
         ];
         $mform->addElement('select', 'language', get_string('form:language', 'block_ai4teachers'), $langoptions);
-        $mform->setType('language', PARAM_ALPHA);
+        // Allow language codes with underscore (e.g., sr_cr).
+        $mform->setType('language', PARAM_ALPHANUMEXT);
         $curlang = current_language();
         $defaultcode = substr($curlang, 0, 2);
         // If UI is in Serbian Cyrillic, default to sr_cr for prompt language.
