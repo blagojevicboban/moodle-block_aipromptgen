@@ -175,18 +175,17 @@ if (!empty($cmid)) {
     }
 }
 
-// Always set courseid; set other defaults only on initial load (not after submission).
+// Always set courseid and subject (subject always initialized with course name).
 $defaultdata = [
     'courseid' => $course->id,
+    'subject' => format_string($course->fullname),
 ];
-if (!$form->is_submitted()) {
-    $defaultdata['subject'] = format_string($course->fullname);
-    if ($defaulttopic !== '') {
-        $defaultdata['topic'] = $defaulttopic;
-    }
-    if ($defaultlesson !== '') {
-        $defaultdata['lesson'] = $defaultlesson;
-    }
+// Set topic/lesson defaults when available; keeps previous input if empty.
+if ($defaulttopic !== '') {
+    $defaultdata['topic'] = $defaulttopic;
+}
+if ($defaultlesson !== '') {
+    $defaultdata['lesson'] = $defaultlesson;
 }
 $form->set_data($defaultdata);
 $form->display();
