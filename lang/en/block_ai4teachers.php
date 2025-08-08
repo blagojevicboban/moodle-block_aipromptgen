@@ -26,6 +26,7 @@ $string['form:audience'] = 'Audience (teacher-facing or student-facing)';
 // Actions
 $string['form:copy'] = 'Copy to clipboard';
 $string['form:copied'] = 'Copied!';
+$string['form:download'] = 'Download .txt';
 
 // Options
 $string['option:lessonplan'] = 'Lesson plan';

@@ -26,6 +26,7 @@ $string['form:audience'] = 'Publika (za nastavnike ili za učenike)';
 // Akcije
 $string['form:copy'] = 'Kopiraj u klipbord';
 $string['form:copied'] = 'Iskopirano!';
+$string['form:download'] = 'Preuzmi .txt';
 
 // Opcije
 $string['option:lessonplan'] = 'Priprema časa';

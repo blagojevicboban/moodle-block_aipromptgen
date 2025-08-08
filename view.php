@@ -22,6 +22,11 @@ require_once($CFG->dirroot . '/blocks/ai4teachers/classes/form/prompt_form.php')
 $form = new \block_ai4teachers\form\prompt_form(null, []);
 
 $generated = null;
+$sessionkey = 'block_ai4teachers_lastprompt_' . $course->id;
+if (optional_param('reset', 0, PARAM_BOOL)) {
+    unset($SESSION->{$sessionkey});
+}
+
 if ($data = $form->get_data()) {
     // Build a structured prompt based on form inputs.
     $parts = [];
@@ -39,6 +44,11 @@ if ($data = $form->get_data()) {
     $prefix = "You are an expert instructional designer helping a teacher in the Moodle course '{$coursename}'. ";
     $instructions = 'Generate content strictly aligned with the purpose and outcomes, at the appropriate level for the specified age/grade. Prefer local curriculum alignment when applicable.';
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
+
+    // Persist in user session per course.
+    $SESSION->{$sessionkey} = $generated;
+} else if (!empty($SESSION->{$sessionkey})) {
+    $generated = $SESSION->{$sessionkey};
 }
 
 echo $OUTPUT->header();
@@ -56,32 +66,48 @@ if ($generated) {
         'style' => 'width:100%;'
     ]);
     echo html_writer::empty_tag('br');
+    echo html_writer::start_tag('div', ['class' => 'ai4t-actions']);
     echo html_writer::tag('button', get_string('form:copy', 'block_ai4teachers'), [
         'type' => 'button',
         'id' => 'ai4t-copy',
         'class' => 'btn btn-secondary'
+    ]);
+    echo html_writer::tag('button', get_string('form:download', 'block_ai4teachers'), [
+        'type' => 'button',
+        'id' => 'ai4t-download',
+        'class' => 'btn btn-secondary',
+        'style' => 'margin-left:8px;'
     ]);
     echo html_writer::tag('span', '', [
         'id' => 'ai4t-copied',
         'style' => 'margin-left:8px; display:none;'
     ]);
     echo html_writer::end_tag('div');
+    echo html_writer::end_tag('div');
 
-    // Inline JS for copy-to-clipboard with Moodle's AMD-free minimal approach.
+    // Inline JS for copy and download.
+    $courseslug = preg_replace('/[^a-z0-9]+/i', '-', core_text::strtolower(format_string($course->shortname ?: $course->fullname)));
+    $filename = $courseslug . '-ai-prompt.txt';
     $copyjs = "(function(){\n" .
         "var btn=document.getElementById('ai4t-copy');\n" .
+        "var dl=document.getElementById('ai4t-download');\n" .
         "var ta=document.getElementById('ai4t-generated');\n" .
         "var ok=document.getElementById('ai4t-copied');\n" .
-        "if(!btn||!ta){return;}\n" .
-        "btn.addEventListener('click',function(){\n" .
+        "if(btn){btn.addEventListener('click',function(){\n" .
         "  ta.select(); ta.setSelectionRange(0, 99999);\n" .
         "  try{\n" .
-        "    navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(ta.value) : document.execCommand('copy');\n" .
+        "    if(navigator.clipboard && navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value);}else{document.execCommand('copy');}\n" .
         "    ok.textContent='" . addslashes(get_string('form:copied', 'block_ai4teachers')) . "';\n" .
-        "    ok.style.display='inline';\n" .
-        "    setTimeout(function(){ ok.style.display='none'; }, 1500);\n" .
+        "    ok.style.display='inline'; setTimeout(function(){ ok.style.display='none'; }, 1500);\n" .
         "  }catch(e){}\n" .
-        "});\n" .
+        "});}\n" .
+        "if(dl){dl.addEventListener('click',function(){\n" .
+        "  var blob=new Blob([ta.value||''],{type:'text/plain'});\n" .
+        "  var a=document.createElement('a');\n" .
+        "  a.href=URL.createObjectURL(blob);\n" .
+        "  a.download='" . addslashes($filename) . "';\n" .
+        "  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},0);\n" .
+        "});}\n" .
         "})();";
     $PAGE->requires->js_amd_inline($copyjs);
 }
