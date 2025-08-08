@@ -42,9 +42,21 @@ if ($data = $form->get_data()) {
         'outcomes' => get_string('label:outcomes', 'block_ai4teachers', null, $langcode),
     ];
 
+    // Map codes to localized values for purpose and audience.
+    $purposecode = clean_param($data->purpose, PARAM_ALPHANUMEXT);
+    $audiencecode = clean_param($data->audience, PARAM_ALPHANUMEXT);
+    $purposeallowed = ['lessonplan', 'quiz', 'rubric', 'worksheet'];
+    $audienceallowed = ['teacher', 'student'];
+    $purposevalue = in_array($purposecode, $purposeallowed)
+        ? get_string('option:' . $purposecode, 'block_ai4teachers', null, $langcode)
+        : s($purposecode);
+    $audiencevalue = in_array($audiencecode, $audienceallowed)
+        ? get_string('option:' . $audiencecode, 'block_ai4teachers', null, $langcode)
+        : s($audiencecode);
+
     $parts = [];
-    $parts[] = $labels['purpose'] . ": {$data->purpose}";
-    $parts[] = $labels['audience'] . ": {$data->audience}";
+    $parts[] = $labels['purpose'] . ': ' . $purposevalue;
+    $parts[] = $labels['audience'] . ': ' . $audiencevalue;
     $parts[] = $labels['language'] . ": " . get_string('lang:' . $langcode, 'block_ai4teachers', null, $langcode);
     $parts[] = $labels['subject'] . ": {$data->subject}";
     $parts[] = $labels['agerange'] . ": {$data->agerange}";
