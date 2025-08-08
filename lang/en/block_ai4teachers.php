@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'AI for Teachers';
+$string['pluginname'] = 'AI tools for teachers - prompt generator';
 $string['openpromptbuilder'] = 'Open AI Prompt Builder';
 $string['notallowed'] = 'This tool is only available to teachers and managers in this course.';
 $string['privacy:metadata'] = 'The AI for Teachers block does not store personal data.';
@@ -37,6 +37,7 @@ $string['ai4teachers:myaddinstance'] = 'Add the AI for Teachers block to the Das
 $string['form:subjectlabel'] = 'Subject';
 $string['form:agerangelabel'] = 'Student age/grade';
 $string['form:topiclabel'] = 'Teaching topic (area)';
+$string['form:topicbrowse'] = 'Browse…';
 $string['form:lessonlabel'] = 'Lesson title';
 $string['form:lessonbrowse'] = 'Browse…';
 $string['form:class_typelabel'] = 'Class type';

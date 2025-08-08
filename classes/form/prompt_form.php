@@ -49,15 +49,21 @@ class prompt_form extends \moodleform {
         $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
         $mform->setType('agerange', PARAM_TEXT);
 
-    // Topic (editable text with suggestions from current course via datalist).
+        // Topic (editable text with suggestions + a Browse button that opens a modal picker).
         $topics = $this->_customdata['topics'] ?? [];
-        $mform->addElement('text', 'topic', get_string('form:topiclabel', 'block_ai4teachers'));
+        $topicelems = [];
+        $topicelems[] = $mform->createElement('text', 'topic', null, ['size' => 60, 'list' => 'ai4t-topiclist']);
+        $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_ai4teachers'), [
+            'type' => 'button',
+            'id' => 'ai4t-topic-browse',
+            'class' => 'btn btn-secondary',
+        ]);
+        $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_ai4teachers'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
+        // Make topic required.
+        $mform->addRule('topic', null, 'required', null, 'client');
+        $mform->addRule('topic', get_string('required'), 'required');
         // Attach HTML5 datalist for suggestions while allowing free text.
-        $mform->getElement('topic')->setAttributes(['list' => 'ai4t-topiclist']);
-    // Make topic required.
-    $mform->addRule('topic', null, 'required', null, 'client');
-    $mform->addRule('topic', get_string('required'), 'required');
         if (!empty($topics) && is_array($topics)) {
             $optionshtml = '';
             foreach ($topics as $t) {

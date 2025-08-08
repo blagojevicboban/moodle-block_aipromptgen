@@ -329,6 +329,65 @@ $browsejs = "(function(){\n"
     . "})();";
 $PAGE->requires->js_amd_inline($browsejs);
 
+// Add a second modal dedicated to browsing Topics (course sections only).
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-topic-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-topic-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:topiclabel', 'block_ai4teachers'), ['id' => 'ai4t-topic-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button',
+    'id' => 'ai4t-topic-modal-close',
+    'class' => 'btn btn-link',
+    'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($topics as $t) {
+    $t = trim((string)$t);
+    if ($t === '') { continue; }
+    echo html_writer::tag('li', s($t), [
+        'class' => 'ai4t-item ai4t-topic-item',
+        'data-value' => $t,
+        'tabindex' => 0,
+    ]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button',
+    'class' => 'btn btn-secondary',
+    'id' => 'ai4t-topic-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$topicbrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-topic-browse');\n"
+    . "var modal=document.getElementById('ai4t-topic-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-topic-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-topic-modal-cancel');\n"
+    . "var input=document.getElementById('id_topic');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-topic-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($topicbrowsejs);
+
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_ai4teachers'));
     // Editable textarea for the generated prompt.

@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'AI pre učiteľov';
+$string['pluginname'] = 'Nástroje AI pre učiteľov – generátor promptov';
 $string['openpromptbuilder'] = 'Otvoriť tvorcu AI promptov';
 $string['notallowed'] = 'Tento nástroj je dostupný iba učiteľom a manažérom v tomto kurze.';
 $string['privacy:metadata'] = 'Blok AI pre učiteľov neukladá osobné údaje.';
@@ -32,6 +32,7 @@ $string['privacy:metadata'] = 'Blok AI pre učiteľov neukladá osobné údaje.'
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Vek/ročník žiakov';
 $string['form:topiclabel'] = 'Vyučovacia téma (oblasť)';
+$string['form:topicbrowse'] = 'Prehliadať…';
 $string['form:lessonlabel'] = 'Názov lekcie';
 $string['form:lessonbrowse'] = 'Prehliadať…';
 $string['form:class_typelabel'] = 'Typ hodiny';

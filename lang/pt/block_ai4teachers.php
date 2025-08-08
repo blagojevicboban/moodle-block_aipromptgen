@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'IA para Professores';
+$string['pluginname'] = 'Ferramentas de IA para professores – gerador de prompts';
 $string['openpromptbuilder'] = 'Abrir Gerador de Prompts de IA';
 $string['notallowed'] = 'Esta ferramenta está disponível apenas para professores e gestores neste curso.';
 $string['privacy:metadata'] = 'O bloco IA para Professores não armazena dados pessoais.';
@@ -36,6 +36,7 @@ $string['form:lessonbrowse'] = 'Procurar…';
 $string['form:class_typelabel'] = 'Tipo de aula';
 $string['form:outcomeslabel'] = 'Resultados / objetivos';
 $string['form:topiclabel'] = 'Tema de ensino (área)';
+$string['form:topicbrowse'] = 'Procurar…';
 $string['form:language'] = 'Idioma do prompt';
 $string['form:purpose'] = 'Finalidade do prompt (ex.: plano de aula, quiz, rubrica)';
 $string['form:course'] = 'Curso';

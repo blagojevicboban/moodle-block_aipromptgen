@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'AI za nastavnike';
+$string['pluginname'] = 'AI alati za nastavnike – generator promptova';
 $string['openpromptbuilder'] = 'Otvori kreator AI promptova';
 $string['notallowed'] = 'Ovaj alat je dostupan samo nastavnicima i menadžerima na kursu.';
 $string['privacy:metadata'] = 'Blok AI za nastavnike ne čuva lične podatke.';
@@ -37,6 +37,7 @@ $string['ai4teachers:myaddinstance'] = 'Dodavanje bloka AI za nastavnike na Kont
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Uzrast/razred učenika';
 $string['form:topiclabel'] = 'Nastavna tema (oblast)';
+$string['form:topicbrowse'] = 'Pregled…';
 $string['form:lessonlabel'] = 'Naziv lekcije (nastavne jedinice)';
 $string['form:lessonbrowse'] = 'Pregled…';
 $string['form:class_typelabel'] = 'Tip časa';

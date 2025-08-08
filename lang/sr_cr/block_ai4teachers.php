@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'АИ за наставнике';
+$string['pluginname'] = 'АИ алати за наставнике – генератор промптова';
 $string['openpromptbuilder'] = 'Отвори креатор АИ промптова';
 $string['notallowed'] = 'Овај алат је доступан само наставницима и менаџерима на курсу.';
 $string['privacy:metadata'] = 'Блок АИ за наставнике не чува личне податке.';
@@ -37,6 +37,7 @@ $string['ai4teachers:myaddinstance'] = 'Додавање блока АИ за н
 $string['form:subjectlabel'] = 'Предмет';
 $string['form:agerangelabel'] = 'Узраст/разред ученика';
 $string['form:topiclabel'] = 'Наставна тема (област)';
+$string['form:topicbrowse'] = 'Преглед…';
 $string['form:lessonlabel'] = 'Назив лекције (наставне јединице)';
 $string['form:lessonbrowse'] = 'Преглед…';
 $string['form:class_typelabel'] = 'Тип часа';
