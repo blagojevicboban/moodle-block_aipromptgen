@@ -121,6 +121,7 @@ try {
 $form = new \block_ai4teachers\form\prompt_form(null, [
     'topics' => $topics,
     'lessonoptions' => $lessonoptions,
+    'subjectdefault' => format_string($course->fullname),
 ]);
 
 $generated = null;
@@ -234,10 +235,9 @@ if (!empty($cmid)) {
     }
 }
 
-// Always set courseid and subject (subject always initialized with course name).
+// Always set courseid; set subject/others only when not already present.
 $defaultdata = [
     'courseid' => $course->id,
-    'subject' => format_string($course->fullname),
 ];
 // Set topic/lesson defaults when available; keeps previous input if empty.
 if ($defaulttopic !== '') {
@@ -245,6 +245,10 @@ if ($defaulttopic !== '') {
 }
 if ($defaultlesson !== '') {
     $defaultdata['lesson'] = $defaultlesson;
+}
+// Initialize Subject to course name on first load (avoid overriding user input on submit).
+if (!$form->is_submitted()) {
+    $defaultdata['subject'] = format_string($course->fullname);
 }
 $form->set_data($defaultdata);
 $form->display();

@@ -36,16 +36,19 @@ class prompt_form extends \moodleform {
      */
     protected function definition() {
         $mform = $this->_form;
+    $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
 
         $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_ai4teachers'));
         $mform->setType('subject', PARAM_TEXT);
+        if ($subjectdefault !== '') {
+            $mform->setDefault('subject', $subjectdefault);
+        }
         // Tooltip as requested (non-localized text per requirement).
         $mform->getElement('subject')->setAttributes([
             'title' => 'Promenite naziv predmeta ukoliko je potrebno',
         ]);
-        // Make subject required (client-side and server-side validation).
-        $mform->addRule('subject', null, 'required', null, 'client');
-        $mform->addRule('subject', get_string('required'), 'required');
+    // Make subject required (server-side; client-side optional to add later if needed).
+    $mform->addRule('subject', get_string('required'), 'required');
 
         $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
         $mform->setType('agerange', PARAM_TEXT);
@@ -61,9 +64,10 @@ class prompt_form extends \moodleform {
         ]);
         $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_ai4teachers'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
-        // Make topic required.
-        $mform->addRule('topic', null, 'required', null, 'client');
-        $mform->addRule('topic', get_string('required'), 'required');
+    // Make topic required (element is inside a group, so use group rule to avoid QuickForm errors).
+    $grouprules = [];
+    $grouprules['topic'][] = [get_string('required'), 'required'];
+    $mform->addGroupRule('topicgroup', $grouprules);
         // Attach HTML5 datalist for suggestions while allowing free text.
         if (!empty($topics) && is_array($topics)) {
             $optionshtml = '';
