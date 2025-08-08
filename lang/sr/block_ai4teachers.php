@@ -41,3 +41,17 @@ $string['lang:sr'] = 'Srpski';
 $string['lang:en'] = 'Engleski';
 $string['lang:pt'] = 'Portugalski';
 $string['lang:sk'] = 'Slovački';
+
+// Oznake za prompt
+$string['label:purpose'] = 'Namena';
+$string['label:audience'] = 'Publika';
+$string['label:language'] = 'Jezik';
+$string['label:subject'] = 'Predmet';
+$string['label:agerange'] = 'Uzrast/razred učenika';
+$string['label:lesson'] = 'Naziv lekcije';
+$string['label:classtype'] = 'Tip časa';
+$string['label:outcomes'] = 'Ishodi';
+
+// Šabloni za prompt
+$string['prompt:prefix'] = "Vi ste stručnjak za instruktivni dizajn koji pomaže nastavniku na Moodle kursu '{$a->course}'.";
+$string['prompt:instructions'] = 'Generišite izlaz na izabranom jeziku. Strogo se uskladite sa namenom i ishodima, prilagodite nivou za navedeni uzrast/razred. Po mogućstvu se oslonite na lokalni kurikulum.';

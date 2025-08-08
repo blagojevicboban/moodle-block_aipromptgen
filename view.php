@@ -28,21 +28,35 @@ if (optional_param('reset', 0, PARAM_BOOL)) {
 }
 
 if ($data = $form->get_data()) {
-    // Build a structured prompt based on form inputs.
+    // Resolve selected language to ensure localized strings come from that pack.
+    $langcode = clean_param($data->language, PARAM_ALPHA);
+
+    $labels = [
+        'purpose' => get_string('label:purpose', 'block_ai4teachers', null, $langcode),
+        'audience' => get_string('label:audience', 'block_ai4teachers', null, $langcode),
+        'language' => get_string('label:language', 'block_ai4teachers', null, $langcode),
+        'subject' => get_string('label:subject', 'block_ai4teachers', null, $langcode),
+        'agerange' => get_string('label:agerange', 'block_ai4teachers', null, $langcode),
+        'lesson' => get_string('label:lesson', 'block_ai4teachers', null, $langcode),
+        'classtype' => get_string('label:classtype', 'block_ai4teachers', null, $langcode),
+        'outcomes' => get_string('label:outcomes', 'block_ai4teachers', null, $langcode),
+    ];
+
     $parts = [];
-    $parts[] = "Purpose: {$data->purpose}";
-    $parts[] = "Audience: {$data->audience}";
-    $parts[] = "Language: " . get_string('lang:' . $data->language, 'block_ai4teachers');
-    $parts[] = "Subject: {$data->subject}";
-    $parts[] = "Student age/grade: {$data->agerange}";
-    $parts[] = "Lesson: {$data->lesson}";
-    $parts[] = "Class type: {$data->classtype}";
+    $parts[] = $labels['purpose'] . ": {$data->purpose}";
+    $parts[] = $labels['audience'] . ": {$data->audience}";
+    $parts[] = $labels['language'] . ": " . get_string('lang:' . $langcode, 'block_ai4teachers', null, $langcode);
+    $parts[] = $labels['subject'] . ": {$data->subject}";
+    $parts[] = $labels['agerange'] . ": {$data->agerange}";
+    $parts[] = $labels['lesson'] . ": {$data->lesson}";
+    $parts[] = $labels['classtype'] . ": {$data->classtype}";
     if (!empty($data->outcomes)) {
-        $parts[] = "Outcomes: " . preg_replace('/\s+/', ' ', trim($data->outcomes));
+        $parts[] = $labels['outcomes'] . ": " . preg_replace('/\s+/', ' ', trim($data->outcomes));
     }
+
     $coursename = format_string($course->fullname);
-    $prefix = "You are an expert instructional designer helping a teacher in the Moodle course '{$coursename}'. ";
-    $instructions = 'Generate content strictly aligned with the purpose and outcomes, at the appropriate level for the specified age/grade. Prefer local curriculum alignment when applicable.';
+    $prefix = get_string('prompt:prefix', 'block_ai4teachers', (object)['course' => $coursename], $langcode);
+    $instructions = get_string('prompt:instructions', 'block_ai4teachers', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
 
     // Persist in user session per course.

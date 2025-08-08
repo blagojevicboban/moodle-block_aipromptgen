@@ -32,6 +32,20 @@ $string['lang:en'] = 'Inglês';
 $string['lang:pt'] = 'Português';
 $string['lang:sk'] = 'Eslovaco';
 
+// Rótulos do prompt
+$string['label:purpose'] = 'Finalidade';
+$string['label:audience'] = 'Público';
+$string['label:language'] = 'Idioma';
+$string['label:subject'] = 'Disciplina';
+$string['label:agerange'] = 'Idade/série dos alunos';
+$string['label:lesson'] = 'Título da lição';
+$string['label:classtype'] = 'Tipo de aula';
+$string['label:outcomes'] = 'Resultados';
+
+// Modelos de prompt
+$string['prompt:prefix'] = "Você é um especialista em design instrucional ajudando um professor no curso do Moodle '{$a->course}'.";
+$string['prompt:instructions'] = 'Gere a saída no idioma selecionado. Alinhe estritamente à finalidade e aos resultados, no nível apropriado para a idade/série indicada. Prefira o alinhamento ao currículo local quando aplicável.';
+
 // Actions
 $string['form:copy'] = 'Copiar para a área de transferência';
 $string['form:copied'] = 'Copiado!';

@@ -41,3 +41,17 @@ $string['lang:sr'] = 'Serbian';
 $string['lang:en'] = 'English';
 $string['lang:pt'] = 'Portuguese';
 $string['lang:sk'] = 'Slovak';
+
+// Prompt labels
+$string['label:purpose'] = 'Purpose';
+$string['label:audience'] = 'Audience';
+$string['label:language'] = 'Language';
+$string['label:subject'] = 'Subject';
+$string['label:agerange'] = 'Student age/grade';
+$string['label:lesson'] = 'Lesson title';
+$string['label:classtype'] = 'Class type';
+$string['label:outcomes'] = 'Outcomes';
+
+// Prompt templates
+$string['prompt:prefix'] = "You are an expert instructional designer helping a teacher in the Moodle course '{$a->course}'.";
+$string['prompt:instructions'] = 'Generate the output in the selected language. Align strictly with the purpose and outcomes, at the appropriate level for the specified age/grade. Prefer local curriculum alignment when applicable.';

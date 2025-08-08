@@ -32,6 +32,20 @@ $string['lang:en'] = 'Angličtina';
 $string['lang:pt'] = 'Portugalčina';
 $string['lang:sk'] = 'Slovenčina';
 
+// Označenia pre prompt
+$string['label:purpose'] = 'Účel';
+$string['label:audience'] = 'Publikum';
+$string['label:language'] = 'Jazyk';
+$string['label:subject'] = 'Predmet';
+$string['label:agerange'] = 'Vek/ročník žiakov';
+$string['label:lesson'] = 'Názov lekcie';
+$string['label:classtype'] = 'Typ hodiny';
+$string['label:outcomes'] = 'Výstupy';
+
+// Šablóny promptu
+$string['prompt:prefix'] = "Ste odborník na inštrukčný dizajn, ktorý pomáha učiteľovi v kurze Moodle '{$a->course}'.";
+$string['prompt:instructions'] = 'Vygenerujte výstup v zvolenom jazyku. Dôsledne sa riaďte účelom a výstupmi, na vhodnej úrovni pre uvedený vek/ročník. Uprednostnite súlad s miestnym kurikulom, ak je to vhodné.';
+
 // Actions
 $string['form:copy'] = 'Skopírovať do schránky';
 $string['form:copied'] = 'Skopírované!';
