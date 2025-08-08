@@ -143,4 +143,11 @@ if ($generated) {
     $PAGE->requires->js_amd_inline($copyjs);
 }
 
+// Back to course button/link
+$backurl = new moodle_url('/course/view.php', ['id' => $course->id]);
+echo html_writer::div(
+    html_writer::link($backurl, get_string('form:backtocourse', 'block_ai4teachers'), ['class' => 'btn btn-secondary mt-3']),
+    'mt-3'
+);
+
 echo $OUTPUT->footer();

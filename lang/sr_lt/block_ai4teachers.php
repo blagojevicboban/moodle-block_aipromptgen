@@ -28,6 +28,7 @@ $string['form:copy'] = 'Kopiraj u klipbord';
 $string['form:copied'] = 'Iskopirano!';
 $string['form:download'] = 'Preuzmi .txt';
 $string['form:reset'] = 'Obriši sačuvani prompt';
+$string['form:backtocourse'] = 'Nazad na kurs';
 
 // Opcije
 $string['option:lessonplan'] = 'Priprema časa';

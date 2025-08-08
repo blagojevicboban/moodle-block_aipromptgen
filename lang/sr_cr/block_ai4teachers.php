@@ -28,6 +28,7 @@ $string['form:copy'] = 'Копирај у клипборд';
 $string['form:copied'] = 'Ископирано!';
 $string['form:download'] = 'Преузми .txt';
 $string['form:reset'] = 'Обриши сачувани промпт';
+$string['form:backtocourse'] = 'Назад на курс';
 
 // Опције
 $string['option:lessonplan'] = 'Припрема часа';
