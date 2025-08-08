@@ -26,6 +26,11 @@
 require_once(__DIR__ . '/../../config.php');
 require_login();
 
+// Ensure Moodle's PEAR library is loaded first to avoid PHP fatal
+// "Non-static method PEAR::getStaticProperty() cannot be called statically"
+// when external/global PEAR versions are present in include_path.
+require_once($CFG->libdir . '/pear/PEAR.php');
+
 $courseid = required_param('courseid', PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);
