@@ -34,6 +34,7 @@ $string['form:agerangelabel'] = 'Idade/série dos alunos';
 $string['form:lessonlabel'] = 'Título da lição';
 $string['form:class_typelabel'] = 'Tipo de aula';
 $string['form:outcomeslabel'] = 'Resultados / objetivos';
+$string['form:topiclabel'] = 'Tema de ensino (área)';
 $string['form:language'] = 'Idioma do prompt';
 $string['form:purpose'] = 'Finalidade do prompt (ex.: plano de aula, quiz, rubrica)';
 $string['form:course'] = 'Curso';
@@ -65,6 +66,7 @@ $string['label:agerange'] = 'Idade/série dos alunos';
 $string['label:lesson'] = 'Título da lição';
 $string['label:classtype'] = 'Tipo de aula';
 $string['label:outcomes'] = 'Resultados';
+$string['label:topic'] = 'Tema de ensino (área)';
 
 // Modelos de prompt.
 $string['prompt:prefix'] = "Você é um especialista em design instrucional ajudando um professor no curso do Moodle '{$a->course}'.";

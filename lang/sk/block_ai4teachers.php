@@ -31,6 +31,7 @@ $string['privacy:metadata'] = 'Blok AI pre učiteľov neukladá osobné údaje.'
 // Form.
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Vek/ročník žiakov';
+$string['form:topiclabel'] = 'Vyučovacia téma (oblasť)';
 $string['form:lessonlabel'] = 'Názov lekcie';
 $string['form:class_typelabel'] = 'Typ hodiny';
 $string['form:outcomeslabel'] = 'Výstupy / ciele';
@@ -62,6 +63,7 @@ $string['label:audience'] = 'Publikum';
 $string['label:language'] = 'Jazyk';
 $string['label:subject'] = 'Predmet';
 $string['label:agerange'] = 'Vek/ročník žiakov';
+$string['label:topic'] = 'Vyučovacia téma (oblasť)';
 $string['label:lesson'] = 'Názov lekcie';
 $string['label:classtype'] = 'Typ hodiny';
 $string['label:outcomes'] = 'Výstupy';

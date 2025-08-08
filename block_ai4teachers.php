@@ -66,9 +66,25 @@ class block_ai4teachers extends block_base {
             $params['section'] = $sectionid;
         }
         $url = new moodle_url('/blocks/ai4teachers/view.php', $params);
-        $link = html_writer::link($url, get_string('openpromptbuilder', 'block_ai4teachers'), ['class' => 'btn btn-primary']);
+        $link = html_writer::link($url, get_string('openpromptbuilder', 'block_ai4teachers'), [
+            'class' => 'btn btn-primary',
+            'id' => 'ai4t-open',
+        ]);
         $this->content->text = html_writer::div($link);
         $this->content->footer = '';
+        // Ensure the link carries the current section when present (all-formats friendly).
+        $js = "(function(){\n"
+            . "var a=document.getElementById('ai4t-open'); if(!a){return;}\n"
+            . "try{\n"
+            . "  var href=new URL(a.href, window.location.origin);\n"
+            . "  var sec=(new URLSearchParams(window.location.search)).get('section');\n"
+            . "  if(!sec && window.location.hash){ var m=window.location.hash.match(/section-(\\\d+)/); if(m){sec=m[1];} }\n"
+            . "  if(!sec){ var el=document.querySelector('.course-content .current[id^=\\'section-\\'], .course-content .section.current[id^=\\'section-\\']');\n"
+            . "    if(el){ var m2=el.id.match(/section-(\\\d+)/); if(m2){sec=m2[1];} } }\n"
+            . "  if(sec){ href.searchParams.set('section', sec); a.href=href.toString(); }\n"
+            . "}catch(e){}\n"
+            . "})();";
+        $this->page->requires->js_amd_inline($js);
         return $this->content;
     }
 

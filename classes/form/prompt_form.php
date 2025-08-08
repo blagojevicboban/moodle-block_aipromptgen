@@ -49,10 +49,7 @@ class prompt_form extends \moodleform {
         $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
         $mform->setType('agerange', PARAM_TEXT);
 
-        $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
-        $mform->setType('lesson', PARAM_TEXT);
-        
-        // Topic (editable text with suggestions from current course via datalist).
+    // Topic (editable text with suggestions from current course via datalist).
         $topics = $this->_customdata['topics'] ?? [];
         $mform->addElement('text', 'topic', get_string('form:topiclabel', 'block_ai4teachers'));
         $mform->setType('topic', PARAM_TEXT);
@@ -68,6 +65,10 @@ class prompt_form extends \moodleform {
             }
             $mform->addElement('html', \html_writer::tag('datalist', $optionshtml, ['id' => 'ai4t-topiclist']));
         }
+
+    // Lesson title.
+    $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
+    $mform->setType('lesson', PARAM_TEXT);
 
         // Class type as a dropdown (localized via strings).
         $classtypeoptions = [
