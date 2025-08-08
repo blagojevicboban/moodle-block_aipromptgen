@@ -24,6 +24,7 @@ require_once($CFG->libdir . '/formslib.php');
  * Prompt builder form for the AI for Teachers block.
  *
  * @package    block_ai4teachers
+ * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

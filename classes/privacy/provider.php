@@ -23,6 +23,7 @@ namespace block_ai4teachers\privacy;
  *
  * @package    block_ai4teachers
  * @category   privacy
+ * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
