@@ -16,8 +16,6 @@
 
 namespace block_ai4teachers\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy Subsystem implementation for block_ai4teachers.
  *
