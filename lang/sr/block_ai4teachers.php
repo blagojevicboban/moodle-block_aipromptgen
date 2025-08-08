@@ -34,3 +34,8 @@ $string['option:rubric'] = 'Rubrika za ocenjivanje';
 $string['option:worksheet'] = 'Radni list / aktivnosti';
 $string['option:teacher'] = 'Za nastavnike';
 $string['option:student'] = 'Za učenike';
+// Jezici
+$string['lang:sr'] = 'Srpski';
+$string['lang:en'] = 'Engleski';
+$string['lang:pt'] = 'Portugalski';
+$string['lang:sk'] = 'Slovački';

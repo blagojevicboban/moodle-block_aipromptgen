@@ -34,3 +34,8 @@ $string['option:rubric'] = 'Assessment rubric';
 $string['option:worksheet'] = 'Worksheet / activities';
 $string['option:teacher'] = 'Teacher-facing';
 $string['option:student'] = 'Student-facing';
+// Language names
+$string['lang:sr'] = 'Serbian';
+$string['lang:en'] = 'English';
+$string['lang:pt'] = 'Portuguese';
+$string['lang:sk'] = 'Slovak';

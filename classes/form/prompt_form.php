@@ -26,8 +26,21 @@ class prompt_form extends \moodleform {
         $mform->addElement('textarea', 'outcomes', get_string('form:outcomeslabel', 'block_ai4teachers'), 'wrap="virtual" rows="6" cols="60"');
         $mform->setType('outcomes', PARAM_TEXT);
 
-        $mform->addElement('text', 'language', get_string('form:language', 'block_ai4teachers'));
-        $mform->setType('language', PARAM_TEXT);
+        // Language as a dropdown with preset values and default to current language.
+        $langoptions = [
+            'sr' => get_string('lang:sr', 'block_ai4teachers'),
+            'en' => get_string('lang:en', 'block_ai4teachers'),
+            'pt' => get_string('lang:pt', 'block_ai4teachers'),
+            'sk' => get_string('lang:sk', 'block_ai4teachers'),
+        ];
+        $mform->addElement('select', 'language', get_string('form:language', 'block_ai4teachers'), $langoptions);
+        $mform->setType('language', PARAM_ALPHA);
+        $curlang = current_language();
+        $defaultcode = substr($curlang, 0, 2);
+        if (!array_key_exists($defaultcode, $langoptions)) {
+            $defaultcode = 'en';
+        }
+        $mform->setDefault('language', $defaultcode);
 
         $mform->addElement('select', 'purpose', get_string('form:purpose', 'block_ai4teachers'), [
             'lessonplan' => get_string('option:lessonplan', 'block_ai4teachers'),
