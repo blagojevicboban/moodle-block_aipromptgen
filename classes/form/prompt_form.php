@@ -20,8 +20,18 @@ class prompt_form extends \moodleform {
         $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
         $mform->setType('lesson', PARAM_TEXT);
 
-        $mform->addElement('text', 'classtype', get_string('form:class_typelabel', 'block_ai4teachers'));
-        $mform->setType('classtype', PARAM_TEXT);
+        // Class type as a dropdown (localized via strings).
+        $classtypeoptions = [
+            'lecture' => get_string('classtype:lecture', 'block_ai4teachers'),
+            'discussion' => get_string('classtype:discussion', 'block_ai4teachers'),
+            'groupwork' => get_string('classtype:groupwork', 'block_ai4teachers'),
+            'lab' => get_string('classtype:lab', 'block_ai4teachers'),
+            'project' => get_string('classtype:project', 'block_ai4teachers'),
+            'review' => get_string('classtype:review', 'block_ai4teachers'),
+            'assessment' => get_string('classtype:assessment', 'block_ai4teachers'),
+        ];
+        $mform->addElement('select', 'classtype', get_string('form:class_typelabel', 'block_ai4teachers'), $classtypeoptions);
+        $mform->setType('classtype', PARAM_ALPHANUMEXT);
 
         $mform->addElement('textarea', 'outcomes', get_string('form:outcomeslabel', 'block_ai4teachers'), 'wrap="virtual" rows="6" cols="60"');
         $mform->setType('outcomes', PARAM_TEXT);

@@ -55,3 +55,12 @@ $string['label:outcomes'] = 'Ishodi';
 // Šabloni za prompt
 $string['prompt:prefix'] = "Vi ste stručnjak za instruktivni dizajn koji pomaže nastavniku na Moodle kursu '{$a->course}'.";
 $string['prompt:instructions'] = 'Generišite izlaz na izabranom jeziku. Strogo se uskladite sa namenom i ishodima, prilagodite nivou za navedeni uzrast/razred. Po mogućstvu se oslonite na lokalni kurikulum.';
+
+// Opcije tipa časa
+$string['classtype:lecture'] = 'Predavanje';
+$string['classtype:discussion'] = 'Diskusija';
+$string['classtype:groupwork'] = 'Grupni rad';
+$string['classtype:lab'] = 'Laboratorijski/praktični rad';
+$string['classtype:project'] = 'Projektna nastava';
+$string['classtype:review'] = 'Ponavljanje/utvrđivanje';
+$string['classtype:assessment'] = 'Provera znanja/test';

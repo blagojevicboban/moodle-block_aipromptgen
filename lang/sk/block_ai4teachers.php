@@ -46,6 +46,15 @@ $string['label:outcomes'] = 'Výstupy';
 $string['prompt:prefix'] = "Ste odborník na inštrukčný dizajn, ktorý pomáha učiteľovi v kurze Moodle '{$a->course}'.";
 $string['prompt:instructions'] = 'Vygenerujte výstup v zvolenom jazyku. Dôsledne sa riaďte účelom a výstupmi, na vhodnej úrovni pre uvedený vek/ročník. Uprednostnite súlad s miestnym kurikulom, ak je to vhodné.';
 
+// Možnosti typu hodiny
+$string['classtype:lecture'] = 'Prednáška';
+$string['classtype:discussion'] = 'Diskusia';
+$string['classtype:groupwork'] = 'Skupinová práca';
+$string['classtype:lab'] = 'Laboratórna/praktická';
+$string['classtype:project'] = 'Projektové vyučovanie';
+$string['classtype:review'] = 'Opakovanie/upevnenie';
+$string['classtype:assessment'] = 'Test/hodnotenie';
+
 // Actions
 $string['form:copy'] = 'Skopírovať do schránky';
 $string['form:copied'] = 'Skopírované!';

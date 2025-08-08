@@ -28,7 +28,6 @@ if (optional_param('reset', 0, PARAM_BOOL)) {
 }
 
 if ($data = $form->get_data()) {
-    // Resolve selected language to ensure localized strings come from that pack.
     $langcode = clean_param($data->language, PARAM_ALPHA);
 
     $labels = [
@@ -42,17 +41,16 @@ if ($data = $form->get_data()) {
         'outcomes' => get_string('label:outcomes', 'block_ai4teachers', null, $langcode),
     ];
 
-    // Map codes to localized values for purpose and audience.
+    // Map select codes to localized values.
     $purposecode = clean_param($data->purpose, PARAM_ALPHANUMEXT);
     $audiencecode = clean_param($data->audience, PARAM_ALPHANUMEXT);
+    $classtypecode = clean_param($data->classtype, PARAM_ALPHANUMEXT);
     $purposeallowed = ['lessonplan', 'quiz', 'rubric', 'worksheet'];
     $audienceallowed = ['teacher', 'student'];
-    $purposevalue = in_array($purposecode, $purposeallowed)
-        ? get_string('option:' . $purposecode, 'block_ai4teachers', null, $langcode)
-        : s($purposecode);
-    $audiencevalue = in_array($audiencecode, $audienceallowed)
-        ? get_string('option:' . $audiencecode, 'block_ai4teachers', null, $langcode)
-        : s($audiencecode);
+    $classtypeallowed = ['lecture', 'discussion', 'groupwork', 'lab', 'project', 'review', 'assessment'];
+    $purposevalue = in_array($purposecode, $purposeallowed) ? get_string('option:' . $purposecode, 'block_ai4teachers', null, $langcode) : s($purposecode);
+    $audiencevalue = in_array($audiencecode, $audienceallowed) ? get_string('option:' . $audiencecode, 'block_ai4teachers', null, $langcode) : s($audiencecode);
+    $classtypevalue = in_array($classtypecode, $classtypeallowed) ? get_string('classtype:' . $classtypecode, 'block_ai4teachers', null, $langcode) : s($classtypecode);
 
     $parts = [];
     $parts[] = $labels['purpose'] . ': ' . $purposevalue;
@@ -61,7 +59,7 @@ if ($data = $form->get_data()) {
     $parts[] = $labels['subject'] . ": {$data->subject}";
     $parts[] = $labels['agerange'] . ": {$data->agerange}";
     $parts[] = $labels['lesson'] . ": {$data->lesson}";
-    $parts[] = $labels['classtype'] . ": {$data->classtype}";
+    $parts[] = $labels['classtype'] . ": {$classtypevalue}";
     if (!empty($data->outcomes)) {
         $parts[] = $labels['outcomes'] . ": " . preg_replace('/\s+/', ' ', trim($data->outcomes));
     }

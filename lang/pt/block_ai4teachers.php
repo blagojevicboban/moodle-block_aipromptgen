@@ -46,6 +46,15 @@ $string['label:outcomes'] = 'Resultados';
 $string['prompt:prefix'] = "Você é um especialista em design instrucional ajudando um professor no curso do Moodle '{$a->course}'.";
 $string['prompt:instructions'] = 'Gere a saída no idioma selecionado. Alinhe estritamente à finalidade e aos resultados, no nível apropriado para a idade/série indicada. Prefira o alinhamento ao currículo local quando aplicável.';
 
+// Opções de tipo de aula
+$string['classtype:lecture'] = 'Aula expositiva';
+$string['classtype:discussion'] = 'Discussão';
+$string['classtype:groupwork'] = 'Trabalho em grupo';
+$string['classtype:lab'] = 'Laboratório/Prática';
+$string['classtype:project'] = 'Baseada em projetos';
+$string['classtype:review'] = 'Revisão/Recapitulação';
+$string['classtype:assessment'] = 'Avaliação/Teste';
+
 // Actions
 $string['form:copy'] = 'Copiar para a área de transferência';
 $string['form:copied'] = 'Copiado!';
