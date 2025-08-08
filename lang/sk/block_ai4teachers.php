@@ -36,6 +36,7 @@ $string['lang:sk'] = 'Slovenčina';
 $string['form:copy'] = 'Skopírovať do schránky';
 $string['form:copied'] = 'Skopírované!';
 $string['form:download'] = 'Stiahnuť .txt';
+$string['form:reset'] = 'Vymazať uložený prompt';
 
 // Capabilities
 $string['ai4teachers:manage'] = 'Používať blok AI pre učiteľov v kurze';

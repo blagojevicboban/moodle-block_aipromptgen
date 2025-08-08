@@ -27,6 +27,7 @@ $string['form:audience'] = 'Audience (teacher-facing or student-facing)';
 $string['form:copy'] = 'Copy to clipboard';
 $string['form:copied'] = 'Copied!';
 $string['form:download'] = 'Download .txt';
+$string['form:reset'] = 'Clear saved prompt';
 
 // Options
 $string['option:lessonplan'] = 'Lesson plan';

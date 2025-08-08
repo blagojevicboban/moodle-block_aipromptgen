@@ -78,6 +78,11 @@ if ($generated) {
         'class' => 'btn btn-secondary',
         'style' => 'margin-left:8px;'
     ]);
+    echo html_writer::tag('a', get_string('form:reset', 'block_ai4teachers'), [
+        'href' => new moodle_url('/blocks/ai4teachers/view.php', ['courseid' => $course->id, 'reset' => 1]),
+        'class' => 'btn btn-link',
+        'style' => 'margin-left:8px;'
+    ]);
     echo html_writer::tag('span', '', [
         'id' => 'ai4t-copied',
         'style' => 'margin-left:8px; display:none;'

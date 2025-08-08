@@ -36,6 +36,7 @@ $string['lang:sk'] = 'Eslovaco';
 $string['form:copy'] = 'Copiar para a área de transferência';
 $string['form:copied'] = 'Copiado!';
 $string['form:download'] = 'Baixar .txt';
+$string['form:reset'] = 'Limpar prompt guardado';
 
 // Capabilities
 $string['ai4teachers:manage'] = 'Usar o bloco IA para Professores no curso';
