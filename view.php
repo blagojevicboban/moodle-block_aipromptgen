@@ -42,8 +42,9 @@ $renderer = $PAGE->get_renderer('core');
 
 // Load form.
 require_once($CFG->dirroot . '/blocks/ai4teachers/classes/form/prompt_form.php');
-// Gather course topics (section names) for suggestions.
+// Gather course topics (section names) for suggestions, and build lesson options (sections + activities).
 $topics = [];
+$lessonoptions = [];
 try {
     $modinfo = get_fast_modinfo($course);
     foreach ($modinfo->get_section_info_all() as $section) {
@@ -58,11 +59,63 @@ try {
         if ($name !== '' && !in_array($name, $topics, true)) {
             $topics[] = $name;
         }
+        // Build grouped lesson options: section as selectable + its visible activities.
+        $group = ['text' => $name, 'options' => []];
+        if ($name !== '') {
+            // Use an icon for the section itself.
+            $group['options']['📘 ' . $name] = $name; // Display with icon; value stays clean.
+        }
+        foreach ($modinfo->get_cms() as $cm) {
+            if (!$cm->uservisible) {
+                continue;
+            }
+            if ((int)$cm->sectionnum !== (int)$section->section) {
+                continue;
+            }
+            $cmname = trim(format_string($cm->name));
+            if ($cmname === '') {
+                continue;
+            }
+            // Choose a simple emoji icon based on module type.
+            $mod = (string)$cm->modname;
+            $icon = '📄';
+            switch ($mod) {
+                case 'assign': $icon = '📝'; break;
+                case 'book': $icon = '📚'; break;
+                case 'chat': $icon = '💬'; break;
+                case 'choice': $icon = '☑️'; break;
+                case 'feedback': $icon = '🗳️'; break;
+                case 'folder': $icon = '📁'; break;
+                case 'forum': $icon = '💬'; break;
+                case 'glossary': $icon = '📔'; break;
+                case 'h5pactivity': $icon = '▶️'; break;
+                case 'label': $icon = '🏷️'; break;
+                case 'lesson': $icon = '📘'; break;
+                case 'lti': $icon = '🌐'; break;
+                case 'page': $icon = '📄'; break;
+                case 'quiz': $icon = '❓'; break;
+                case 'resource': $icon = '📄'; break;
+                case 'scorm': $icon = '🎯'; break;
+                case 'survey': $icon = '📊'; break;
+                case 'url': $icon = '🔗'; break;
+                case 'wiki': $icon = '🧭'; break;
+                case 'workshop': $icon = '🛠️'; break;
+                default: $icon = '📄';
+            }
+            // Indent activities visually in the list with icon.
+            $group['options']['    ' . $icon . ' ' . $cmname] = $cmname;
+        }
+        if (!empty($group['options'])) {
+            $lessonoptions[] = $group;
+        }
     }
 } catch (\Throwable $e) {
     // Ignore; leave topics empty if anything goes wrong.
 }
-$form = new \block_ai4teachers\form\prompt_form(null, ['topics' => $topics]);
+$form = new \block_ai4teachers\form\prompt_form(null, [
+    'topics' => $topics,
+    'lessonoptions' => $lessonoptions,
+]);
 
 $generated = null;
 $sessionkey = 'block_ai4teachers_lastprompt_' . $course->id;
