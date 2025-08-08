@@ -30,6 +30,8 @@ if (optional_param('reset', 0, PARAM_BOOL)) {
 if ($data = $form->get_data()) {
     $langcode = clean_param($data->language, PARAM_ALPHA);
 
+    // UI labels follow current Moodle language automatically via get_string().
+    // Prompt content (labels inside the generated text) will use the selected language.
     $labels = [
         'purpose' => get_string('label:purpose', 'block_ai4teachers', null, $langcode),
         'audience' => get_string('label:audience', 'block_ai4teachers', null, $langcode),

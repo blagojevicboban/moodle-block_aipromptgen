@@ -31,6 +31,7 @@ $string['lang:sr'] = 'Sérvio';
 $string['lang:en'] = 'Inglês';
 $string['lang:pt'] = 'Português';
 $string['lang:sk'] = 'Eslovaco';
+$string['lang:sr_cr'] = 'Sérvio (cirílico)';
 
 // Rótulos do prompt
 $string['label:purpose'] = 'Finalidade';

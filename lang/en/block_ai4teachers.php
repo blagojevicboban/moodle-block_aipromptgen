@@ -41,6 +41,7 @@ $string['lang:sr'] = 'Serbian';
 $string['lang:en'] = 'English';
 $string['lang:pt'] = 'Portuguese';
 $string['lang:sk'] = 'Slovak';
+$string['lang:sr_cr'] = 'Serbian (Cyrillic)';
 
 // Prompt labels
 $string['label:purpose'] = 'Purpose';

@@ -31,6 +31,7 @@ $string['lang:sr'] = 'Srbčina';
 $string['lang:en'] = 'Angličtina';
 $string['lang:pt'] = 'Portugalčina';
 $string['lang:sk'] = 'Slovenčina';
+$string['lang:sr_cr'] = 'Srbčina (cyrilika)';
 
 // Označenia pre prompt
 $string['label:purpose'] = 'Účel';

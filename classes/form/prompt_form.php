@@ -39,6 +39,7 @@ class prompt_form extends \moodleform {
         // Language as a dropdown with preset values and default to current language.
         $langoptions = [
             'sr' => get_string('lang:sr', 'block_ai4teachers'),
+            'sr_cr' => get_string('lang:sr_cr', 'block_ai4teachers'),
             'en' => get_string('lang:en', 'block_ai4teachers'),
             'pt' => get_string('lang:pt', 'block_ai4teachers'),
             'sk' => get_string('lang:sk', 'block_ai4teachers'),
@@ -47,6 +48,10 @@ class prompt_form extends \moodleform {
         $mform->setType('language', PARAM_ALPHA);
         $curlang = current_language();
         $defaultcode = substr($curlang, 0, 2);
+        // If UI is in Serbian Cyrillic, default to sr_cr for prompt language.
+        if (in_array($curlang, ['sr_cr', 'sr_cyrl', 'sr@cyrl'])) {
+            $defaultcode = 'sr_cr';
+        }
         if (!array_key_exists($defaultcode, $langoptions)) {
             $defaultcode = 'en';
         }
