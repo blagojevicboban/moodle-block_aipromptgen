@@ -175,12 +175,20 @@ if (!empty($cmid)) {
     }
 }
 
-$form->set_data([
+// Always set courseid; set other defaults only on initial load (not after submission).
+$defaultdata = [
     'courseid' => $course->id,
-    'subject' => format_string($course->fullname),
-    'topic' => $defaulttopic,
-    'lesson' => $defaultlesson,
-]);
+];
+if (!$form->is_submitted()) {
+    $defaultdata['subject'] = format_string($course->fullname);
+    if ($defaulttopic !== '') {
+        $defaultdata['topic'] = $defaulttopic;
+    }
+    if ($defaultlesson !== '') {
+        $defaultdata['lesson'] = $defaultlesson;
+    }
+}
+$form->set_data($defaultdata);
 $form->display();
 
 if ($generated) {
