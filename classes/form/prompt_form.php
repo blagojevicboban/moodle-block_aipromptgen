@@ -77,7 +77,7 @@ class prompt_form extends \moodleform {
             $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
             $mform->setType('lesson', PARAM_TEXT);
             // Small hint: if text is provided, it takes precedence.
-            $mform->addElement('static', 'lessonhint', '', html_writer::span(get_string('form:lessonhint', 'block_ai4teachers') ?? '')); // Optional string.
+            $mform->addElement('static', 'lessonhint', '', \html_writer::span(get_string('form:lessonhint', 'block_ai4teachers') ?? '')); // Optional string.
         } else {
             $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
             $mform->setType('lesson', PARAM_TEXT);
