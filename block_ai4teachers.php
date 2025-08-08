@@ -37,7 +37,7 @@ class block_ai4teachers extends block_base {
      * @return array
      */
     public function applicable_formats() {
-        return ['course-view' => true, 'site-index' => false, 'mod' => false];
+        return ['course-view' => true, 'site-index' => false, 'mod' => true];
     }
 
     /**
@@ -62,6 +62,10 @@ class block_ai4teachers extends block_base {
 
         $sectionid = optional_param('section', 0, PARAM_INT);
         $params = ['courseid' => $courseid];
+        // If rendered on a module page, include cmid for lesson defaulting.
+        if (!empty($this->page->cm) && !empty($this->page->cm->id)) {
+            $params['cmid'] = (int)$this->page->cm->id;
+        }
         if (!empty($sectionid)) {
             $params['section'] = $sectionid;
         }
@@ -82,6 +86,10 @@ class block_ai4teachers extends block_base {
             . "  if(!sec){ var el=document.querySelector('.course-content .current[id^=\\'section-\\'], .course-content .section.current[id^=\\'section-\\']');\n"
             . "    if(el){ var m2=el.id.match(/section-(\\\d+)/); if(m2){sec=m2[1];} } }\n"
             . "  if(sec){ href.searchParams.set('section', sec); a.href=href.toString(); }\n"
+            . "  // Also propagate cmid if viewing a module page (URL like /mod/...&id=CMID).\n"
+            . "  var usp=new URLSearchParams(window.location.search);\n"
+            . "  var cmid=usp.get('id');\n"
+            . "  if(cmid && /\\/mod\\//.test(window.location.pathname)){ href.searchParams.set('cmid', cmid); a.href=href.toString(); }\n"
             . "}catch(e){}\n"
             . "})();";
         $this->page->requires->js_amd_inline($js);

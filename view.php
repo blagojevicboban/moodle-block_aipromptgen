@@ -27,6 +27,7 @@ require_login();
 
 $courseid = required_param('courseid', PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
+$cmid = optional_param('cmid', 0, PARAM_INT);
 $course = get_course($courseid);
 $context = context_course::instance($course->id);
 require_capability('block/ai4teachers:manage', $context);
@@ -153,10 +154,32 @@ if (!empty($sectionid)) {
     }
 }
 
+// Determine a default lesson title from cmid if provided.
+$defaultlesson = '';
+if (!empty($cmid)) {
+    try {
+        $cm = get_coursemodule_from_id(null, $cmid, $course->id, false, MUST_EXIST);
+        // Prefer module name; fall back to instance name if needed.
+        if (!empty($cm->name)) {
+            $defaultlesson = format_string($cm->name);
+        } else if (!empty($cm->instance)) {
+            // Some modules rely on instance-level naming; modinfo provides name reliably.
+            $modinfo = get_fast_modinfo($course);
+            if (isset($modinfo->cms[$cmid])) {
+                $defaultlesson = format_string($modinfo->cms[$cmid]->name);
+            }
+        }
+        $defaultlesson = trim((string)$defaultlesson);
+    } catch (\Throwable $e) {
+        $defaultlesson = '';
+    }
+}
+
 $form->set_data([
     'courseid' => $course->id,
     'subject' => format_string($course->fullname),
     'topic' => $defaulttopic,
+    'lesson' => $defaultlesson,
 ]);
 $form->display();
 
