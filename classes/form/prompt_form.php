@@ -38,12 +38,36 @@ class prompt_form extends \moodleform {
 
         $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_ai4teachers'));
         $mform->setType('subject', PARAM_TEXT);
+        // Tooltip as requested (non-localized text per requirement).
+        $mform->getElement('subject')->setAttributes([
+            'title' => 'Promenite naziv predmeta ukoliko je potrebno',
+        ]);
+        // Make subject required (client-side and server-side validation).
+        $mform->addRule('subject', null, 'required', null, 'client');
+        $mform->addRule('subject', get_string('required'), 'required');
 
         $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
         $mform->setType('agerange', PARAM_TEXT);
 
         $mform->addElement('text', 'lesson', get_string('form:lessonlabel', 'block_ai4teachers'));
         $mform->setType('lesson', PARAM_TEXT);
+        
+        // Topic (editable text with suggestions from current course via datalist).
+        $topics = $this->_customdata['topics'] ?? [];
+        $mform->addElement('text', 'topic', get_string('form:topiclabel', 'block_ai4teachers'));
+        $mform->setType('topic', PARAM_TEXT);
+        // Attach HTML5 datalist for suggestions while allowing free text.
+        $mform->getElement('topic')->setAttributes(['list' => 'ai4t-topiclist']);
+    // Make topic required.
+    $mform->addRule('topic', null, 'required', null, 'client');
+    $mform->addRule('topic', get_string('required'), 'required');
+        if (!empty($topics) && is_array($topics)) {
+            $optionshtml = '';
+            foreach ($topics as $t) {
+                $optionshtml .= \html_writer::tag('option', s($t));
+            }
+            $mform->addElement('html', \html_writer::tag('datalist', $optionshtml, ['id' => 'ai4t-topiclist']));
+        }
 
         // Class type as a dropdown (localized via strings).
         $classtypeoptions = [

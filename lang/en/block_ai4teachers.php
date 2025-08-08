@@ -36,6 +36,7 @@ $string['ai4teachers:myaddinstance'] = 'Add the AI for Teachers block to the Das
 // Form strings.
 $string['form:subjectlabel'] = 'Subject';
 $string['form:agerangelabel'] = 'Student age/grade';
+$string['form:topiclabel'] = 'Teaching topic (area)';
 $string['form:lessonlabel'] = 'Lesson title';
 $string['form:class_typelabel'] = 'Class type';
 $string['form:outcomeslabel'] = 'Outcomes / objectives';
@@ -74,6 +75,7 @@ $string['label:audience'] = 'Audience';
 $string['label:language'] = 'Language';
 $string['label:subject'] = 'Subject';
 $string['label:agerange'] = 'Student age/grade';
+$string['label:topic'] = 'Teaching topic (area)';
 $string['label:lesson'] = 'Lesson title';
 $string['label:classtype'] = 'Class type';
 $string['label:outcomes'] = 'Outcomes';

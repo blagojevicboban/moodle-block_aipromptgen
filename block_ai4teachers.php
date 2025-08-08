@@ -60,7 +60,12 @@ class block_ai4teachers extends block_base {
             return $this->content;
         }
 
-        $url = new moodle_url('/blocks/ai4teachers/view.php', ['courseid' => $courseid]);
+        $sectionid = optional_param('section', 0, PARAM_INT);
+        $params = ['courseid' => $courseid];
+        if (!empty($sectionid)) {
+            $params['section'] = $sectionid;
+        }
+        $url = new moodle_url('/blocks/ai4teachers/view.php', $params);
         $link = html_writer::link($url, get_string('openpromptbuilder', 'block_ai4teachers'), ['class' => 'btn btn-primary']);
         $this->content->text = html_writer::div($link);
         $this->content->footer = '';

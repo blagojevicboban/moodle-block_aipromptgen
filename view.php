@@ -26,6 +26,7 @@ require_once(__DIR__ . '/../../config.php');
 require_login();
 
 $courseid = required_param('courseid', PARAM_INT);
+$sectionid = optional_param('section', 0, PARAM_INT);
 $course = get_course($courseid);
 $context = context_course::instance($course->id);
 require_capability('block/ai4teachers:manage', $context);
@@ -40,7 +41,27 @@ $renderer = $PAGE->get_renderer('core');
 
 // Load form.
 require_once($CFG->dirroot . '/blocks/ai4teachers/classes/form/prompt_form.php');
-$form = new \block_ai4teachers\form\prompt_form(null, []);
+// Gather course topics (section names) for suggestions.
+$topics = [];
+try {
+    $modinfo = get_fast_modinfo($course);
+    foreach ($modinfo->get_section_info_all() as $section) {
+        $name = '';
+        if (!empty($section->name)) {
+            $name = $section->name;
+        } else {
+            // Fallback to formatted default section name (e.g., Topic 1).
+            $name = get_section_name($course, $section);
+        }
+        $name = trim(format_string($name));
+        if ($name !== '' && !in_array($name, $topics, true)) {
+            $topics[] = $name;
+        }
+    }
+} catch (\Throwable $e) {
+    // Ignore; leave topics empty if anything goes wrong.
+}
+$form = new \block_ai4teachers\form\prompt_form(null, ['topics' => $topics]);
 
 $generated = null;
 $sessionkey = 'block_ai4teachers_lastprompt_' . $course->id;
@@ -60,6 +81,7 @@ if ($data = $form->get_data()) {
         'language' => get_string('label:language', 'block_ai4teachers', null, $langcode),
         'subject' => get_string('label:subject', 'block_ai4teachers', null, $langcode),
         'agerange' => get_string('label:agerange', 'block_ai4teachers', null, $langcode),
+    'topic' => get_string('label:topic', 'block_ai4teachers', null, $langcode),
         'lesson' => get_string('label:lesson', 'block_ai4teachers', null, $langcode),
         'classtype' => get_string('label:classtype', 'block_ai4teachers', null, $langcode),
         'outcomes' => get_string('label:outcomes', 'block_ai4teachers', null, $langcode),
@@ -89,6 +111,9 @@ if ($data = $form->get_data()) {
         . get_string('lang:' . $langcode, 'block_ai4teachers', null, $langcode);
     $parts[] = $labels['subject'] . ": {$data->subject}";
     $parts[] = $labels['agerange'] . ": {$data->agerange}";
+    if (!empty($data->topic)) {
+        $parts[] = $labels['topic'] . ": {$data->topic}";
+    }
     $parts[] = $labels['lesson'] . ": {$data->lesson}";
     $parts[] = $labels['classtype'] . ": {$classtypevalue}";
     if (!empty($data->outcomes)) {
@@ -113,7 +138,26 @@ if ($data = $form->get_data()) {
 }
 
 echo $OUTPUT->header();
-$form->set_data(['courseid' => $course->id]);
+// Determine a default topic based on current section if provided.
+$defaulttopic = '';
+if (!empty($sectionid)) {
+    try {
+        $modinfo = get_fast_modinfo($course);
+        $sectioninfo = $modinfo->get_section_info($sectionid, MUST_EXIST);
+        $defaulttopic = !empty($sectioninfo->name)
+            ? format_string($sectioninfo->name)
+            : get_section_name($course, $sectioninfo);
+        $defaulttopic = trim((string)$defaulttopic);
+    } catch (\Throwable $e) {
+        $defaulttopic = '';
+    }
+}
+
+$form->set_data([
+    'courseid' => $course->id,
+    'subject' => format_string($course->fullname),
+    'topic' => $defaulttopic,
+]);
 $form->display();
 
 if ($generated) {

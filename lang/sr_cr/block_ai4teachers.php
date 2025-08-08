@@ -36,7 +36,8 @@ $string['ai4teachers:myaddinstance'] = 'Додавање блока АИ за н
 // Форме.
 $string['form:subjectlabel'] = 'Предмет';
 $string['form:agerangelabel'] = 'Узраст/разред ученика';
-$string['form:lessonlabel'] = 'Назив лекције';
+$string['form:topiclabel'] = 'Наставна тема (област)';
+$string['form:lessonlabel'] = 'Назив лекције (наставне јединице)';
 $string['form:class_typelabel'] = 'Тип часа';
 $string['form:outcomeslabel'] = 'Исходи / циљеви';
 $string['form:language'] = 'Језик промпта';
@@ -74,6 +75,7 @@ $string['label:audience'] = 'Публика';
 $string['label:language'] = 'Језик';
 $string['label:subject'] = 'Предмет';
 $string['label:agerange'] = 'Узраст/разред ученика';
+$string['label:topic'] = 'Наставна тема (област)';
 $string['label:lesson'] = 'Назив лекције';
 $string['label:classtype'] = 'Тип часа';
 $string['label:outcomes'] = 'Исходи';

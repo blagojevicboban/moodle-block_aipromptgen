@@ -36,7 +36,8 @@ $string['ai4teachers:myaddinstance'] = 'Dodavanje bloka AI za nastavnike na Kont
 // Forme.
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:agerangelabel'] = 'Uzrast/razred učenika';
-$string['form:lessonlabel'] = 'Naziv lekcije';
+$string['form:topiclabel'] = 'Nastavna tema (oblast)';
+$string['form:lessonlabel'] = 'Naziv lekcije (nastavne jedinice)';
 $string['form:class_typelabel'] = 'Tip časa';
 $string['form:outcomeslabel'] = 'Ishodi / ciljevi';
 $string['form:language'] = 'Jezik prompta';
@@ -74,6 +75,7 @@ $string['label:audience'] = 'Publika';
 $string['label:language'] = 'Jezik';
 $string['label:subject'] = 'Predmet';
 $string['label:agerange'] = 'Uzrast/razred učenika';
+$string['label:topic'] = 'Nastavna tema (oblast)';
 $string['label:lesson'] = 'Naziv lekcije';
 $string['label:classtype'] = 'Tip časa';
 $string['label:outcomes'] = 'Ishodi';
