@@ -40,15 +40,19 @@ class prompt_form extends \moodleform {
 
         $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_ai4teachers'));
         $mform->setType('subject', PARAM_TEXT);
-        if ($subjectdefault !== '') {
-            $mform->setDefault('subject', $subjectdefault);
+        // Set a default only if provided and not empty.
+        if (is_string($subjectdefault)) {
+            $subjectdefault = trim($subjectdefault);
+            if ($subjectdefault !== '') {
+                $mform->setDefault('subject', $subjectdefault);
+            }
         }
         // Tooltip as requested (non-localized text per requirement).
         $mform->getElement('subject')->setAttributes([
             'title' => 'Promenite naziv predmeta ukoliko je potrebno',
         ]);
     // Make subject required (server-side; client-side optional to add later if needed).
-    $mform->addRule('subject', get_string('required'), 'required');
+    //$mform->addRule('subject', get_string('required'), 'required');
 
         $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
         $mform->setType('agerange', PARAM_TEXT);
@@ -136,8 +140,8 @@ class prompt_form extends \moodleform {
         ]);
 
         $mform->addElement('select', 'audience', get_string('form:audience', 'block_ai4teachers'), [
-            'teacher' => get_string('option:teacher', 'block_ai4teachers'),
             'student' => get_string('option:student', 'block_ai4teachers'),
+            'teacher' => get_string('option:teacher', 'block_ai4teachers'),
         ]);
 
         $mform->addElement('hidden', 'courseid');

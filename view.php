@@ -118,10 +118,16 @@ try {
 } catch (\Throwable $e) {
     // Ignore; leave topics empty if anything goes wrong.
 }
+// Prepare a robust course name for defaults.
+$coursedefaultname = trim((string)format_string($course->fullname));
+if ($coursedefaultname === '' && !empty($course->shortname)) {
+    $coursedefaultname = trim((string)format_string($course->shortname));
+}
+
 $form = new \block_ai4teachers\form\prompt_form(null, [
     'topics' => $topics,
     'lessonoptions' => $lessonoptions,
-    'subjectdefault' => format_string($course->fullname),
+    'subjectdefault' => $coursedefaultname,
 ]);
 
 $generated = null;
@@ -248,7 +254,7 @@ if ($defaultlesson !== '') {
 }
 // Initialize Subject to course name on first load (avoid overriding user input on submit).
 if (!$form->is_submitted()) {
-    $defaultdata['subject'] = format_string($course->fullname);
+    $defaultdata['subject'] = $coursedefaultname;
 }
 $form->set_data($defaultdata);
 $form->display();
