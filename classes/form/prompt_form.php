@@ -23,7 +23,7 @@ require_once($CFG->libdir . '/formslib.php');
 /**
  * Prompt builder form for the AI for Teachers block.
  *
- * @package    block_ai4teachers
+ * @package    block_aipromptgen
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -59,7 +59,7 @@ class prompt_form extends \moodleform {
     // Make subject required (server-side; client-side optional to add later if needed).
     //$mform->addRule('subject', get_string('required'), 'required');
 
-        $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_ai4teachers'));
+    $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_aipromptgen'));
         $mform->setType('agerange', PARAM_TEXT);
 
         // Topic (editable text with suggestions + a Browse button that opens a modal picker).

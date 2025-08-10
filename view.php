@@ -47,7 +47,7 @@ $PAGE->set_heading(format_string($course->fullname));
 $renderer = $PAGE->get_renderer('core');
 
 // Load form.
-require_once($CFG->dirroot . '/blocks/ai4teachers/classes/form/prompt_form.php');
+require_once($CFG->dirroot . '/blocks/aipromptgen/classes/form/prompt_form.php');
 // Gather course topics (section names) for suggestions, and build lesson options (sections + activities).
 $topics = [];
 $lessonoptions = [];

@@ -3,12 +3,12 @@
 A minimal block plugin that provides an AI prompt builder for teachers on a per-course basis. Students cannot access it.
 
 Features
-- Course block visible only to roles with the capability block/ai4teachers:manage (editing teachers and managers by default).
+- Course block visible only to roles with the capability block/aipromptgen:manage (editing teachers and managers by default).
 - Opens a form where a teacher selects/enters: subject, student age/grade, lesson title, class type, outcomes, language, prompt purpose, and audience.
 - Generates a well-structured prompt string that the teacher can copy into their preferred AI tool.
 
 Install
-1. Place this folder under Moodle at blocks/ai4teachers
+1. Place this folder under Moodle at blocks/aipromptgen
 2. Visit Site administration → Notifications to complete installation.
 
 Usage
