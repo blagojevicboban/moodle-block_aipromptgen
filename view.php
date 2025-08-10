@@ -316,7 +316,7 @@ foreach ($lessonoptions as $group) {
         foreach ($group['options'] as $display => $value) {
             // Each item is clickable; data-value holds the clean lesson title to insert.
             echo html_writer::tag('li', s($display), [
-                'class' => 'ai4t-item',
+                'class' => 'ai4t-lesson-item',
                 'data-value' => $value,
                 'tabindex' => 0,
             ]);
@@ -350,7 +350,7 @@ $browsejs = "(function(){\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-item');\n"
+    . "var items=document.querySelectorAll('.ai4t-lesson-item');\n"
     . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($browsejs);
