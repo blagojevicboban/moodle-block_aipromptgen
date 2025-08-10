@@ -254,12 +254,17 @@ if ($defaultlesson !== '') {
 }
 // Initialize Subject to course name on first load (avoid overriding user input on submit).
 if (!$form->is_submitted()) {
-    $defaultdata['subject'] = $coursedefaultname;
+    if (!isset($defaultdata['subject']) || trim($defaultdata['subject']) === '') {
+        $defaultdata['subject'] = $coursedefaultname;
+    }
 }
 $form->set_data($defaultdata);
-// As a final guard, directly set the Subject value on first load.
+// As a final guard, direktno postavi Subject samo ako je i dalje prazan nakon set_data.
 if (!$form->is_submitted() && $coursedefaultname !== '') {
-    $form->set_data(['subject' => $coursedefaultname]);
+    $current = $form->get_data();
+    if (empty($current->subject)) {
+        $form->set_data(['subject' => $coursedefaultname]);
+    }
 }
 $form->display();
 
