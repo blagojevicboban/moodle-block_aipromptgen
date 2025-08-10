@@ -257,7 +257,17 @@ if (!$form->is_submitted()) {
     $defaultdata['subject'] = $coursedefaultname;
 }
 $form->set_data($defaultdata);
+// As a final guard, directly set the Subject value on first load.
+if (!$form->is_submitted() && $coursedefaultname !== '') {
+    $form->set_data(['subject' => $coursedefaultname]);
+}
 $form->display();
+
+// Client-side fallback: if Subject is still empty on first load, set it to the course name.
+if (!$form->is_submitted() && $coursedefaultname !== '') {
+    $jsfill = "(function(){var el=document.getElementById('id_subject'); if(el && !el.value){ el.value='" . addslashes($coursedefaultname) . "'; }})();";
+    $PAGE->requires->js_amd_inline($jsfill);
+}
 
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.

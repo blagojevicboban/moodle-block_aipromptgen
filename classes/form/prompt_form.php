@@ -45,6 +45,11 @@ class prompt_form extends \moodleform {
             $subjectdefault = trim($subjectdefault);
             if ($subjectdefault !== '') {
                 $mform->setDefault('subject', $subjectdefault);
+                // Also set the element value directly as a robustness fallback.
+                $el = $mform->getElement('subject');
+                if ($el) {
+                    $el->setValue($subjectdefault);
+                }
             }
         }
         // Tooltip as requested (non-localized text per requirement).
@@ -64,7 +69,7 @@ class prompt_form extends \moodleform {
         $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_ai4teachers'), [
             'type' => 'button',
             'id' => 'ai4t-topic-browse',
-            'class' => 'btn btn-secondary',
+            'class' => 'btn btn-secondary btn-sm',
         ]);
         $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_ai4teachers'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
@@ -87,7 +92,7 @@ class prompt_form extends \moodleform {
         $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_ai4teachers'), [
             'type' => 'button',
             'id' => 'ai4t-lesson-browse',
-            'class' => 'btn btn-secondary',
+            'class' => 'btn btn-secondary btn-sm',
         ]);
         $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_ai4teachers'), ' ', false);
         $mform->setType('lesson', PARAM_TEXT);
