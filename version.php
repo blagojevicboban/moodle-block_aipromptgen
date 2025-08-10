@@ -17,7 +17,7 @@
 /**
  * Version details for the AI for Teachers block.
  *
- * @package    block_ai4teachers
+ * @package    block_aipromptgen
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_ai4teachers';
+$plugin->component = 'block_aipromptgen';
 $plugin->version   = 2025080800; // YYYYMMDDHH.
 $plugin->release   = '0.1.0';
 $plugin->maturity  = MATURITY_ALPHA;

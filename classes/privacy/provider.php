@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace block_ai4teachers\privacy;
+namespace block_aipromptgen\privacy;
 
 /**
- * Privacy Subsystem implementation for block_ai4teachers.
+ * Privacy Subsystem implementation for block_aipromptgen.
  *
  * Declares that this plugin does not store any personal data.
  *
- * @package    block_ai4teachers
+ * @package    block_aipromptgen
  * @category   privacy
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
@@ -34,6 +34,6 @@ class provider implements \core_privacy\local\metadata\null_provider {
      * @return string The language string with the reason.
      */
     public static function get_reason() : string {
-        return get_string('privacy:metadata', 'block_ai4teachers');
+    return get_string('privacy:metadata', 'block_aipromptgen');
     }
 }

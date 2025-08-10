@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace block_ai4teachers\form;
+namespace block_aipromptgen\form;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -38,7 +38,7 @@ class prompt_form extends \moodleform {
         $mform = $this->_form;
     $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
 
-        $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_ai4teachers'));
+    $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_aipromptgen'));
         $mform->setType('subject', PARAM_TEXT);
         // Set a default only if provided and not empty.
         if (is_string($subjectdefault)) {
@@ -63,15 +63,15 @@ class prompt_form extends \moodleform {
         $mform->setType('agerange', PARAM_TEXT);
 
         // Topic (editable text with suggestions + a Browse button that opens a modal picker).
-        $topics = $this->_customdata['topics'] ?? [];
+    $topics = $this->_customdata['topics'] ?? [];
         $topicelems = [];
-        $topicelems[] = $mform->createElement('text', 'topic', null, ['size' => 60, 'list' => 'ai4t-topiclist']);
-        $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_ai4teachers'), [
+    $topicelems[] = $mform->createElement('text', 'topic', null, ['size' => 60, 'list' => 'ai4t-topiclist']);
+    $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-topic-browse',
             'class' => 'btn btn-secondary btn-sm',
         ]);
-        $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_ai4teachers'), ' ', false);
+    $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
     // Make topic required (element is inside a group, so use group rule to avoid QuickForm errors).
     $grouprules = [];
@@ -88,42 +88,42 @@ class prompt_form extends \moodleform {
 
         // Lesson title: keep as textbox, with a Browse button to open a modal picker.
         $lessonelems = [];
-        $lessonelems[] = $mform->createElement('text', 'lesson', null, ['size' => 60]);
-        $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_ai4teachers'), [
+    $lessonelems[] = $mform->createElement('text', 'lesson', null, ['size' => 60]);
+    $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-lesson-browse',
             'class' => 'btn btn-secondary btn-sm',
         ]);
-        $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_ai4teachers'), ' ', false);
+    $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('lesson', PARAM_TEXT);
 
         // Class type as a dropdown (localized via strings).
         $classtypeoptions = [
-            'lecture' => get_string('classtype:lecture', 'block_ai4teachers'),
-            'discussion' => get_string('classtype:discussion', 'block_ai4teachers'),
-            'groupwork' => get_string('classtype:groupwork', 'block_ai4teachers'),
-            'lab' => get_string('classtype:lab', 'block_ai4teachers'),
-            'project' => get_string('classtype:project', 'block_ai4teachers'),
-            'review' => get_string('classtype:review', 'block_ai4teachers'),
-            'assessment' => get_string('classtype:assessment', 'block_ai4teachers'),
+            'lecture' => get_string('classtype:lecture', 'block_aipromptgen'),
+            'discussion' => get_string('classtype:discussion', 'block_aipromptgen'),
+            'groupwork' => get_string('classtype:groupwork', 'block_aipromptgen'),
+            'lab' => get_string('classtype:lab', 'block_aipromptgen'),
+            'project' => get_string('classtype:project', 'block_aipromptgen'),
+            'review' => get_string('classtype:review', 'block_aipromptgen'),
+            'assessment' => get_string('classtype:assessment', 'block_aipromptgen'),
         ];
-        $mform->addElement('select', 'classtype', get_string('form:class_typelabel', 'block_ai4teachers'), $classtypeoptions);
+        $mform->addElement('select', 'classtype', get_string('form:class_typelabel', 'block_aipromptgen'), $classtypeoptions);
         $mform->setType('classtype', PARAM_ALPHANUMEXT);
 
-        $mform->addElement('textarea', 'outcomes', get_string('form:outcomeslabel', 'block_ai4teachers'), [
+    $mform->addElement('textarea', 'outcomes', get_string('form:outcomeslabel', 'block_aipromptgen'), [
             'wrap' => 'virtual', 'rows' => 6, 'cols' => 60,
         ]);
         $mform->setType('outcomes', PARAM_TEXT);
 
         // Language as a dropdown with preset values and default to current language.
         $langoptions = [
-            'sr' => get_string('lang:sr', 'block_ai4teachers'),
-            'sr_cr' => get_string('lang:sr_cr', 'block_ai4teachers'),
-            'en' => get_string('lang:en', 'block_ai4teachers'),
-            'pt' => get_string('lang:pt', 'block_ai4teachers'),
-            'sk' => get_string('lang:sk', 'block_ai4teachers'),
+            'sr' => get_string('lang:sr', 'block_aipromptgen'),
+            'sr_cr' => get_string('lang:sr_cr', 'block_aipromptgen'),
+            'en' => get_string('lang:en', 'block_aipromptgen'),
+            'pt' => get_string('lang:pt', 'block_aipromptgen'),
+            'sk' => get_string('lang:sk', 'block_aipromptgen'),
         ];
-        $mform->addElement('select', 'language', get_string('form:language', 'block_ai4teachers'), $langoptions);
+        $mform->addElement('select', 'language', get_string('form:language', 'block_aipromptgen'), $langoptions);
         // Allow language codes with underscore (e.g., sr_cr).
         $mform->setType('language', PARAM_ALPHANUMEXT);
         $curlang = current_language();
@@ -137,22 +137,22 @@ class prompt_form extends \moodleform {
         }
         $mform->setDefault('language', $defaultcode);
 
-        $mform->addElement('select', 'purpose', get_string('form:purpose', 'block_ai4teachers'), [
-            'lessonplan' => get_string('option:lessonplan', 'block_ai4teachers'),
-            'quiz' => get_string('option:quiz', 'block_ai4teachers'),
-            'rubric' => get_string('option:rubric', 'block_ai4teachers'),
-            'worksheet' => get_string('option:worksheet', 'block_ai4teachers'),
+        $mform->addElement('select', 'purpose', get_string('form:purpose', 'block_aipromptgen'), [
+            'lessonplan' => get_string('option:lessonplan', 'block_aipromptgen'),
+            'quiz' => get_string('option:quiz', 'block_aipromptgen'),
+            'rubric' => get_string('option:rubric', 'block_aipromptgen'),
+            'worksheet' => get_string('option:worksheet', 'block_aipromptgen'),
         ]);
 
-        $mform->addElement('select', 'audience', get_string('form:audience', 'block_ai4teachers'), [
-            'student' => get_string('option:student', 'block_ai4teachers'),
-            'teacher' => get_string('option:teacher', 'block_ai4teachers'),
+        $mform->addElement('select', 'audience', get_string('form:audience', 'block_aipromptgen'), [
+            'student' => get_string('option:student', 'block_aipromptgen'),
+            'teacher' => get_string('option:teacher', 'block_aipromptgen'),
         ]);
 
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
 
-        $this->add_action_buttons(true, get_string('form:submit', 'block_ai4teachers'));
+    $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
 
     // No inline script here; handled on the page to open a modal and populate the textbox.
     }

@@ -17,7 +17,7 @@
 /**
  * Prompt builder page for the AI for Teachers block.
  *
- * @package    block_ai4teachers
+ * @package    block_aipromptgen
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -36,12 +36,12 @@ $sectionid = optional_param('section', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $course = get_course($courseid);
 $context = context_course::instance($course->id);
-require_capability('block/ai4teachers:manage', $context);
+require_capability('block/aipromptgen:manage', $context);
 
-$PAGE->set_url(new moodle_url('/blocks/ai4teachers/view.php', ['courseid' => $course->id]));
+$PAGE->set_url(new moodle_url('/blocks/aipromptgen/view.php', ['courseid' => $course->id]));
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('course');
-$PAGE->set_title(get_string('pluginname', 'block_ai4teachers'));
+$PAGE->set_title(get_string('pluginname', 'block_aipromptgen'));
 $PAGE->set_heading(format_string($course->fullname));
 
 $renderer = $PAGE->get_renderer('core');
@@ -124,14 +124,14 @@ if ($coursedefaultname === '' && !empty($course->shortname)) {
     $coursedefaultname = trim((string)format_string($course->shortname));
 }
 
-$form = new \block_ai4teachers\form\prompt_form(null, [
+$form = new \block_aipromptgen\form\prompt_form(null, [
     'topics' => $topics,
     'lessonoptions' => $lessonoptions,
     'subjectdefault' => $coursedefaultname,
 ]);
 
 $generated = null;
-$sessionkey = 'block_ai4teachers_lastprompt_' . $course->id;
+$sessionkey = 'block_aipromptgen_lastprompt_' . $course->id;
 if (optional_param('reset', 0, PARAM_BOOL)) {
     unset($SESSION->{$sessionkey});
 }
@@ -143,15 +143,15 @@ if ($data = $form->get_data()) {
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.
     $labels = [
-        'purpose' => get_string('label:purpose', 'block_ai4teachers', null, $langcode),
-        'audience' => get_string('label:audience', 'block_ai4teachers', null, $langcode),
-        'language' => get_string('label:language', 'block_ai4teachers', null, $langcode),
-        'subject' => get_string('label:subject', 'block_ai4teachers', null, $langcode),
-        'agerange' => get_string('label:agerange', 'block_ai4teachers', null, $langcode),
-    'topic' => get_string('label:topic', 'block_ai4teachers', null, $langcode),
-        'lesson' => get_string('label:lesson', 'block_ai4teachers', null, $langcode),
-        'classtype' => get_string('label:classtype', 'block_ai4teachers', null, $langcode),
-        'outcomes' => get_string('label:outcomes', 'block_ai4teachers', null, $langcode),
+        'purpose' => get_string('label:purpose', 'block_aipromptgen', null, $langcode),
+        'audience' => get_string('label:audience', 'block_aipromptgen', null, $langcode),
+        'language' => get_string('label:language', 'block_aipromptgen', null, $langcode),
+        'subject' => get_string('label:subject', 'block_aipromptgen', null, $langcode),
+        'agerange' => get_string('label:agerange', 'block_aipromptgen', null, $langcode),
+    'topic' => get_string('label:topic', 'block_aipromptgen', null, $langcode),
+        'lesson' => get_string('label:lesson', 'block_aipromptgen', null, $langcode),
+        'classtype' => get_string('label:classtype', 'block_aipromptgen', null, $langcode),
+        'outcomes' => get_string('label:outcomes', 'block_aipromptgen', null, $langcode),
     ];
 
     // Map select codes to localized values.
@@ -162,20 +162,20 @@ if ($data = $form->get_data()) {
     $audienceallowed = ['teacher', 'student'];
     $classtypeallowed = ['lecture', 'discussion', 'groupwork', 'lab', 'project', 'review', 'assessment'];
     $purposevalue = in_array($purposecode, $purposeallowed)
-        ? get_string('option:' . $purposecode, 'block_ai4teachers', null, $langcode)
+    ? get_string('option:' . $purposecode, 'block_aipromptgen', null, $langcode)
         : s($purposecode);
     $audiencevalue = in_array($audiencecode, $audienceallowed)
-        ? get_string('option:' . $audiencecode, 'block_ai4teachers', null, $langcode)
+    ? get_string('option:' . $audiencecode, 'block_aipromptgen', null, $langcode)
         : s($audiencecode);
     $classtypevalue = in_array($classtypecode, $classtypeallowed)
-        ? get_string('classtype:' . $classtypecode, 'block_ai4teachers', null, $langcode)
+    ? get_string('classtype:' . $classtypecode, 'block_aipromptgen', null, $langcode)
         : s($classtypecode);
 
     $parts = [];
     $parts[] = $labels['purpose'] . ': ' . $purposevalue;
     $parts[] = $labels['audience'] . ': ' . $audiencevalue;
     $parts[] = $labels['language'] . ': '
-        . get_string('lang:' . $langcode, 'block_ai4teachers', null, $langcode);
+    . get_string('lang:' . $langcode, 'block_aipromptgen', null, $langcode);
     $parts[] = $labels['subject'] . ": {$data->subject}";
     $parts[] = $labels['agerange'] . ": {$data->agerange}";
     if (!empty($data->topic)) {
@@ -191,11 +191,11 @@ if ($data = $form->get_data()) {
     $coursename = format_string($course->fullname);
     $prefix = get_string(
         'prompt:prefix',
-        'block_ai4teachers',
+        'block_aipromptgen',
         (object)['course' => $coursename],
         $langcode
     );
-    $instructions = get_string('prompt:instructions', 'block_ai4teachers', null, $langcode);
+    $instructions = get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
 
     // Persist in user session per course.
@@ -294,7 +294,7 @@ echo html_writer::start_tag('div', [
     'aria-labelledby' => 'ai4t-modal-title',
 ]);
 echo html_writer::start_tag('header');
-echo html_writer::tag('h3', get_string('form:lessonlabel', 'block_ai4teachers'), ['id' => 'ai4t-modal-title']);
+echo html_writer::tag('h3', get_string('form:lessonlabel', 'block_aipromptgen'), ['id' => 'ai4t-modal-title']);
 // Close button (uses a simple × symbol).
 echo html_writer::tag('button', '&times;', [
     'type' => 'button',
@@ -365,7 +365,7 @@ echo html_writer::start_tag('div', [
     'style' => 'display:none;',
 ]);
 echo html_writer::start_tag('header');
-echo html_writer::tag('h3', get_string('form:topiclabel', 'block_ai4teachers'), ['id' => 'ai4t-topic-modal-title']);
+echo html_writer::tag('h3', get_string('form:topiclabel', 'block_aipromptgen'), ['id' => 'ai4t-topic-modal-title']);
 echo html_writer::tag('button', '&times;', [
     'type' => 'button',
     'id' => 'ai4t-topic-modal-close',
@@ -415,7 +415,7 @@ $topicbrowsejs = "(function(){\n"
 $PAGE->requires->js_amd_inline($topicbrowsejs);
 
 if ($generated) {
-    echo html_writer::tag('h3', get_string('form:result', 'block_ai4teachers'));
+    echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));
     // Editable textarea for the generated prompt.
     echo html_writer::start_tag('div', ['class' => 'ai4t-result']);
     echo html_writer::tag('textarea', s($generated), [
@@ -426,19 +426,19 @@ if ($generated) {
     ]);
     echo html_writer::empty_tag('br');
     echo html_writer::start_tag('div', ['class' => 'ai4t-actions']);
-    echo html_writer::tag('button', get_string('form:copy', 'block_ai4teachers'), [
+    echo html_writer::tag('button', get_string('form:copy', 'block_aipromptgen'), [
         'type' => 'button',
         'id' => 'ai4t-copy',
         'class' => 'btn btn-secondary',
     ]);
-    echo html_writer::tag('button', get_string('form:download', 'block_ai4teachers'), [
+    echo html_writer::tag('button', get_string('form:download', 'block_aipromptgen'), [
         'type' => 'button',
         'id' => 'ai4t-download',
         'class' => 'btn btn-secondary',
         'style' => 'margin-left:8px;',
     ]);
-    echo html_writer::tag('a', get_string('form:reset', 'block_ai4teachers'), [
-        'href' => new moodle_url('/blocks/ai4teachers/view.php', ['courseid' => $course->id, 'reset' => 1]),
+    echo html_writer::tag('a', get_string('form:reset', 'block_aipromptgen'), [
+        'href' => new moodle_url('/blocks/aipromptgen/view.php', ['courseid' => $course->id, 'reset' => 1]),
         'class' => 'btn btn-link',
         'style' => 'margin-left:8px;',
     ]);
@@ -469,7 +469,7 @@ if ($generated) {
         . "    } else {\n"
         . "      document.execCommand('copy');\n"
         . "    }\n"
-        . "    ok.textContent='" . addslashes(get_string('form:copied', 'block_ai4teachers')) . "';\n"
+    . "    ok.textContent='" . addslashes(get_string('form:copied', 'block_aipromptgen')) . "';\n"
         . "    ok.style.display='inline'; setTimeout(function(){ ok.style.display='none'; }, 1500);\n"
         . "  }catch(e){}\n"
         . "});}\n"
@@ -490,7 +490,7 @@ $backurl = new moodle_url('/course/view.php', ['id' => $course->id]);
 echo html_writer::div(
     html_writer::link(
         $backurl,
-        get_string('form:backtocourse', 'block_ai4teachers'),
+    get_string('form:backtocourse', 'block_aipromptgen'),
         ['class' => 'btn btn-secondary mt-3']
     ),
     'mt-3'

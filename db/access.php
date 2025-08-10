@@ -17,7 +17,7 @@
 /**
  * Capabilities for the AI for Teachers block.
  *
- * @package    block_ai4teachers
+ * @package    block_aipromptgen
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    'block/ai4teachers:manage' => [
+    'block/aipromptgen:manage' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [
@@ -35,7 +35,7 @@ $capabilities = [
         ],
         'clonepermissionsfrom' => 'moodle/block:edit',
     ],
-    'block/ai4teachers:addinstance' => [
+    'block/aipromptgen:addinstance' => [
         'riskbitmask' => RISK_SPAM | RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
@@ -45,7 +45,7 @@ $capabilities = [
         ],
         'clonepermissionsfrom' => 'moodle/site:manageblocks',
     ],
-    'block/ai4teachers:myaddinstance' => [
+    'block/aipromptgen:myaddinstance' => [
         'riskbitmask' => RISK_SPAM | RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
