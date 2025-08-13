@@ -158,16 +158,49 @@ class prompt_form extends \moodleform {
         $mform->getElement('language')->setAttributes([
             'title' => 'Choose the language for the generated prompt',
         ]);
-        // Default to current UI language when available; else fallback to a close match or English.
+        // Default to the user's current UI language when available.
+        // Try exact, normalized, and alias matches; then fallback to base language or English.
         $curlang = current_language();
-        $defaultcode = $curlang;
-        if (in_array($curlang, ['sr_cyrl', 'sr@cyrl'])) {
-            $defaultcode = 'sr_cr';
+        $candidates = [];
+        $aliasmap = [
+            'sr_cyrl' => 'sr_cr',
+            'sr@cyrl' => 'sr_cr',
+            'sr_cyr' => 'sr_cr',
+            'sr_latn' => 'sr_lt',
+            'sr@latin' => 'sr_lt',
+        ];
+        $norms = array_unique([
+            $curlang,
+            str_replace('-', '_', $curlang),
+            str_replace('_', '-', $curlang),
+            str_replace('@', '_', $curlang),
+        ]);
+        foreach ($norms as $code) {
+            if (isset($langoptions[$code])) {
+                $candidates[] = $code;
+            }
+            if (isset($aliasmap[$code]) && isset($langoptions[$aliasmap[$code]])) {
+                $candidates[] = $aliasmap[$code];
+            }
         }
-        if (!array_key_exists($defaultcode, $langoptions)) {
-            $short = substr($curlang, 0, 2);
-            $defaultcode = array_key_exists($short, $langoptions) ? $short : 'en';
+        if (empty($candidates)) {
+            $base = substr($curlang, 0, 2);
+            // Prefer sensible Serbian variants when only a base language is detected.
+            if ($base === 'sr') {
+                foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
+                    if (isset($langoptions[$p])) { $candidates[] = $p; break; }
+                }
+            }
+            // Otherwise, pick the first option whose code starts with the base.
+            if (empty($candidates)) {
+                foreach (array_keys($langoptions) as $code) {
+                    if (stripos($code, $base) === 0) { $candidates[] = $code; break; }
+                }
+            }
         }
+        $defaultcode = !empty($candidates)
+            ? $candidates[0]
+            : (isset($langoptions['en']) ? 'en' : array_key_first($langoptions));
         $mform->setDefault('language', $defaultcode);
 
         $mform->addElement('select', 'purpose', get_string('form:purpose', 'block_aipromptgen'), [

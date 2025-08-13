@@ -16,6 +16,9 @@ Usage
 - Click "Open AI Prompt Builder".
 - Fill in the form and copy the generated prompt.
 
+Repository
+- GitHub: https://github.com/blagojevicboban/ai4teachers
+
 Roadmap
 - Save presets per course and user.
 - Integrate with external LLM providers (via API key in plugin settings) to preview outputs.
