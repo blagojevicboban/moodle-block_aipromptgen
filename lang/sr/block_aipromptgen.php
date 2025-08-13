@@ -70,7 +70,7 @@ $string['label:outcomes'] = 'Ishodi';
 $string['label:topic'] = 'Nastavna tema/oblast';
 
 // Prompt templates.
-$string['prompt:prefix'] = "Vi ste stručnjak za didaktički dizajn koji pomaže nastavniku u Moodle kursu '{$a->course}'.";
+$string['prompt:prefix'] = 'Vi ste stručnjak za didaktički dizajn koji pomaže nastavniku u Moodle kursu {$a->course}.';
 $string['prompt:instructions'] = 'Generišite izlaz na izabranom jeziku. Strogo se držite svrhe i ishoda, na nivou primerenom uzrastu/razredu. Kada je primenljivo, preferirajte usklađenost sa lokalnim nastavnim planom i programom.';
 
 // Class type options.

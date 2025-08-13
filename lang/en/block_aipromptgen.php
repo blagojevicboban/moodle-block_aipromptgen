@@ -55,6 +55,7 @@ $string['form:copied'] = 'Copied!';
 $string['form:download'] = 'Download .txt';
 $string['form:reset'] = 'Clear saved prompt';
 $string['form:backtocourse'] = 'Back to course';
+$string['form:outcomesbrowse'] = 'Browse…';
 
 // Options.
 $string['option:lessonplan'] = 'Lesson plan';
@@ -83,7 +84,7 @@ $string['label:classtype'] = 'Class type';
 $string['label:outcomes'] = 'Outcomes';
 
 // Prompt templates.
-$string['prompt:prefix'] = "You are an expert instructional designer helping a teacher in the Moodle course '{$a->course}'.";
+$string['prompt:prefix'] = 'You are an expert instructional designer helping a teacher in the Moodle course {$a->course}.';
 $string['prompt:instructions'] = 'Generate the output in the selected language. Align strictly with the purpose and outcomes, at the appropriate level for the specified age/grade. Prefer local curriculum alignment when applicable.';
 
 // Class type options.

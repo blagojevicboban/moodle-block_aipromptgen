@@ -71,7 +71,7 @@ $string['label:outcomes'] = 'Výstupy';
 $string['label:topic'] = 'Vyučovacia téma (oblasť)';
 
 // Prompt templates.
-$string['prompt:prefix'] = "Ste expert na didaktický dizajn a pomáhate učiteľovi v kurze Moodle '{$a->course}'.";
+$string['prompt:prefix'] = 'Ste expert na didaktický dizajn a pomáhate učiteľovi v kurze Moodle {$a->course}.';
 $string['prompt:instructions'] = 'Generujte výstup vo vybranom jazyku. Dôsledne sa držte účelu a cieľov, primerane veku/ročníku. Preferujte súlad s miestnym kurikulom, ak je to vhodné.';
 
 // Class type options.

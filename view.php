@@ -51,6 +51,7 @@ require_once($CFG->dirroot . '/blocks/aipromptgen/classes/form/prompt_form.php')
 // Gather course topics (section names) for suggestions, and build lesson options (sections + activities).
 $topics = [];
 $lessonoptions = [];
+$competencies = [];
 try {
     $modinfo = get_fast_modinfo($course);
     foreach ($modinfo->get_section_info_all() as $section) {
@@ -118,6 +119,30 @@ try {
 } catch (\Throwable $e) {
     // Ignore; leave topics empty if anything goes wrong.
 }
+// Try to gather course competencies for the Outcomes modal (if competencies subsystem is available).
+try {
+    if (class_exists('core_competency\api')) {
+        $coursecompetencies = \core_competency\api::list_course_competencies($course->id);
+        foreach ($coursecompetencies as $cc) {
+            // Each $cc is a stdClass with competencyid and ruleoutcome; fetch competency record for full strings.
+            if (!empty($cc->competencyid)) {
+                $comp = \core_competency\api::read_competency($cc->competencyid);
+                if ($comp && isset($comp->shortname)) {
+                    $name = trim(format_string($comp->shortname));
+                    $desc = '';
+                    if (!empty($comp->description)) {
+                        $desc = trim(strip_tags(format_text($comp->description, FORMAT_HTML)));
+                    }
+                    $text = $name !== '' ? $name : (string)$comp->id;
+                    if ($desc !== '') { $text .= ' — ' . $desc; }
+                    $competencies[] = $text;
+                }
+            }
+        }
+    }
+} catch (\Throwable $e) {
+    // Silently ignore if competencies are not configured.
+}
 // Prepare a robust course name for defaults.
 $coursedefaultname = trim((string)format_string($course->fullname));
 if ($coursedefaultname === '' && !empty($course->shortname)) {
@@ -131,10 +156,7 @@ $form = new \block_aipromptgen\form\prompt_form(null, [
 ]);
 
 $generated = null;
-$sessionkey = 'block_aipromptgen_lastprompt_' . $course->id;
-if (optional_param('reset', 0, PARAM_BOOL)) {
-    unset($SESSION->{$sessionkey});
-}
+$refillsubject = null;
 
 if ($data = $form->get_data()) {
     // Preserve underscores in language code (e.g., sr_cr).
@@ -142,66 +164,76 @@ if ($data = $form->get_data()) {
 
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.
+    $sm = get_string_manager();
     $labels = [
-        'purpose' => get_string('label:purpose', 'block_aipromptgen', null, $langcode),
-        'audience' => get_string('label:audience', 'block_aipromptgen', null, $langcode),
-        'language' => get_string('label:language', 'block_aipromptgen', null, $langcode),
-        'subject' => get_string('label:subject', 'block_aipromptgen', null, $langcode),
-        'agerange' => get_string('label:agerange', 'block_aipromptgen', null, $langcode),
-    'topic' => get_string('label:topic', 'block_aipromptgen', null, $langcode),
-        'lesson' => get_string('label:lesson', 'block_aipromptgen', null, $langcode),
-        'classtype' => get_string('label:classtype', 'block_aipromptgen', null, $langcode),
-        'outcomes' => get_string('label:outcomes', 'block_aipromptgen', null, $langcode),
+        'purpose' => $sm->get_string('label:purpose', 'block_aipromptgen', null, $langcode),
+        'audience' => $sm->get_string('label:audience', 'block_aipromptgen', null, $langcode),
+        'language' => $sm->get_string('label:language', 'block_aipromptgen', null, $langcode),
+        'subject' => $sm->get_string('label:subject', 'block_aipromptgen', null, $langcode),
+        'agerange' => $sm->get_string('label:agerange', 'block_aipromptgen', null, $langcode),
+        'topic' => $sm->get_string('label:topic', 'block_aipromptgen', null, $langcode),
+        'lesson' => $sm->get_string('label:lesson', 'block_aipromptgen', null, $langcode),
+        'classtype' => $sm->get_string('label:classtype', 'block_aipromptgen', null, $langcode),
+        'outcomes' => $sm->get_string('label:outcomes', 'block_aipromptgen', null, $langcode),
     ];
 
     // Map select codes to localized values.
-    $purposecode = clean_param($data->purpose, PARAM_ALPHANUMEXT);
-    $audiencecode = clean_param($data->audience, PARAM_ALPHANUMEXT);
-    $classtypecode = clean_param($data->classtype, PARAM_ALPHANUMEXT);
-    $purposeallowed = ['lessonplan', 'quiz', 'rubric', 'worksheet'];
+    $purposecode = clean_param($data->purpose ?? '', PARAM_ALPHANUMEXT);
+    $audiencecode = clean_param($data->audience ?? '', PARAM_ALPHANUMEXT);
+    $classtypecode = clean_param($data->classtype ?? '', PARAM_ALPHANUMEXT);
+    $purposeallowed = ['lessonplan', 'quiz', 'rubric', 'worksheet']; 
     $audienceallowed = ['teacher', 'student'];
     $classtypeallowed = ['lecture', 'discussion', 'groupwork', 'lab', 'project', 'review', 'assessment'];
     $purposevalue = in_array($purposecode, $purposeallowed)
-    ? get_string('option:' . $purposecode, 'block_aipromptgen', null, $langcode)
+        ? $sm->get_string('option:' . $purposecode, 'block_aipromptgen', null, $langcode)
         : s($purposecode);
     $audiencevalue = in_array($audiencecode, $audienceallowed)
-    ? get_string('option:' . $audiencecode, 'block_aipromptgen', null, $langcode)
+        ? $sm->get_string('option:' . $audiencecode, 'block_aipromptgen', null, $langcode)
         : s($audiencecode);
     $classtypevalue = in_array($classtypecode, $classtypeallowed)
-    ? get_string('classtype:' . $classtypecode, 'block_aipromptgen', null, $langcode)
+        ? $sm->get_string('classtype:' . $classtypecode, 'block_aipromptgen', null, $langcode)
         : s($classtypecode);
 
     $parts = [];
     $parts[] = $labels['purpose'] . ': ' . $purposevalue;
     $parts[] = $labels['audience'] . ': ' . $audiencevalue;
-    $parts[] = $labels['language'] . ': '
-    . get_string('lang:' . $langcode, 'block_aipromptgen', null, $langcode);
-    $parts[] = $labels['subject'] . ": {$data->subject}";
-    $parts[] = $labels['agerange'] . ": {$data->agerange}";
-    if (!empty($data->topic)) {
-        $parts[] = $labels['topic'] . ": {$data->topic}";
+    // Resolve human-readable language name from installed languages.
+    $trans = $sm->get_list_of_translations();
+    $langname = $trans[$langcode] ?? null;
+    if ($langname === null) {
+        $langs = $sm->get_list_of_languages();
+        $langname = $langs[$langcode] ?? null;
     }
-    $parts[] = $labels['lesson'] . ": {$data->lesson}";
-    $parts[] = $labels['classtype'] . ": {$classtypevalue}";
-    if (!empty($data->outcomes)) {
-        $parts[] = $labels['outcomes'] . ': '
-            . preg_replace('/\s+/', ' ', trim($data->outcomes));
+    if ($langname === null) {
+        $short = substr($langcode, 0, 2);
+        $langname = $trans[$short] ?? ($langs[$short] ?? $langcode);
+    }
+    $parts[] = $labels['language'] . ': ' . $langname;
+    $subjectval = (string)($data->subject ?? '');
+    if (trim($subjectval) === '' && trim($coursedefaultname) !== '') {
+        $subjectval = $coursedefaultname;
+    }
+    $refillsubject = $subjectval;
+    $agerangeval = (string)($data->agerange ?? '');
+    $topicval = (string)($data->topic ?? '');
+    $lessonval = (string)($data->lesson ?? '');
+    $outcomesval = (string)($data->outcomes ?? '');
+    $parts[] = $labels['subject'] . ': ' . $subjectval;
+    $parts[] = $labels['agerange'] . ': ' . $agerangeval;
+    if ($topicval !== '') {
+        $parts[] = $labels['topic'] . ': ' . $topicval;
+    }
+    $parts[] = $labels['lesson'] . ': ' . $lessonval;
+    $parts[] = $labels['classtype'] . ': ' . $classtypevalue;
+    if (trim($outcomesval) !== '') {
+        $parts[] = $labels['outcomes'] . ': ' . preg_replace('/\s+/', ' ', trim($outcomesval));
     }
 
     $coursename = format_string($course->fullname);
-    $prefix = get_string(
-        'prompt:prefix',
-        'block_aipromptgen',
-        (object)['course' => $coursename],
-        $langcode
-    );
-    $instructions = get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
+    $prefix = $sm->get_string('prompt:prefix', 'block_aipromptgen', (object)['course' => $coursename], $langcode);
+    $instructions = $sm->get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
 
-    // Persist in user session per course.
-    $SESSION->{$sessionkey} = $generated;
-} else if (!empty($SESSION->{$sessionkey})) {
-    $generated = $SESSION->{$sessionkey};
 }
 
 echo $OUTPUT->header();
@@ -241,31 +273,27 @@ if (!empty($cmid)) {
     }
 }
 
-// Always set courseid; set subject/others only when not already present.
-$defaultdata = [
-    'courseid' => $course->id,
-];
-// Set topic/lesson defaults when available; keeps previous input if empty.
-if ($defaulttopic !== '') {
-    $defaultdata['topic'] = $defaulttopic;
-}
-if ($defaultlesson !== '') {
-    $defaultdata['lesson'] = $defaultlesson;
-}
-// Initialize Subject to course name on first load (avoid overriding user input on submit).
+// Only set defaults before submission; avoid overwriting submitted values.
 if (!$form->is_submitted()) {
-    if (!isset($defaultdata['subject']) || trim($defaultdata['subject']) === '') {
+    $defaultdata = [
+        'courseid' => $course->id,
+    ];
+    // Set topic/lesson defaults when available.
+    if ($defaulttopic !== '') {
+        $defaultdata['topic'] = $defaulttopic;
+    }
+    if ($defaultlesson !== '') {
+        $defaultdata['lesson'] = $defaultlesson;
+    }
+    // Initialize Subject to course name on first load.
+    if (trim((string)$coursedefaultname) !== '') {
         $defaultdata['subject'] = $coursedefaultname;
     }
+    $form->set_data($defaultdata);
 }
-$form->set_data($defaultdata);
-// As a final guard, direktno postavi Subject samo ako je i dalje prazan nakon set_data.
-if (!$form->is_submitted() && $coursedefaultname !== '') {
-    $current = $form->get_data();
-    if (empty($current->subject)) {
-        $form->set_data(['subject' => $coursedefaultname]);
-    }
-}
+$form->set_data($form->is_submitted() && is_string($refillsubject) && trim($refillsubject) !== ''
+    ? ['subject' => $refillsubject]
+    : []);
 $form->display();
 
 // Client-side fallback: if Subject is still empty on first load, set it to the course name.
@@ -419,6 +447,81 @@ $topicbrowsejs = "(function(){\n"
     . "})();";
 $PAGE->requires->js_amd_inline($topicbrowsejs);
 
+// Add a third modal for browsing Course Competencies and appending to Outcomes.
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-outcomes-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-outcomes-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:outcomeslabel', 'block_aipromptgen'), ['id' => 'ai4t-outcomes-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button',
+    'id' => 'ai4t-outcomes-modal-close',
+    'class' => 'btn btn-link',
+    'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+if (!empty($competencies)) {
+    foreach ($competencies as $c) {
+        echo html_writer::start_tag('li', ['class' => 'ai4t-item']);
+        echo html_writer::start_tag('label');
+        echo html_writer::empty_tag('input', [
+            'type' => 'checkbox',
+            'class' => 'ai4t-outcome-checkbox',
+            'value' => $c,
+        ]);
+        echo html_writer::span(s($c), '');
+        echo html_writer::end_tag('label');
+        echo html_writer::end_tag('li');
+    }
+} else {
+    echo html_writer::tag('li', get_string('none'), [
+        'class' => 'ai4t-item',
+        'style' => 'color:#666;'
+    ]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('add'), [
+    'type' => 'button',
+    'class' => 'btn btn-primary',
+    'id' => 'ai4t-outcomes-modal-insert',
+]);
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button',
+    'class' => 'btn btn-secondary',
+    'id' => 'ai4t-outcomes-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$outcomesbrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-outcomes-browse');\n"
+    . "var modal=document.getElementById('ai4t-outcomes-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-outcomes-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-outcomes-modal-cancel');\n"
+    . "var insertBtn=document.getElementById('ai4t-outcomes-modal-insert');\n"
+    . "var ta=document.getElementById('id_outcomes');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked'); var vals=[]; for(var i=0;i<boxes.length;i++){ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0){ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; } ta.value=cur+vals.join('\\n'); close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(insertBtn){ insertBtn.addEventListener('click', onInsert); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($outcomesbrowsejs);
+
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));
     // Editable textarea for the generated prompt.
@@ -440,11 +543,6 @@ if ($generated) {
         'type' => 'button',
         'id' => 'ai4t-download',
         'class' => 'btn btn-secondary',
-        'style' => 'margin-left:8px;',
-    ]);
-    echo html_writer::tag('a', get_string('form:reset', 'block_aipromptgen'), [
-        'href' => new moodle_url('/blocks/aipromptgen/view.php', ['courseid' => $course->id, 'reset' => 1]),
-        'class' => 'btn btn-link',
         'style' => 'margin-left:8px;',
     ]);
     echo html_writer::tag('span', '', [
