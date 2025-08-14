@@ -557,8 +557,6 @@ if ($data = $form->get_data()) {
         }
     }
     $langcode = $normalizecode($langcode);
-    // Force generated prompt content to English regardless of selection.
-    $langcode = 'en';
 
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.
@@ -586,6 +584,9 @@ if ($data = $form->get_data()) {
     $trans = $sm->get_list_of_translations();
     $langslist = $sm->get_list_of_languages();
     $langname = $trans[$langcode] ?? ($langslist[$langcode] ?? $langcode);
+    if (!empty($langcode) && !preg_match('/\(' . preg_quote($langcode, '/') . '\)$/', (string)$langname)) {
+        $langname .= ' (' . $langcode . ')';
+    }
     if ($langname === null || $langname === '') {
         $short = substr($langcode, 0, 2);
         $langname = $trans[$short] ?? ($langslist[$short] ?? $langcode);
