@@ -472,6 +472,7 @@ $generated = null;
 $airesponse = null;
 $refillsubject = null;
 $posteddata = null;
+$typedname = '';
 
 if ($data = $form->get_data()) {
     // Keep a copy of submitted values so we can repopulate the form after rendering results.
@@ -510,6 +511,34 @@ if ($data = $form->get_data()) {
                     break;
                 }
             }
+        }
+        // If still not found, strip any trailing variant parentheses in names and match base (e.g., 'Serbian' matching 'Serbian (Latin)').
+        if ($langcode === '' && $typedname !== '') {
+            $typedbase = core_text::strtolower(trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', $typedname)));
+            $candidates = [];
+            foreach ($installedlangs as $code => $name) {
+                $namebase = core_text::strtolower(trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', (string)$name)));
+                if ($namebase === $typedbase) {
+                    $candidates[] = (string)$code;
+                }
+            }
+            if (!empty($candidates)) {
+                // Prefer Latin over Cyrillic when both exist for Serbian.
+                if (in_array('sr_lt', $candidates, true)) { $langcode = 'sr_lt'; }
+                else if (in_array('sr_cr', $candidates, true)) { $langcode = 'sr_cr'; }
+                else { $langcode = $candidates[0]; }
+            }
+        }
+        // Synonym fallback (simple heuristics).
+        if ($langcode === '' && $typedname !== '') {
+            $tl = core_text::strtolower($typedname);
+            $syn = [
+                'serbian latin' => 'sr_lt', 'serbian (latin)' => 'sr_lt', 'srpski latinica' => 'sr_lt', 'srpski (latinica)' => 'sr_lt',
+                'serbian cyrillic' => 'sr_cr', 'serbian (cyrillic)' => 'sr_cr', 'srpski ćirilica' => 'sr_cr', 'srpski (ćirilica)' => 'sr_cr',
+                'serbian' => 'sr_lt', 'srpski' => 'sr_lt',
+                'english' => 'en', 'english (en)' => 'en'
+            ];
+            if (isset($syn[$tl])) { $langcode = $syn[$tl]; }
         }
     }
 
@@ -583,9 +612,21 @@ if ($data = $form->get_data()) {
     // Resolve human-readable language name from installed languages.
     $trans = $sm->get_list_of_translations();
     $langslist = $sm->get_list_of_languages();
-    $langname = $trans[$langcode] ?? ($langslist[$langcode] ?? $langcode);
-    if (!empty($langcode) && !preg_match('/\(' . preg_quote($langcode, '/') . '\)$/', (string)$langname)) {
-        $langname .= ' (' . $langcode . ')';
+    // Prefer the typed language name for display when provided.
+    $displaybase = trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', (string)$typedname));
+    if ($displaybase === '') {
+        $langname = $trans[$langcode] ?? ($langslist[$langcode] ?? $langcode);
+        $langname = trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', (string)$langname));
+    } else {
+        $langname = $displaybase;
+    }
+    // Append code only if it's meaningful (e.g., sr_lt, sr_cr). Avoid appending '(en)' when user typed a different language but packs are missing.
+    if (!empty($langcode)) {
+        $lc = core_text::strtolower($langcode);
+        $isenglish = (strpos(core_text::strtolower($langname), 'english') !== false);
+        if ($lc !== 'en' || $isenglish) {
+            $langname .= ' (' . $langcode . ')';
+        }
     }
     if ($langname === null || $langname === '') {
         $short = substr($langcode, 0, 2);
