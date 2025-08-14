@@ -85,7 +85,7 @@ $string['label:outcomes'] = 'Outcomes';
 
 // Prompt templates.
 $string['prompt:prefix'] = 'You are an expert instructional designer helping a teacher in the Moodle course {$a->course}.';
-$string['prompt:instructions'] = 'Generate the output in the selected language. Align strictly with the purpose and outcomes, at the appropriate level for the specified age/grade. Prefer local curriculum alignment when applicable.';
+$string['prompt:instructions'] = 'Generate the output fully in the specified language. Ensure that the content is appropriate for the given student age/grade, matches the local curriculum when applicable, and directly supports the stated objectives. Structure the output clearly, using headings, subheadings, and bullet points where appropriate.';
 
 // Class type options.
 $string['classtype:lecture'] = 'Lecture';

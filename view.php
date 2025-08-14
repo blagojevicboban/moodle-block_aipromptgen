@@ -421,6 +421,38 @@ if (!empty($course->lang)) {
     $defaultlangcode = (string)current_language();
 }
 
+// Compute a concrete option code that exists in the language dropdown.
+$sm = get_string_manager();
+$alllangs = $sm->get_list_of_languages();
+$pickcode = function(string $code) use ($alllangs): string {
+    $code = trim($code);
+    if ($code === '') { return ''; }
+    $aliasmap = [
+        'sr_cyrl' => 'sr_cr',
+        'sr@cyrl' => 'sr_cr',
+        'sr_cyr'  => 'sr_cr',
+        'sr_latn' => 'sr_lt',
+        'sr@latin'=> 'sr_lt',
+    ];
+    $norms = array_unique([
+        $code,
+        str_replace('-', '_', $code),
+        str_replace('_', '-', $code),
+        str_replace('@', '_', $code),
+    ]);
+    foreach ($norms as $c) {
+        if (isset($alllangs[$c])) { return $c; }
+        if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) { return $aliasmap[$c]; }
+    }
+    $base = substr($code, 0, 2);
+    if ($base === 'sr') {
+        foreach (['sr_lt', 'sr_cr', 'sr'] as $p) { if (isset($alllangs[$p])) { return $p; } }
+    }
+    foreach (array_keys($alllangs) as $k) { if (stripos($k, $base) === 0) { return $k; } }
+    return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
+};
+$defaultlangselect = $pickcode($defaultlangcode);
+
 $actionparams = ['courseid' => $course->id];
 if (!empty($sectionid)) { $actionparams['section'] = (int)$sectionid; }
 if (!empty($cmid)) { $actionparams['cmid'] = (int)$cmid; }
@@ -436,10 +468,14 @@ $form = new \block_aipromptgen\form\prompt_form($actionurl, [
 
 $generated = null;
 $refillsubject = null;
+$posteddata = null;
 
 if ($data = $form->get_data()) {
-    // Preserve underscores in language code (e.g., sr_cr).
-    $langcode = clean_param($data->language, PARAM_ALPHANUMEXT);
+    // Keep a copy of submitted values so we can repopulate the form after rendering results.
+    $posteddata = $data;
+    // Preserve underscores in language code (e.g., sr_cr). Use hidden languagecode when present.
+    $langcode = clean_param(($data->languagecode ?? ''), PARAM_ALPHANUMEXT);
+    if ($langcode === '') { $langcode = $defaultlangselect; }
 
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.
@@ -456,36 +492,21 @@ if ($data = $form->get_data()) {
         'outcomes' => $sm->get_string('label:outcomes', 'block_aipromptgen', null, $langcode),
     ];
 
-    // Map select codes to localized values.
-    $purposecode = clean_param($data->purpose ?? '', PARAM_ALPHANUMEXT);
-    $audiencecode = clean_param($data->audience ?? '', PARAM_ALPHANUMEXT);
-    $classtypecode = clean_param($data->classtype ?? '', PARAM_ALPHANUMEXT);
-    $purposeallowed = ['lessonplan', 'quiz', 'rubric', 'worksheet']; 
-    $audienceallowed = ['teacher', 'student'];
-    $classtypeallowed = ['lecture', 'discussion', 'groupwork', 'lab', 'project', 'review', 'assessment'];
-    $purposevalue = in_array($purposecode, $purposeallowed)
-        ? $sm->get_string('option:' . $purposecode, 'block_aipromptgen', null, $langcode)
-        : s($purposecode);
-    $audiencevalue = in_array($audiencecode, $audienceallowed)
-        ? $sm->get_string('option:' . $audiencecode, 'block_aipromptgen', null, $langcode)
-        : s($audiencecode);
-    $classtypevalue = in_array($classtypecode, $classtypeallowed)
-        ? $sm->get_string('classtype:' . $classtypecode, 'block_aipromptgen', null, $langcode)
-        : s($classtypecode);
+    // Use free-text values from the form for purpose, audience, and class type.
+    $purposevalue = trim((string)($data->purpose ?? ''));
+    $audiencevalue = trim((string)($data->audience ?? ''));
+    $classtypevalue = trim((string)($data->classtype ?? ''));
 
     $parts = [];
     $parts[] = $labels['purpose'] . ': ' . $purposevalue;
     $parts[] = $labels['audience'] . ': ' . $audiencevalue;
     // Resolve human-readable language name from installed languages.
     $trans = $sm->get_list_of_translations();
-    $langname = $trans[$langcode] ?? null;
-    if ($langname === null) {
-        $langs = $sm->get_list_of_languages();
-        $langname = $langs[$langcode] ?? null;
-    }
-    if ($langname === null) {
+    $langslist = $sm->get_list_of_languages();
+    $langname = $trans[$langcode] ?? ($langslist[$langcode] ?? $langcode);
+    if ($langname === null || $langname === '') {
         $short = substr($langcode, 0, 2);
-        $langname = $trans[$short] ?? ($langs[$short] ?? $langcode);
+        $langname = $trans[$short] ?? ($langslist[$short] ?? $langcode);
     }
     $parts[] = $labels['language'] . ': ' . $langname;
     $subjectval = (string)($data->subject ?? '');
@@ -557,6 +578,14 @@ if (!$form->is_submitted()) {
     $defaultdata = [
         'courseid' => $course->id,
     ];
+    if (!empty($defaultlangselect)) {
+        // Set both the visible language name and the hidden language code.
+        $trans = $sm->get_list_of_translations();
+        $langslist = $sm->get_list_of_languages();
+        $defaultlangname = $trans[$defaultlangselect] ?? ($langslist[$defaultlangselect] ?? $defaultlangselect);
+        $defaultdata['language'] = $defaultlangname;
+        $defaultdata['languagecode'] = $defaultlangselect;
+    }
     // Set topic/lesson defaults when available.
     if ($defaulttopic !== '') {
         $defaultdata['topic'] = $defaulttopic;
@@ -569,10 +598,14 @@ if (!$form->is_submitted()) {
         $defaultdata['subject'] = $coursedefaultname;
     }
     $form->set_data($defaultdata);
+} else if ($posteddata) {
+    // Refill the form with the user's submitted values (keeps age/grade and others intact).
+    $persist = (array)$posteddata;
+    if (is_string($refillsubject) && trim($refillsubject) !== '') {
+        $persist['subject'] = $refillsubject;
+    }
+    $form->set_data($persist);
 }
-$form->set_data($form->is_submitted() && is_string($refillsubject) && trim($refillsubject) !== ''
-    ? ['subject' => $refillsubject]
-    : []);
 $form->display();
 
 // Client-side fallback: if Subject is still empty on first load, set it to the course name.
@@ -805,6 +838,225 @@ $outcomesbrowsejs = "(function(){\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "})();";
 $PAGE->requires->js_amd_inline($outcomesbrowsejs);
+
+// Language modal: list installed languages and set both text and hidden code.
+$langoptions = $sm->get_list_of_languages();
+$installed = $sm->get_list_of_translations();
+if (!empty($installed)) {
+    foreach ($installed as $code => $name) { if (isset($langoptions[$code]) && is_string($name) && $name !== '') { $langoptions[$code] = $name; } }
+}
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-language-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-language-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:language', 'block_aipromptgen'), ['id' => 'ai4t-language-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button', 'id' => 'ai4t-language-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($langoptions as $code => $name) {
+    echo html_writer::tag('li', s($name . ' [' . $code . ']'), [
+        'class' => 'ai4t-item ai4t-language-item',
+        'data-code' => $code,
+        'data-name' => $name,
+        'tabindex' => 0,
+    ]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-language-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$languagebrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-language-browse');\n"
+    . "var modal=document.getElementById('ai4t-language-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-language-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-language-modal-cancel');\n"
+    . "var input=document.getElementById('id_language');\n"
+    . "var codeEl=document.getElementById('id_languagecode');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var t=e.currentTarget; var name=t.getAttribute('data-name'); var code=t.getAttribute('data-code'); if(input){ input.value=name; } if(codeEl){ codeEl.value=code; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-language-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($languagebrowsejs);
+
+// Purpose modal: fixed list of purposes.
+$purposelist = [
+    get_string('option:lessonplan', 'block_aipromptgen'),
+    get_string('option:quiz', 'block_aipromptgen'),
+    get_string('option:rubric', 'block_aipromptgen'),
+    get_string('option:worksheet', 'block_aipromptgen'),
+];
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal', 'id' => 'ai4t-purpose-modal', 'role' => 'dialog', 'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-purpose-modal-title', 'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:purpose', 'block_aipromptgen'), ['id' => 'ai4t-purpose-modal-title']);
+echo html_writer::tag('button', '&times;', ['type' => 'button', 'id' => 'ai4t-purpose-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($purposelist as $p) {
+    echo html_writer::tag('li', s($p), ['class' => 'ai4t-item ai4t-purpose-item', 'data-value' => $p, 'tabindex' => 0]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), ['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-purpose-modal-cancel']);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$purposebrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-purpose-browse');\n"
+    . "var modal=document.getElementById('ai4t-purpose-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-purpose-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-purpose-modal-cancel');\n"
+    . "var input=document.getElementById('id_purpose');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-purpose-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($purposebrowsejs);
+
+// Audience modal: two options.
+$audiencelist = [
+    get_string('option:student', 'block_aipromptgen'),
+    get_string('option:teacher', 'block_aipromptgen'),
+];
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal', 'id' => 'ai4t-audience-modal', 'role' => 'dialog', 'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-audience-modal-title', 'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:audience', 'block_aipromptgen'), ['id' => 'ai4t-audience-modal-title']);
+echo html_writer::tag('button', '&times;', ['type' => 'button', 'id' => 'ai4t-audience-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($audiencelist as $a) {
+    echo html_writer::tag('li', s($a), ['class' => 'ai4t-item ai4t-audience-item', 'data-value' => $a, 'tabindex' => 0]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), ['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-audience-modal-cancel']);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$audiencebrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-audience-browse');\n"
+    . "var modal=document.getElementById('ai4t-audience-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-audience-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-audience-modal-cancel');\n"
+    . "var input=document.getElementById('id_audience');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-audience-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($audiencebrowsejs);
+
+// Add a fourth modal for browsing Class types and inserting into the textbox.
+// Use the same small set as before and localize labels for display.
+$classtypes = [
+    'lecture' => get_string('classtype:lecture', 'block_aipromptgen'),
+    'discussion' => get_string('classtype:discussion', 'block_aipromptgen'),
+    'groupwork' => get_string('classtype:groupwork', 'block_aipromptgen'),
+    'lab' => get_string('classtype:lab', 'block_aipromptgen'),
+    'project' => get_string('classtype:project', 'block_aipromptgen'),
+    'review' => get_string('classtype:review', 'block_aipromptgen'),
+    'assessment' => get_string('classtype:assessment', 'block_aipromptgen'),
+];
+
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-classtype-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-classtype-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:class_typelabel', 'block_aipromptgen'), ['id' => 'ai4t-classtype-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button',
+    'id' => 'ai4t-classtype-modal-close',
+    'class' => 'btn btn-link',
+    'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
+foreach ($classtypes as $code => $label) {
+    echo html_writer::tag('li', s($label), [
+        'class' => 'ai4t-item ai4t-classtype-item',
+        'data-value' => $label, // Insert human-readable label.
+        'tabindex' => 0,
+    ]);
+}
+echo html_writer::end_tag('ul');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button',
+    'class' => 'btn btn-secondary',
+    'id' => 'ai4t-classtype-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+$classtypebrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-classtype-browse');\n"
+    . "var modal=document.getElementById('ai4t-classtype-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-classtype-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-classtype-modal-cancel');\n"
+    . "var input=document.getElementById('id_classtype');\n"
+    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
+    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
+    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "var items=document.querySelectorAll('.ai4t-classtype-item');\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($classtypebrowsejs);
 
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));

@@ -72,7 +72,7 @@ $string['label:topic'] = 'Tema de ensino (área)';
 
 // Modelos de prompt.
 $string['prompt:prefix'] = 'Você é um especialista em design instrucional ajudando um professor no curso do Moodle {$a->course}.';
-$string['prompt:instructions'] = 'Gere a saída no idioma selecionado. Alinhe estritamente à finalidade e aos resultados, no nível apropriado para a idade/série indicada. Prefira o alinhamento ao currículo local quando aplicável.';
+$string['prompt:instructions'] = 'Gere a saída totalmente no idioma especificado. Garanta que o conteúdo seja adequado à idade/série indicada dos alunos, corresponda ao currículo local quando aplicável e apoie diretamente os objetivos declarados. Estruture a saída de forma clara, usando títulos, subtítulos e marcadores quando apropriado.';
 
 // Opções de tipo de aula.
 $string['classtype:lecture'] = 'Aula expositiva';

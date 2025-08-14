@@ -118,22 +118,21 @@ class prompt_form extends \moodleform {
     $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('lesson', PARAM_TEXT);
 
-        // Class type as a dropdown (localized via strings).
-        $classtypeoptions = [
-            'lecture' => get_string('classtype:lecture', 'block_aipromptgen'),
-            'discussion' => get_string('classtype:discussion', 'block_aipromptgen'),
-            'groupwork' => get_string('classtype:groupwork', 'block_aipromptgen'),
-            'lab' => get_string('classtype:lab', 'block_aipromptgen'),
-            'project' => get_string('classtype:project', 'block_aipromptgen'),
-            'review' => get_string('classtype:review', 'block_aipromptgen'),
-            'assessment' => get_string('classtype:assessment', 'block_aipromptgen'),
-        ];
-        $mform->addElement('select', 'classtype', get_string('form:class_typelabel', 'block_aipromptgen'), $classtypeoptions);
-        $mform->setType('classtype', PARAM_ALPHANUMEXT);
-        $mform->getElement('classtype')->setAttributes([
+        // Class type: free text with a Browse button to open a modal picker.
+        $classgroupelems = [];
+        $classgroupelems[] = $mform->createElement('text', 'classtype', '', [
             'id' => 'id_classtype',
-            'title' => 'Select the class type',
+            'size' => 40,
+            'title' => 'Type a class type or click Browse to pick from a list',
         ]);
+        $classgroupelems[] = $mform->createElement('button', 'classtypebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-classtype-browse',
+            'class' => 'btn btn-secondary btn-sm',
+            'title' => 'Browse class types',
+        ]);
+        $mform->addGroup($classgroupelems, 'classtypegroup', get_string('form:class_typelabel', 'block_aipromptgen'), ' ', false);
+        $mform->setType('classtype', PARAM_TEXT);
 
         // Outcomes textarea with a Browse button to pick competencies.
         $outcomeselems = [];
@@ -151,98 +150,55 @@ class prompt_form extends \moodleform {
         $mform->addGroup($outcomeselems, 'outcomesgroup', get_string('form:outcomeslabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('outcomes', PARAM_TEXT);
 
-        // Language dropdown populated from installed Moodle languages.
-        $sm = get_string_manager();
-        // Start from all languages supported by Moodle core.
-        $langoptions = $sm->get_list_of_languages(); // code => English name
-        // If some languages are installed, prefer their localized names.
-        $installed = $sm->get_list_of_translations(); // code => localized name (installed only)
-        if (!empty($installed)) {
-            foreach ($installed as $code => $localized) {
-                if (isset($langoptions[$code]) && is_string($localized) && $localized !== '') {
-                    $langoptions[$code] = $localized;
-                }
-            }
-        }
-        $mform->addElement('select', 'language', get_string('form:language', 'block_aipromptgen'), $langoptions);
-        // Allow language codes with underscores/dashes (e.g., sr_cr).
-        $mform->setType('language', PARAM_ALPHANUMEXT);
-        $mform->getElement('language')->setAttributes([
+        // Prompt language: text + Browse, plus hidden languagecode for precise mapping.
+        $langgroupelems = [];
+        $langgroupelems[] = $mform->createElement('text', 'language', '', [
             'id' => 'id_language',
-            'title' => 'Choose the language for the generated prompt',
+            'size' => 40,
+            'title' => 'Type a language or click Browse to pick from installed languages',
         ]);
-        // Default to a provided preferred language (from course/user) when available,
-        // otherwise use the Moodle user's language, else the current page language.
-        // Then try exact, normalized, and alias matches; finally fallback to base or English.
-        global $USER;
-        $pref = $this->_customdata['defaultlanguage'] ?? '';
-        if (is_string($pref)) { $pref = trim($pref); }
-        $curlang = ($pref !== '')
-            ? $pref
-            : ((!empty($USER->lang) && is_string($USER->lang)) ? $USER->lang : current_language());
-        $candidates = [];
-        $aliasmap = [
-            'sr_cyrl' => 'sr_cr',
-            'sr@cyrl' => 'sr_cr',
-            'sr_cyr' => 'sr_cr',
-            'sr_latn' => 'sr_lt',
-            'sr@latin' => 'sr_lt',
-        ];
-        $norms = array_unique([
-            $curlang,
-            str_replace('-', '_', $curlang),
-            str_replace('_', '-', $curlang),
-            str_replace('@', '_', $curlang),
+        $langgroupelems[] = $mform->createElement('button', 'languagebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-language-browse',
+            'class' => 'btn btn-secondary btn-sm',
+            'title' => 'Browse languages',
         ]);
-        foreach ($norms as $code) {
-            if (isset($langoptions[$code])) {
-                $candidates[] = $code;
-            }
-            if (isset($aliasmap[$code]) && isset($langoptions[$aliasmap[$code]])) {
-                $candidates[] = $aliasmap[$code];
-            }
-        }
-        if (empty($candidates)) {
-            $base = substr($curlang, 0, 2);
-            // Prefer sensible Serbian variants when only a base language is detected.
-            if ($base === 'sr') {
-                foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
-                    if (isset($langoptions[$p])) { $candidates[] = $p; break; }
-                }
-            }
-            // Otherwise, pick the first option whose code starts with the base.
-            if (empty($candidates)) {
-                foreach (array_keys($langoptions) as $code) {
-                    if (stripos($code, $base) === 0) { $candidates[] = $code; break; }
-                }
-            }
-        }
-        $defaultcode = !empty($candidates)
-            ? $candidates[0]
-            : (isset($langoptions['en']) ? 'en' : array_key_first($langoptions));
-        $mform->setDefault('language', $defaultcode);
+        $mform->addGroup($langgroupelems, 'languagegroup', get_string('form:language', 'block_aipromptgen'), ' ', false);
+        $mform->setType('language', PARAM_TEXT);
+        $mform->addElement('hidden', 'languagecode');
+        $mform->setType('languagecode', PARAM_ALPHANUMEXT);
 
-        $mform->addElement('select', 'purpose', get_string('form:purpose', 'block_aipromptgen'), [
-            'lessonplan' => get_string('option:lessonplan', 'block_aipromptgen'),
-            'quiz' => get_string('option:quiz', 'block_aipromptgen'),
-            'rubric' => get_string('option:rubric', 'block_aipromptgen'),
-            'worksheet' => get_string('option:worksheet', 'block_aipromptgen'),
-        ]);
-    $mform->setType('purpose', PARAM_ALPHANUMEXT);
-        $mform->getElement('purpose')->setAttributes([
+        // Prompt purpose: text + Browse.
+        $purposeelems = [];
+        $purposeelems[] = $mform->createElement('text', 'purpose', '', [
             'id' => 'id_purpose',
-            'title' => 'Select the purpose (e.g., lesson plan, quiz, rubric)',
+            'size' => 40,
+            'title' => 'Type a purpose or click Browse to pick from a list',
         ]);
+        $purposeelems[] = $mform->createElement('button', 'purposebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-purpose-browse',
+            'class' => 'btn btn-secondary btn-sm',
+            'title' => 'Browse purposes',
+        ]);
+        $mform->addGroup($purposeelems, 'purposegroup', get_string('form:purpose', 'block_aipromptgen'), ' ', false);
+        $mform->setType('purpose', PARAM_TEXT);
 
-        $mform->addElement('select', 'audience', get_string('form:audience', 'block_aipromptgen'), [
-            'student' => get_string('option:student', 'block_aipromptgen'),
-            'teacher' => get_string('option:teacher', 'block_aipromptgen'),
-        ]);
-    $mform->setType('audience', PARAM_ALPHANUMEXT);
-        $mform->getElement('audience')->setAttributes([
+        // Audience: text + Browse.
+        $audienceelems = [];
+        $audienceelems[] = $mform->createElement('text', 'audience', '', [
             'id' => 'id_audience',
-            'title' => 'Who will read the output (teacher or student)',
+            'size' => 40,
+            'title' => 'Type an audience or click Browse to pick',
         ]);
+        $audienceelems[] = $mform->createElement('button', 'audiencebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-audience-browse',
+            'class' => 'btn btn-secondary btn-sm',
+            'title' => 'Browse audiences',
+        ]);
+        $mform->addGroup($audienceelems, 'audiencegroup', get_string('form:audience', 'block_aipromptgen'), ' ', false);
+        $mform->setType('audience', PARAM_TEXT);
 
     $mform->addElement('hidden', 'courseid');
     $mform->setType('courseid', PARAM_INT);
