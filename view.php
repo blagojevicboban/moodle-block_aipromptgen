@@ -284,7 +284,7 @@ try {
         $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
         if ($name === '') {
             $id = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
-            $name = $id !== '' ? $id : get_string('competency', 'tool_lp');
+            $name = $id !== '' ? $id : get_string('competency', 'core_competency');
         }
         $desc = '';
         if (!empty($descraw)) {
@@ -338,7 +338,7 @@ if (empty($competencies)) {
                     $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
                     if ($name === '') {
                         $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
-                        $name = $idtxt !== '' ? $idtxt : get_string('competency', 'tool_lp');
+                        $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
                     }
                     $desc = '';
                     if (!empty($descraw)) {
@@ -593,12 +593,24 @@ if ($data = $form->get_data()) {
         $subjectval = $coursedefaultname;
     }
     $refillsubject = $subjectval;
-    $agerangeval = (string)($data->agerange ?? '');
+    $agerangeval = trim((string)($data->agerange ?? ''));
+    // Format with Serbian unit as requested, and normalize ranges to hyphen.
+    $agerangedisplay = $agerangeval;
+    if ($agerangeval !== '') {
+        if (preg_match('/^\d+$/', $agerangeval)) {
+            $agerangedisplay = $agerangeval . ' godina';
+        } else if (preg_match('/^\s*\d+\s*[\x{2013}-]\s*\d+\s*$/u', $agerangeval)) { // 10-12 or 10–12
+            // Normalize any spaces and dashes to a simple hyphen.
+            $norm = preg_replace('/\s*[\x{2013}-]\s*/u', '-', $agerangeval);
+            $norm = trim($norm);
+            $agerangedisplay = $norm . ' godina';
+        }
+    }
     $topicval = (string)($data->topic ?? '');
     $lessonval = (string)($data->lesson ?? '');
     $outcomesval = (string)($data->outcomes ?? '');
     $parts[] = $labels['subject'] . ': ' . $subjectval;
-    $parts[] = $labels['agerange'] . ': ' . $agerangeval;
+    $parts[] = $labels['agerange'] . ': ' . $agerangedisplay;
     if ($topicval !== '') {
         $parts[] = $labels['topic'] . ': ' . $topicval;
     }
@@ -693,6 +705,8 @@ if (!$form->is_submitted() && $coursedefaultname !== '') {
     $PAGE->requires->js_amd_inline($jsfill);
 }
 
+// Age field is plain text; no numeric spinner enforcement.
+
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.
 echo html_writer::tag('style',
@@ -710,6 +724,95 @@ echo html_writer::tag('style',
 
 // Modal backdrop and container.
 echo html_writer::div('', 'ai4t-modal-backdrop', ['id' => 'ai4t-modal-backdrop']);
+
+// Age modal: pick exact age or range and insert into the textbox.
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-age-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-age-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:agerangelabel', 'block_aipromptgen'), ['id' => 'ai4t-age-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button', 'id' => 'ai4t-age-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+// Simple controls: one number for exact, or two numbers for range.
+echo html_writer::start_tag('div');
+// Exact age option with radio.
+echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
+echo html_writer::empty_tag('input', [
+    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked'
+]);
+echo html_writer::span(s('Exact age'));
+echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-exact', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;']);
+echo html_writer::end_tag('label');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('div', ['style' => 'margin-top:8px;']);
+// Range option with radio.
+echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
+echo html_writer::empty_tag('input', [
+    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range'
+]);
+echo html_writer::span(s('Range'));
+echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'From', 'style' => 'width:100px;']);
+echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'To', 'style' => 'width:100px;']);
+echo html_writer::end_tag('label');
+echo html_writer::end_tag('div');
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('add'), [
+    'type' => 'button', 'class' => 'btn btn-primary', 'id' => 'ai4t-age-modal-insert',
+]);
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-age-modal-cancel',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+// Wire up Age modal open/close and insertion logic.
+$agebrowsejs = "(function(){\n"
+    . "var openBtn=document.getElementById('ai4t-age-browse');\n"
+    . "var modal=document.getElementById('ai4t-age-modal');\n"
+    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
+    . "var closeBtn=document.getElementById('ai4t-age-modal-close');\n"
+    . "var cancelBtn=document.getElementById('ai4t-age-modal-cancel');\n"
+    . "var insertBtn=document.getElementById('ai4t-age-modal-insert');\n"
+    . "var input=document.getElementById('id_agerange');\n"
+    . "var exact=document.getElementById('ai4t-age-exact');\n"
+    . "var from=document.getElementById('ai4t-age-from');\n"
+    . "var to=document.getElementById('ai4t-age-to');\n"
+    . "var modeExact=document.getElementById('ai4t-age-mode-exact');\n"
+    . "var modeRange=document.getElementById('ai4t-age-mode-range');\n"
+    . "function open(){ if(!modal||!backdrop){return;} prefill(); modal.style.display='block'; backdrop.style.display='block'; modal.focus(); }\n"
+    . "function close(){ if(!modal||!backdrop){return;} modal.style.display='none'; backdrop.style.display='none'; }\n"
+    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked; if(useExact){ if(exact){ exact.removeAttribute('disabled'); } if(from){ from.setAttribute('disabled','disabled'); } if(to){ to.setAttribute('disabled','disabled'); } } else { if(exact){ exact.setAttribute('disabled','disabled'); } if(from){ from.removeAttribute('disabled'); } if(to){ to.removeAttribute('disabled'); } } }\n"
+    . "function prefill(){ if(!input){return;} var v=(input.value||'').trim(); if(!v){ if(modeExact){ modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled(); return; }\n"
+    . "  if(/^\\d+$/.test(v)){ exact.value=v; from.value=''; to.value=''; if(modeExact){ modeExact.checked=true; } syncEnabled(); return; }\n"
+    . "  var m=v.match(/^\s*(\\d+)\s*[-\\u2013]\s*(\\d+)\s*$/u);\n"
+    . "  if(m){ exact.value=''; from.value=m[1]; to.value=m[2]; if(modeRange){ modeRange.checked=true; } syncEnabled(); return; }\n"
+    . "  if(modeExact){ modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled();\n"
+    . "}\n"
+    . "function onInsert(){ if(!input){ close(); return; } var ev=(exact.value||'').trim(); var fv=(from.value||'').trim(); var tv=(to.value||'').trim();\n"
+    . "  var useExact = modeExact && modeExact.checked;\n"
+    . "  if(useExact && ev){ input.value=ev; close(); return; }\n"
+    . "  if(!useExact && fv && tv){ var a=parseInt(fv,10); var b=parseInt(tv,10); if(!isNaN(a)&&!isNaN(b)){ if(a>b){ var t=a;a=b;b=t; } input.value=a+'-'+b; close(); return; } }\n"
+    . "  close();\n"
+    . "}\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
+    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
+    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
+    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
+    . "if(insertBtn){ insertBtn.addEventListener('click', onInsert); }\n"
+    . "if(modeExact){ modeExact.addEventListener('change', syncEnabled); }\n"
+    . "if(modeRange){ modeRange.addEventListener('change', syncEnabled); }\n"
+    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($agebrowsejs);
 echo html_writer::start_tag('div', [
     'class' => 'ai4t-modal',
     'id' => 'ai4t-modal',
@@ -769,7 +872,7 @@ $browsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
@@ -829,7 +932,7 @@ $topicbrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
@@ -909,7 +1012,7 @@ $outcomesbrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked'); var vals=[]; for(var i=0;i<boxes.length;i++){ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0){ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; } ta.value=cur+vals.join('\\n'); close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(insertBtn){ insertBtn.addEventListener('click', onInsert); }\n"
@@ -968,7 +1071,7 @@ $languagebrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var t=e.currentTarget; var name=t.getAttribute('data-name'); var code=t.getAttribute('data-code'); if(input){ input.value=name; } if(codeEl){ codeEl.value=code; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
@@ -1027,7 +1130,7 @@ $purposebrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
@@ -1071,7 +1174,7 @@ $audiencebrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
@@ -1140,7 +1243,7 @@ $classtypebrowsejs = "(function(){\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
     . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', open); }\n"
+    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"

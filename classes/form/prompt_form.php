@@ -63,12 +63,23 @@ class prompt_form extends \moodleform {
     // Make subject required (server-side; client-side optional to add later if needed).
     //$mform->addRule('subject', get_string('required'), 'required');
 
-    $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_aipromptgen'));
-        $mform->setType('agerange', PARAM_TEXT);
-        $mform->getElement('agerange')->setAttributes([
-            'id' => 'id_agerange',
-            'title' => 'Enter the student age or grade level',
-        ]);
+    // Student age/grade: free text with a Browse button to open a modal for exact age or range selection.
+    $ageelems = [];
+    $ageelems[] = $mform->createElement('text', 'agerange', '', [
+        'id' => 'id_agerange',
+        'size' => 20,
+        'title' => 'Type an age or grade, or click Browse to pick exact age or range',
+        'placeholder' => 'e.g., 15 or 10–12',
+    ]);
+    $ageelems[] = $mform->createElement('button', 'agebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+        'type' => 'button',
+        'id' => 'ai4t-age-browse',
+        'class' => 'btn btn-secondary btn-sm',
+        'title' => 'Browse age or range',
+    ]);
+    $mform->addGroup($ageelems, 'agegroup', get_string('form:agerangelabel', 'block_aipromptgen'), ' ', false);
+    $mform->setType('agerange', PARAM_TEXT);
+    $mform->setDefault('agerange', '15');
 
         // Topic (editable text with suggestions + a Browse button that opens a modal picker).
     $topics = $this->_customdata['topics'] ?? [];
