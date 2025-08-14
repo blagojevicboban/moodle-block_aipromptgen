@@ -30,6 +30,8 @@ require_login();
 // "Non-static method PEAR::getStaticProperty() cannot be called statically"
 // when external/global PEAR versions are present in include_path.
 require_once($CFG->libdir . '/pear/PEAR.php');
+// For HTTP client (curl) used to call OpenAI API when enabled.
+require_once($CFG->libdir . '/filelib.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
@@ -467,6 +469,7 @@ $form = new \block_aipromptgen\form\prompt_form($actionurl, [
 ]);
 
 $generated = null;
+$airesponse = null;
 $refillsubject = null;
 $posteddata = null;
 
@@ -624,6 +627,43 @@ if ($data = $form->get_data()) {
     $prefix = $sm->get_string('prompt:prefix', 'block_aipromptgen', (object)['course' => $coursename], $langcode);
     $instructions = $sm->get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
+
+    // Optional: send to ChatGPT if requested and configured.
+    $sendtochat = optional_param('sendtochat', 0, PARAM_BOOL);
+    if ($sendtochat && !empty($generated)) {
+        $apikey = (string)(get_config('block_aipromptgen', 'openai_apikey') ?? '');
+        $model = (string)(get_config('block_aipromptgen', 'openai_model') ?? 'gpt-4o-mini');
+        if ($apikey !== '') {
+            $endpoint = 'https://api.openai.com/v1/chat/completions';
+            $payload = [
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'user', 'content' => $generated],
+                ],
+                'temperature' => 0.7,
+            ];
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $apikey,
+            ];
+            try {
+                $curl = new curl();
+                $resp = $curl->post($endpoint, json_encode($payload), $headers);
+                $json = json_decode($resp);
+                if (isset($json->choices[0]->message->content)) {
+                    $airesponse = (string)$json->choices[0]->message->content;
+                } else if (isset($json->error->message)) {
+                    $airesponse = 'Error: ' . (string)$json->error->message;
+                } else {
+                    $airesponse = 'No response content received.';
+                }
+            } catch (\Throwable $e) {
+                $airesponse = 'Error contacting OpenAI: ' . $e->getMessage();
+            }
+        } else {
+            $airesponse = 'OpenAI is not configured.';
+        }
+    }
 
 }
 
@@ -1276,11 +1316,30 @@ if ($generated) {
         'class' => 'btn btn-secondary',
         'style' => 'margin-left:8px;',
     ]);
+    // Send to ChatGPT button if API key configured.
+    if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
+        echo html_writer::tag('button', get_string('form:sendtochatgpt', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-sendtochat',
+            'class' => 'btn btn-primary',
+            'style' => 'margin-left:8px;',
+        ]);
+    }
     echo html_writer::tag('span', '', [
         'id' => 'ai4t-copied',
         'style' => 'margin-left:8px; display:none;',
     ]);
     echo html_writer::end_tag('div');
+    // Render AI response when present; otherwise leave a placeholder container.
+    if (!empty($airesponse)) {
+        echo html_writer::tag('h4', get_string('form:response', 'block_aipromptgen'));
+        echo html_writer::tag('pre', s($airesponse), [
+            'class' => 'form-control',
+            'style' => 'white-space:pre-wrap;padding:12px;'
+        ]);
+    } else if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
+        echo html_writer::div('', 'ai4t-airesponse', ['id' => 'ai4t-airesponse']);
+    }
     echo html_writer::end_tag('div');
 
     // Inline JS for copy and download.
@@ -1293,6 +1352,8 @@ if ($generated) {
     $copyjs = "(function(){\n"
         . "var btn=document.getElementById('ai4t-copy');\n"
         . "var dl=document.getElementById('ai4t-download');\n"
+        . "var send=document.getElementById('ai4t-sendtochat');\n"
+        . "var form=document.querySelector('form.mform');\n"
         . "var ta=document.getElementById('ai4t-generated');\n"
         . "var ok=document.getElementById('ai4t-copied');\n"
         . "if(btn){btn.addEventListener('click',function(){\n"
@@ -1314,6 +1375,9 @@ if ($generated) {
         . "  a.download='" . addslashes($filename) . "';\n"
         . "  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},0);\n"
         . "});}\n"
+    . "if(send && form){ send.addEventListener('click', function(){\n"
+    . "  try{ var i=document.createElement('input'); i.type='hidden'; i.name='sendtochat'; i.value='1'; form.appendChild(i); form.submit(); }catch(e){}\n"
+    . "}); }\n"
         . "})();";
     $PAGE->requires->js_amd_inline($copyjs);
 }
