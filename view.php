@@ -475,11 +475,90 @@ if ($data = $form->get_data()) {
     $posteddata = $data;
     // Preserve underscores in language code (e.g., sr_cr). Use hidden languagecode when present.
     $langcode = clean_param(($data->languagecode ?? ''), PARAM_ALPHANUMEXT);
-    if ($langcode === '') { $langcode = $defaultlangselect; }
+
+    // Resolve installed languages list (code => name) and translations for display names.
+    $sm = get_string_manager();
+    $installedlangs = $sm->get_list_of_languages();
+    $translations = $sm->get_list_of_translations();
+    // Prefer translated names if available (so matching by typed name works with localized lists too).
+    if (!empty($translations)) {
+        foreach ($translations as $code => $name) {
+            if (isset($installedlangs[$code]) && is_string($name) && $name !== '') {
+                $installedlangs[$code] = $name;
+            }
+        }
+    }
+
+    // If hidden code missing, try to infer from typed language name.
+    if ($langcode === '') {
+        $typedname = trim((string)($data->language ?? ''));
+        if ($typedname !== '') {
+            // First, try to parse a code in parentheses e.g., "Português - Portugal (pt)" or "Português (pt_br)".
+            if (preg_match('/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i', $typedname, $m)) {
+                $langcode = str_replace('-', '_', core_text::strtolower($m[1]));
+            }
+        }
+        // If still not found, try exact name match against installed lists.
+        if ($langcode === '' && $typedname !== '') {
+            $typedlow = core_text::strtolower($typedname);
+            foreach ($installedlangs as $code => $name) {
+                if (core_text::strtolower((string)$name) === $typedlow) {
+                    $langcode = (string)$code;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Helper to normalize a language code to an installed pack (handles aliases like sr/sr_cyrl -> sr_lt/sr_cr).
+    $normalizecode = function(string $code) use ($sm): string {
+        $code = trim($code);
+        if ($code === '') { return ''; }
+        $alllangs = $sm->get_list_of_languages();
+        $aliasmap = [
+            'sr_cyrl' => 'sr_cr',
+            'sr@cyrl' => 'sr_cr',
+            'sr_cyr'  => 'sr_cr',
+            'sr_latn' => 'sr_lt',
+            'sr@latin'=> 'sr_lt',
+        ];
+        $variants = array_unique([
+            $code,
+            str_replace('-', '_', $code),
+            str_replace('_', '-', $code),
+            str_replace('@', '_', $code),
+        ]);
+        foreach ($variants as $c) {
+            if (isset($alllangs[$c])) { return $c; }
+            if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) { return $aliasmap[$c]; }
+        }
+        $base = substr($code, 0, 2);
+        if ($base === 'sr') {
+            foreach (['sr_lt', 'sr_cr', 'sr'] as $p) { if (isset($alllangs[$p])) { return $p; } }
+        }
+    foreach (array_keys($alllangs) as $k) { if (stripos($k, $base) === 0) { return $k; } }
+    $cur = (string)current_language();
+    if (isset($alllangs[$cur])) { return $cur; }
+    return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
+    };
+
+    // Fallback order for missing code: course language, user language, current UI language.
+    if ($langcode === '') {
+        global $USER;
+        if (!empty($course->lang)) {
+            $langcode = (string)$course->lang;
+        } else if (!empty($USER->lang)) {
+            $langcode = (string)$USER->lang;
+        } else {
+            $langcode = (string)current_language();
+        }
+    }
+    $langcode = $normalizecode($langcode);
+    // Force generated prompt content to English regardless of selection.
+    $langcode = 'en';
 
     // UI labels follow current Moodle language automatically via get_string().
     // Prompt content (labels inside the generated text) will use the selected language.
-    $sm = get_string_manager();
     $labels = [
         'purpose' => $sm->get_string('label:purpose', 'block_aipromptgen', null, $langcode),
         'audience' => $sm->get_string('label:audience', 'block_aipromptgen', null, $langcode),
@@ -898,6 +977,19 @@ $languagebrowsejs = "(function(){\n"
     . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($languagebrowsejs);
+
+// Auto-sync hidden language code when the user types/pastes a language name without using the modal.
+$langsyncjs = "(function(){\n"
+    . "var input=document.getElementById('id_language');\n"
+    . "var codeEl=document.getElementById('id_languagecode');\n"
+    . "function guess(){ if(!input||!codeEl){return;} var t=(input.value||'').trim(); if(!t){return;}\n"
+    . "  var m=t.match(/\\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\\)/i); if(m){ codeEl.value=m[1].replace('-', '_').toLowerCase(); return; }\n"
+    . "  var items=document.querySelectorAll('.ai4t-language-item'); var tl=t.toLowerCase();\n"
+    . "  for(var i=0;i<items.length;i++){ var name=items[i].getAttribute('data-name')||''; if(name.toLowerCase()===tl){ codeEl.value=items[i].getAttribute('data-code'); return; } }\n"
+    . "}\n"
+    . "if(input){ input.addEventListener('blur', guess); input.addEventListener('change', guess); }\n"
+    . "})();";
+$PAGE->requires->js_amd_inline($langsyncjs);
 
 // Purpose modal: fixed list of purposes.
 $purposelist = [
