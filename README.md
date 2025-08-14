@@ -18,9 +18,10 @@ Features
   - Prompt language: text input + Browse (installed languages; stores hidden language code)
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
-- Generated prompt is always produced in English (by design), regardless of the UI or selected language name.
+- Generated prompt reflects the selected Prompt language. The visible language name is preserved and a single normalized code (e.g., `sr_lt`) is appended once: e.g., `Serbian (sr_lt)`.
 - Block header can show a comma‑separated label of course Competencies/Outcomes when available.
 - No session‑based prefill: form does not restore previous session values.
+- Optional: "Send to ChatGPT" button that submits the generated prompt to OpenAI and displays the response (when configured with an API key).
 
 Install
 1. Place this folder under Moodle at `blocks/aipromptgen`.
@@ -29,12 +30,16 @@ Install
    - Competencies: Site administration → Advanced features → “Competencies”.
    - Outcomes: Site administration → Advanced features → “Enable outcomes”.
    Then link competencies to the course (Course → More → Competencies) and/or define local/global outcomes.
+4. (Optional) Configure OpenAI integration (to enable "Send to ChatGPT"):
+  - Site administration → Plugins → Blocks → AI for Teachers
+  - Set the OpenAI API key and (optionally) the model (defaults to `gpt-4o-mini`).
 
 Usage
 1. Add the “AI for Teachers” block to a course page.
 2. Click “Open AI Prompt Builder”.
 3. Fill the fields (use Browse buttons for quick selection).
 4. Click “Generate prompt” and copy or download the generated text.
+5. (Optional) Click “Send to ChatGPT” to send the generated prompt and view the response inline (requires API key configuration).
 
 Permissions
 - Capability: `block/aipromptgen:manage` (required to view the block and use the builder).
@@ -45,10 +50,14 @@ Notes
   - If Gradebook Outcomes are enabled, local and global outcomes will be listed too.
 - Language field:
   - The visible field accepts a language name (with optional code in parentheses). A hidden `languagecode` is maintained automatically when using Browse.
-  - The generator always renders the final prompt in English by design.
+  - The generated prompt honors the selected language and appends a single normalized code to the displayed name (e.g., `Serbian (sr_lt)`). If no meaningful code is available, `(en)` is only appended when the language is actually English.
 - Data cleaning/security:
   - All inputs have explicit `$mform->setType(...)` (e.g., `PARAM_TEXT`, `PARAM_INT`, `PARAM_ALPHANUMEXT` for codes).
   - Language string placeholders use single‑quoted strings in lang files to avoid premature interpolation.
+- Age/grade modal:
+  - Choose an exact age or a range. The prompt formats this as `15 godina` or `15-16 godina` (localized wording can vary by language pack).
+- OpenAI integration:
+  - When configured, pressing “Send to ChatGPT” sends the generated prompt to OpenAI and displays the AI response on the page. Ensure you have consent and comply with your institution’s data and privacy policies before sending any data to third‑party services.
 
 Troubleshooting
 - “A required parameter (courseid) was missing”:
@@ -58,10 +67,13 @@ Troubleshooting
   - Link competencies to the course or activities; define outcomes if needed.
   - Check role permissions to view competencies.
 - Language appears wrong in prompt:
-  - By design, the generated prompt is always in English. Change this behavior in code if you want to honor the selected language.
+  - Use the Browse list to set a known language and ensure the hidden `languagecode` is set.
+  - Typed names are supported (with synonyms like “Serbian”), and the code is appended once. If you still see a mismatch, verify installed language packs and share the exact typed value to extend the mapping.
+- “Send to ChatGPT” button not visible:
+  - Configure the OpenAI API key under Site administration → Plugins → Blocks → AI for Teachers, then reload the page.
 
 Roadmap
-- Optional setting to switch between “Always English” vs “Use selected language”.
+- Optional setting to “Force English output” regardless of selection.
 - Save user presets per course.
 - Integrations with external LLM providers (preview outputs).
 - Additional localized strings and templates
