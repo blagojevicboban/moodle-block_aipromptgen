@@ -31,9 +31,62 @@ require_login();
 // when external/global PEAR versions are present in include_path.
 require_once($CFG->libdir . '/pear/PEAR.php');
 
-$courseid = required_param('courseid', PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);
+$paramid = optional_param('id', 0, PARAM_INT); // Could be cmid (on /mod/*) or course id (on /course/view.php).
+
+// If courseid not provided, try to infer from id/cmid.
+if ($courseid == 0) {
+    // First, if we have an explicit cmid use it to derive course.
+    if (!empty($cmid)) {
+        try {
+            $cm = get_coursemodule_from_id(null, $cmid, 0, MUST_EXIST);
+            if (!empty($cm) && !empty($cm->course)) {
+                $courseid = (int)$cm->course;
+            }
+        } catch (\Throwable $e) {
+            // Ignore; will try other options below.
+        }
+    }
+    // If still missing and we have a generic id, probe whether it's a cmid or a course id.
+    if (empty($courseid) && !empty($paramid)) {
+        try {
+            $cmprobe = get_coursemodule_from_id(null, $paramid, 0, IGNORE_MISSING);
+            if (!empty($cmprobe) && !empty($cmprobe->course)) {
+                $cmid = $paramid;
+                $courseid = (int)$cmprobe->course;
+            }
+        } catch (\Throwable $e) {
+            // Ignore; fall back to treating id as course id if no cm found.
+        }
+        if (empty($courseid)) {
+            // Treat as course id (e.g., /course/view.php?id=COURSEID or block added on course page).
+            $courseid = (int)$paramid;
+        }
+    }
+}
+if ($courseid == 0) {
+    // Derive course from module if provided.
+    try {
+        $cm = get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
+        if (!empty($cm->course)) {
+            $courseid = (int)$cm->course;
+        }
+    } catch (\Throwable $e) {
+        // Ignore and try other fallbacks.
+    }
+}
+if ($courseid == 0) {
+    // As a last resort, use current course in global context if not the site course.
+    global $COURSE;
+    if (!empty($COURSE) && !empty($COURSE->id) && (int)$COURSE->id !== (int)SITEID) {
+        $courseid = (int)$COURSE->id;
+    }
+}
+if (empty($courseid)) {
+    throw new moodle_exception('missingparam', 'error', '', 'courseid');
+}
 $course = get_course($courseid);
 $context = context_course::instance($course->id);
 require_capability('block/aipromptgen:manage', $context);
@@ -120,43 +173,126 @@ try {
     // Ignore; leave topics empty if anything goes wrong.
 }
 // Try to gather course competencies for the Outcomes modal (if competencies subsystem is enabled and accessible).
+// First, try to gather Gradebook Outcomes (local to course and global) if the feature is enabled.
 try {
-    if (class_exists('core_competency\api') && \core_competency\api::is_enabled()) {
-        $coursecompetencies = \core_competency\api::list_course_competencies($course->id);
-        foreach ($coursecompetencies as $cc) {
-            // Support both persistent objects and stdClass, depending on Moodle version.
-            $competencyid = null;
-            if (is_object($cc)) {
-                if (method_exists($cc, 'get')) {
-                    $competencyid = $cc->get('competencyid');
-                } else if (property_exists($cc, 'competencyid')) {
-                    $competencyid = $cc->competencyid;
+    if (!empty($CFG->enableoutcomes)) {
+        // Gradebook APIs (functions + outcome class).
+        @require_once($CFG->libdir . '/gradelib.php');
+        @require_once($CFG->libdir . '/grade/grade_outcome.php');
+
+        $seen = [];
+        // Local (course) outcomes.
+        if (class_exists('grade_outcome') && method_exists('grade_outcome', 'fetch_all_local')) {
+            $locals = grade_outcome::fetch_all_local($course->id);
+            if (!empty($locals) && is_array($locals)) {
+                foreach ($locals as $o) {
+                    // grade_outcome is a legacy class with public props.
+                    $name = '';
+                    if (!empty($o->shortname)) {
+                        $name = format_string($o->shortname);
+                    } else if (!empty($o->fullname)) {
+                        $name = format_string($o->fullname);
+                    }
+                    $name = trim((string)$name);
+                    if ($name === '') { continue; }
+                    $desc = '';
+                    if (!empty($o->description)) {
+                        $desc = trim(strip_tags(format_text($o->description, FORMAT_HTML)));
+                    }
+                    $text = $name . ($desc !== '' ? ' — ' . $desc : '');
+                    $competencies[] = $text;
+                    if (!empty($o->id)) { $seen[(int)$o->id] = true; }
                 }
             }
-            if (empty($competencyid)) { continue; }
-
-            $comp = \core_competency\api::read_competency($competencyid);
-            if (!$comp) { continue; }
-
-            // Access fields using persistent getters when available.
-            $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-            $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
-            $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
-            $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML) : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
-
-            $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
-            if ($name === '') {
-                $id = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
-                $name = $id !== '' ? $id : get_string('competency', 'tool_lp');
-            }
-            $desc = '';
-            if (!empty($descraw)) {
-                $desc = trim(strip_tags(format_text($descraw, $descfmt)));
-            }
-            $text = $name;
-            if ($desc !== '') { $text .= ' — ' . $desc; }
-            $competencies[] = $text;
         }
+        // Global outcomes (site-level), include them if not already present in local list.
+        if (class_exists('grade_outcome') && method_exists('grade_outcome', 'fetch_all_global')) {
+            $globals = grade_outcome::fetch_all_global();
+            if (!empty($globals) && is_array($globals)) {
+                foreach ($globals as $o) {
+                    $oid = isset($o->id) ? (int)$o->id : 0;
+                    if ($oid && isset($seen[$oid])) { continue; }
+                    $name = '';
+                    if (!empty($o->shortname)) {
+                        $name = format_string($o->shortname);
+                    } else if (!empty($o->fullname)) {
+                        $name = format_string($o->fullname);
+                    }
+                    $name = trim((string)$name);
+                    if ($name === '') { continue; }
+                    $desc = '';
+                    if (!empty($o->description)) {
+                        $desc = trim(strip_tags(format_text($o->description, FORMAT_HTML)));
+                    }
+                    $text = $name . ($desc !== '' ? ' — ' . $desc : '');
+                    $competencies[] = $text;
+                }
+            }
+        }
+    }
+} catch (\Throwable $e) {
+    // Ignore issues with grade outcomes; we'll fall back to competencies below.
+}
+
+// Try to gather course competencies for the Outcomes modal (robust across versions).
+try {
+    $coursecompetencies = [];
+    if (class_exists('\\core_competency\\api')) {
+        // Prefer not to hard-fail on is_enabled; some sites expose course competencies even when learning plans are off.
+        if (method_exists('\\core_competency\\api', 'list_course_competencies')) {
+            $coursecompetencies = \core_competency\api::list_course_competencies($course->id);
+        } else if (method_exists('\\core_competency\\api', 'list_course_competencies_in_course')) {
+            $coursecompetencies = \core_competency\api::list_course_competencies_in_course($course->id);
+        }
+    }
+    // Fallback to tool_lp API if core_competency call returned empty but tool_lp exposes a method.
+    if (empty($coursecompetencies) && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'list_course_competencies')) {
+        $coursecompetencies = \tool_lp\api::list_course_competencies($course->id);
+    }
+
+    foreach ($coursecompetencies as $cc) {
+        // Support both persistent objects and stdClass, depending on Moodle version.
+        $competencyid = null;
+        if (is_object($cc)) {
+            if (method_exists($cc, 'get')) {
+                $competencyid = $cc->get('competencyid');
+            } else if (property_exists($cc, 'competencyid')) {
+                $competencyid = $cc->competencyid;
+            } else if (method_exists($cc, 'get_competencyid')) {
+                $competencyid = $cc->get_competencyid();
+            }
+        } else if (is_array($cc) && isset($cc['competencyid'])) {
+            $competencyid = $cc['competencyid'];
+        }
+        if (empty($competencyid)) { continue; }
+
+        $comp = null;
+        if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
+            $comp = \core_competency\api::read_competency($competencyid);
+        }
+        if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
+            $comp = \tool_lp\api::read_competency($competencyid);
+        }
+        if (!$comp) { continue; }
+
+        // Access fields using persistent getters when available.
+        $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
+        $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+        $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
+        $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML) : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
+
+        $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
+        if ($name === '') {
+            $id = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
+            $name = $id !== '' ? $id : get_string('competency', 'tool_lp');
+        }
+        $desc = '';
+        if (!empty($descraw)) {
+            $desc = trim(strip_tags(format_text($descraw, $descfmt)));
+        }
+        $text = $name;
+        if ($desc !== '') { $text .= ' — ' . $desc; }
+        $competencies[] = $text;
     }
 } catch (\Throwable $e) {
     // Silently ignore if competencies are not configured or user lacks permissions.
@@ -164,14 +300,14 @@ try {
 // Fallback: if no course-level competencies found, try collecting from visible course modules.
 if (empty($competencies)) {
     try {
-        if (class_exists('core_competency\\api') && \\core_competency\\api::is_enabled()) {
+        if (class_exists('\\core_competency\\api')) {
             $seen = [];
             $modinfo = get_fast_modinfo($course);
             foreach ($modinfo->get_cms() as $cm) {
                 if (!$cm->uservisible) { continue; }
                 $links = [];
                 try {
-                    $links = \\core_competency\\api::list_course_module_competencies($cm->id);
+                    $links = \core_competency\api::list_course_module_competencies($cm->id);
                 } catch (\Throwable $ignore) { $links = []; }
                 foreach ($links as $link) {
                     $competencyid = null;
@@ -180,12 +316,20 @@ if (empty($competencies)) {
                             $competencyid = $link->get('competencyid');
                         } else if (property_exists($link, 'competencyid')) {
                             $competencyid = $link->competencyid;
+                        } else if (method_exists($link, 'get_competencyid')) {
+                            $competencyid = $link->get_competencyid();
                         }
                     }
                     if (empty($competencyid)) { continue; }
                     $cid = (int)$competencyid;
                     if (isset($seen[$cid])) { continue; }
-                    $comp = \\core_competency\\api::read_competency($cid);
+                    $comp = null;
+                    if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
+                        $comp = \core_competency\api::read_competency($cid);
+                    }
+                    if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
+                        $comp = \tool_lp\api::read_competency($cid);
+                    }
                     if (!$comp) { continue; }
                     $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
                     $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
@@ -211,16 +355,83 @@ if (empty($competencies)) {
         // Ignore fallback errors.
     }
 }
+
+// Final fallback: query DB directly for course and module competencies if still empty.
+if (empty($competencies)) {
+    try {
+        global $DB;
+        // Course-level competencies via competency_coursecomp.
+        $sql = 'SELECT c.id, c.shortname, c.idnumber, c.description, c.descriptionformat
+                  FROM {competency} c
+                  JOIN {competency_coursecomp} cc ON cc.competencyid = c.id
+                 WHERE cc.courseid = :cid';
+        $recs = $DB->get_records_sql($sql, ['cid' => $course->id]);
+        foreach ($recs as $r) {
+            $shortname = isset($r->shortname) ? (string)$r->shortname : '';
+            $idnumber  = isset($r->idnumber) ? (string)$r->idnumber : '';
+            $descraw   = isset($r->description) ? $r->description : '';
+            $descfmt   = isset($r->descriptionformat) ? (int)$r->descriptionformat : FORMAT_HTML;
+            $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
+            if ($name === '') { $name = (string)$r->id; }
+            $desc = '';
+            if (!empty($descraw)) { $desc = trim(strip_tags(format_text($descraw, $descfmt))); }
+            $text = $name . ($desc !== '' ? ' — ' . $desc : '');
+            $competencies[] = $text;
+        }
+
+        // If still empty, look for module-level links via competency_modulecomp.
+        if (empty($competencies)) {
+            $sql2 = 'SELECT DISTINCT c.id, c.shortname, c.idnumber, c.description, c.descriptionformat
+                       FROM {competency} c
+                       JOIN {competency_modulecomp} mc ON mc.competencyid = c.id
+                       JOIN {course_modules} cm ON cm.id = mc.cmid
+                      WHERE cm.course = :cid2';
+            $recs2 = $DB->get_records_sql($sql2, ['cid2' => $course->id]);
+            foreach ($recs2 as $r) {
+                $shortname = isset($r->shortname) ? (string)$r->shortname : '';
+                $idnumber  = isset($r->idnumber) ? (string)$r->idnumber : '';
+                $descraw   = isset($r->description) ? $r->description : '';
+                $descfmt   = isset($r->descriptionformat) ? (int)$r->descriptionformat : FORMAT_HTML;
+                $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
+                if ($name === '') { $name = (string)$r->id; }
+                $desc = '';
+                if (!empty($descraw)) { $desc = trim(strip_tags(format_text($descraw, $descfmt))); }
+                $text = $name . ($desc !== '' ? ' — ' . $desc : '');
+                $competencies[] = $text;
+            }
+        }
+    } catch (\Throwable $e) {
+        // As a last resort we keep the list empty.
+    }
+}
 // Prepare a robust course name for defaults.
 $coursedefaultname = trim((string)format_string($course->fullname));
 if ($coursedefaultname === '' && !empty($course->shortname)) {
     $coursedefaultname = trim((string)format_string($course->shortname));
 }
 
-$form = new \block_aipromptgen\form\prompt_form(null, [
+// Resolve a sensible default language: course forced language > user preference > current UI language.
+global $USER;
+$defaultlangcode = '';
+if (!empty($course->lang)) {
+    $defaultlangcode = (string)$course->lang;
+} else if (!empty($USER->lang)) {
+    $defaultlangcode = (string)$USER->lang;
+} else {
+    $defaultlangcode = (string)current_language();
+}
+
+$actionparams = ['courseid' => $course->id];
+if (!empty($sectionid)) { $actionparams['section'] = (int)$sectionid; }
+if (!empty($cmid)) { $actionparams['cmid'] = (int)$cmid; }
+$actionurl = new moodle_url('/blocks/aipromptgen/view.php', $actionparams);
+
+$form = new \block_aipromptgen\form\prompt_form($actionurl, [
     'topics' => $topics,
     'lessonoptions' => $lessonoptions,
     'subjectdefault' => $coursedefaultname,
+    'defaultlanguage' => $defaultlangcode,
+    'coursename' => $coursedefaultname,
 ]);
 
 $generated = null;
@@ -516,6 +727,11 @@ $topicbrowsejs = "(function(){\n"
 $PAGE->requires->js_amd_inline($topicbrowsejs);
 
 // Add a third modal for browsing Course Competencies and appending to Outcomes.
+// Remove duplicates and sort for a tidy list.
+if (!empty($competencies)) {
+    $competencies = array_values(array_unique($competencies));
+    core_collator::asort($competencies);
+}
 echo html_writer::start_tag('div', [
     'class' => 'ai4t-modal',
     'id' => 'ai4t-outcomes-modal',

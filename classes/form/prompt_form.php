@@ -39,6 +39,8 @@ class prompt_form extends \moodleform {
     protected function definition() {
         $mform = $this->_form;
     $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
+    $coursename = $this->_customdata['coursename'] ?? '';
+
 
     $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_aipromptgen'));
         $mform->setType('subject', PARAM_TEXT);
@@ -49,16 +51,22 @@ class prompt_form extends \moodleform {
                 $mform->setDefault('subject', $subjectdefault);
             }
         }
-        // Tooltip as requested (non-localized text per requirement).
-        $mform->getElement('subject')->setAttributes([
+        // Tooltip and placeholder showing the course name inside the control.
+        $subjectattrs = [
+            'id' => 'id_subject',
             'title' => 'Change the subject name if necessary',
-        ]);
+        ];
+        if (is_string($coursename) && trim($coursename) !== '') {
+            $subjectattrs['placeholder'] = format_string($coursename);
+        }
+        $mform->getElement('subject')->setAttributes($subjectattrs);
     // Make subject required (server-side; client-side optional to add later if needed).
     //$mform->addRule('subject', get_string('required'), 'required');
 
     $mform->addElement('text', 'agerange', get_string('form:agerangelabel', 'block_aipromptgen'));
         $mform->setType('agerange', PARAM_TEXT);
         $mform->getElement('agerange')->setAttributes([
+            'id' => 'id_agerange',
             'title' => 'Enter the student age or grade level',
         ]);
 
@@ -67,6 +75,7 @@ class prompt_form extends \moodleform {
         $topicelems = [];
         // Use empty string for label instead of null to avoid strrpos() deprecation inside QuickForm.
         $topicelems[] = $mform->createElement('text', 'topic', '', [
+            'id' => 'id_topic',
             'size' => 60,
             'list' => 'ai4t-topiclist',
             'title' => 'Type a topic or click Browse to pick from course sections',
@@ -96,6 +105,7 @@ class prompt_form extends \moodleform {
         $lessonelems = [];
         // Use empty string for label instead of null to avoid strrpos() deprecation inside QuickForm.
         $lessonelems[] = $mform->createElement('text', 'lesson', '', [
+            'id' => 'id_lesson',
             'size' => 60,
             'title' => 'Type a lesson title or click Browse to pick a section/activity',
         ]);
@@ -121,12 +131,14 @@ class prompt_form extends \moodleform {
         $mform->addElement('select', 'classtype', get_string('form:class_typelabel', 'block_aipromptgen'), $classtypeoptions);
         $mform->setType('classtype', PARAM_ALPHANUMEXT);
         $mform->getElement('classtype')->setAttributes([
+            'id' => 'id_classtype',
             'title' => 'Select the class type',
         ]);
 
         // Outcomes textarea with a Browse button to pick competencies.
         $outcomeselems = [];
         $outcomeselems[] = $mform->createElement('textarea', 'outcomes', '', [
+            'id' => 'id_outcomes',
             'wrap' => 'virtual', 'rows' => 6, 'cols' => 60,
             'title' => 'List outcomes/objectives (one or more)',
         ]);
@@ -156,11 +168,18 @@ class prompt_form extends \moodleform {
         // Allow language codes with underscores/dashes (e.g., sr_cr).
         $mform->setType('language', PARAM_ALPHANUMEXT);
         $mform->getElement('language')->setAttributes([
+            'id' => 'id_language',
             'title' => 'Choose the language for the generated prompt',
         ]);
-        // Default to the user's current UI language when available.
-        // Try exact, normalized, and alias matches; then fallback to base language or English.
-        $curlang = current_language();
+        // Default to a provided preferred language (from course/user) when available,
+        // otherwise use the Moodle user's language, else the current page language.
+        // Then try exact, normalized, and alias matches; finally fallback to base or English.
+        global $USER;
+        $pref = $this->_customdata['defaultlanguage'] ?? '';
+        if (is_string($pref)) { $pref = trim($pref); }
+        $curlang = ($pref !== '')
+            ? $pref
+            : ((!empty($USER->lang) && is_string($USER->lang)) ? $USER->lang : current_language());
         $candidates = [];
         $aliasmap = [
             'sr_cyrl' => 'sr_cr',
@@ -211,6 +230,7 @@ class prompt_form extends \moodleform {
         ]);
     $mform->setType('purpose', PARAM_ALPHANUMEXT);
         $mform->getElement('purpose')->setAttributes([
+            'id' => 'id_purpose',
             'title' => 'Select the purpose (e.g., lesson plan, quiz, rubric)',
         ]);
 
@@ -220,11 +240,13 @@ class prompt_form extends \moodleform {
         ]);
     $mform->setType('audience', PARAM_ALPHANUMEXT);
         $mform->getElement('audience')->setAttributes([
+            'id' => 'id_audience',
             'title' => 'Who will read the output (teacher or student)',
         ]);
 
-        $mform->addElement('hidden', 'courseid');
-        $mform->setType('courseid', PARAM_INT);
+    $mform->addElement('hidden', 'courseid');
+    $mform->setType('courseid', PARAM_INT);
+    $mform->getElement('courseid')->setAttributes(['id' => 'id_courseid']);
 
     $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
 
