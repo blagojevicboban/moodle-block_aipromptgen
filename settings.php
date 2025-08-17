@@ -25,12 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Ensure the settings page exists and is registered in the admin tree so a Settings link appears.
-if (!isset($settings)) {
-    $settings = new admin_settingpage('block_aipromptgen', get_string('pluginname', 'block_aipromptgen'));
-    $ADMIN->add('blocksettings', $settings);
-}
-
+// Only add fields when the full admin tree is being built.
 if ($ADMIN->fulltree) {
     // OpenAI API key (password-unmask field).
     $settings->add(new admin_setting_configpasswordunmask(
@@ -45,6 +40,7 @@ if ($ADMIN->fulltree) {
         'block_aipromptgen/openai_model',
         get_string('setting:model', 'block_aipromptgen'),
         get_string('setting:model_desc', 'block_aipromptgen'),
-        'gpt-4o-mini'
+        'gpt-4o-mini',
+        PARAM_TEXT
     ));
 }

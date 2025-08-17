@@ -242,4 +242,11 @@ class block_aipromptgen extends block_base {
         $context = context_course::instance($courseid);
         return !has_capability('block/aipromptgen:manage', $context);
     }
+
+    /**
+     * Declare that this block has a global settings.php.
+     */
+    public function has_config(): bool {
+        return true;
+    }
 }
