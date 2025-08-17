@@ -38,11 +38,10 @@ class prompt_form extends \moodleform {
      */
     protected function definition() {
         $mform = $this->_form;
-    $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
-    $coursename = $this->_customdata['coursename'] ?? '';
+        $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
+        $coursename = $this->_customdata['coursename'] ?? '';
 
-
-    $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_aipromptgen'));
+        $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_aipromptgen'));
         $mform->setType('subject', PARAM_TEXT);
         // Set a default only if provided and not empty.
         if (is_string($subjectdefault)) {
@@ -60,29 +59,29 @@ class prompt_form extends \moodleform {
             $subjectattrs['placeholder'] = format_string($coursename);
         }
         $mform->getElement('subject')->setAttributes($subjectattrs);
-    // Make subject required (server-side; client-side optional to add later if needed).
-    //$mform->addRule('subject', get_string('required'), 'required');
+        // Make subject required (server-side; client-side optional to add later if needed).
+        // $mform->addRule('subject', get_string('required'), 'required');
 
-    // Student age/grade: free text with a Browse button to open a modal for exact age or range selection.
-    $ageelems = [];
-    $ageelems[] = $mform->createElement('text', 'agerange', '', [
-        'id' => 'id_agerange',
-        'size' => 20,
-        'title' => 'Type an age or grade, or click Browse to pick exact age or range',
-        'placeholder' => 'e.g., 15 or 10–12',
-    ]);
-    $ageelems[] = $mform->createElement('button', 'agebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
-        'type' => 'button',
-        'id' => 'ai4t-age-browse',
-        'class' => 'btn btn-secondary btn-sm',
-        'title' => 'Browse age or range',
-    ]);
-    $mform->addGroup($ageelems, 'agegroup', get_string('form:agerangelabel', 'block_aipromptgen'), ' ', false);
-    $mform->setType('agerange', PARAM_TEXT);
-    $mform->setDefault('agerange', '15');
+        // Student age/grade: free text with a Browse button to open a modal for exact age or range selection.
+        $ageelems = [];
+        $ageelems[] = $mform->createElement('text', 'agerange', '', [
+            'id' => 'id_agerange',
+            'size' => 20,
+            'title' => 'Type an age or grade, or click Browse to pick exact age or range',
+            'placeholder' => 'e.g., 15 or 10–12',
+        ]);
+        $ageelems[] = $mform->createElement('button', 'agebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+            'type' => 'button',
+            'id' => 'ai4t-age-browse',
+            'class' => 'btn btn-secondary btn-sm',
+            'title' => 'Browse age or range',
+        ]);
+        $mform->addGroup($ageelems, 'agegroup', get_string('form:agerangelabel', 'block_aipromptgen'), ' ', false);
+        $mform->setType('agerange', PARAM_TEXT);
+        $mform->setDefault('agerange', '15');
 
         // Topic (editable text with suggestions + a Browse button that opens a modal picker).
-    $topics = $this->_customdata['topics'] ?? [];
+        $topics = $this->_customdata['topics'] ?? [];
         $topicelems = [];
         // Use empty string for label instead of null to avoid strrpos() deprecation inside QuickForm.
         $topicelems[] = $mform->createElement('text', 'topic', '', [
@@ -91,25 +90,25 @@ class prompt_form extends \moodleform {
             'list' => 'ai4t-topiclist',
             'title' => 'Type a topic or click Browse to pick from course sections',
         ]);
-    $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_aipromptgen'), [
+        $topicelems[] = $mform->createElement('button', 'topicbrowse', get_string('form:topicbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-topic-browse',
             'class' => 'btn btn-secondary btn-sm',
             'title' => 'Browse course sections',
         ]);
-    $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_aipromptgen'), ' ', false);
+        $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
-    // Make topic required (element is inside a group, so use group rule to avoid QuickForm errors).
-    $grouprules = [];
-    $grouprules['topic'][] = [get_string('required'), 'required'];
-    $mform->addGroupRule('topicgroup', $grouprules);
+        // Make topic required (element is inside a group, so use group rule to avoid QuickForm errors).
+        $grouprules = [];
+        $grouprules['topic'][] = [get_string('required'), 'required'];
+        $mform->addGroupRule('topicgroup', $grouprules);
         // Attach HTML5 datalist for suggestions while allowing free text.
         if (!empty($topics) && is_array($topics)) {
             $optionshtml = '';
             foreach ($topics as $t) {
-                $optionshtml .= \html_writer::tag('option', s($t));
+                $optionshtml .= '<option>' . s($t) . '</option>';
             }
-            $mform->addElement('html', \html_writer::tag('datalist', $optionshtml, ['id' => 'ai4t-topiclist']));
+            $mform->addElement('html', '<datalist id="ai4t-topiclist">' . $optionshtml . '</datalist>');
         }
 
         // Lesson title: keep as textbox, with a Browse button to open a modal picker.
@@ -120,13 +119,13 @@ class prompt_form extends \moodleform {
             'size' => 60,
             'title' => 'Type a lesson title or click Browse to pick a section/activity',
         ]);
-    $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+        $lessonelems[] = $mform->createElement('button', 'lessonbrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-lesson-browse',
             'class' => 'btn btn-secondary btn-sm',
             'title' => 'Browse sections and activities',
         ]);
-    $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_aipromptgen'), ' ', false);
+        $mform->addGroup($lessonelems, 'lessongroup', get_string('form:lessonlabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('lesson', PARAM_TEXT);
 
         // Class type: free text with a Browse button to open a modal picker.
@@ -211,12 +210,12 @@ class prompt_form extends \moodleform {
         $mform->addGroup($audienceelems, 'audiencegroup', get_string('form:audience', 'block_aipromptgen'), ' ', false);
         $mform->setType('audience', PARAM_TEXT);
 
-    $mform->addElement('hidden', 'courseid');
-    $mform->setType('courseid', PARAM_INT);
-    $mform->getElement('courseid')->setAttributes(['id' => 'id_courseid']);
+        $mform->addElement('hidden', 'courseid');
+        $mform->setType('courseid', PARAM_INT);
+        $mform->getElement('courseid')->setAttributes(['id' => 'id_courseid']);
 
-    $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
+        $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
 
-    // No inline script here; handled on the page to open a modal and populate the textbox.
+        // No inline script here; handled on the page to open a modal and populate the textbox.
     }
 }

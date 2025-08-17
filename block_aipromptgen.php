@@ -22,6 +22,14 @@
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
+/**
+ * Block class for AI Prompt Generator.
+ *
+ * @package    block_aipromptgen
+ */
 class block_aipromptgen extends block_base {
     /**
      * Initialise the block title.
@@ -38,7 +46,11 @@ class block_aipromptgen extends block_base {
      * @return array
      */
     public function applicable_formats() {
-        return ['course-view' => true, 'site-index' => false, 'mod' => true];
+        return [
+            'course-view' => true,
+            'site-index' => false,
+            'mod' => true,
+        ];
     }
 
     /**
@@ -51,11 +63,11 @@ class block_aipromptgen extends block_base {
             return $this->content;
         }
         $this->content = new stdClass();
-    global $CFG;
+        global $CFG;
 
         // Capability check: only users with manage capability see content.
-        $courseid = $this->page->course->id;
-        $context = context_course::instance($courseid);
+        $courseid = (int)$this->page->course->id;
+        $context = $this->page->context;
         if (!has_capability('block/aipromptgen:manage', $context)) {
             $this->content->text = get_string('notallowed', 'block_aipromptgen');
             $this->content->footer = '';
@@ -70,6 +82,7 @@ class block_aipromptgen extends block_base {
         try {
             $compnames = [];
             $outnames = [];
+
             if (class_exists('\\core_competency\\api') && \core_competency\api::is_enabled()) {
                 // Course-level competencies.
                 $coursecompetencies = \core_competency\api::list_course_competencies($courseid);
@@ -82,28 +95,46 @@ class block_aipromptgen extends block_base {
                             $competencyid = $cc->competencyid;
                         }
                     }
-                    if (empty($competencyid)) { continue; }
+                    if (empty($competencyid)) {
+                        continue;
+                    }
                     $comp = \core_competency\api::read_competency($competencyid);
-                    if (!$comp) { continue; }
-                    $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-                    $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+                    if (!$comp) {
+                        continue;
+                    }
+                    $shortname = '';
+                    if (method_exists($comp, 'get')) {
+                        $shortname = (string)$comp->get('shortname');
+                    }
+                    $idnumber = '';
+                    if (method_exists($comp, 'get')) {
+                        $idnumber = (string)$comp->get('idnumber');
+                    }
                     $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
                     if ($name === '') {
-                        $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
-                        $name = $idtxt !== '' ? $idtxt : get_string('competency', 'tool_lp');
+                        $idtxt = '';
+                        if (method_exists($comp, 'get')) {
+                            $idtxt = (string)$comp->get('id');
+                        }
+                        $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
                     }
                     $compnames[] = $name;
                 }
+
                 // Fallback: competencies linked to visible modules if none at course level.
                 if (empty($compnames)) {
                     $seen = [];
                     $modinfo = get_fast_modinfo($courseid);
                     foreach ($modinfo->get_cms() as $cm) {
-                        if (!$cm->uservisible) { continue; }
+                        if (!$cm->uservisible) {
+                            continue;
+                        }
                         $links = [];
                         try {
                             $links = \core_competency\api::list_course_module_competencies($cm->id);
-                        } catch (\Throwable $ignore) { $links = []; }
+                        } catch (\Throwable $ignore) {
+                            $links = [];
+                        }
                         foreach ($links as $link) {
                             $competencyid = null;
                             if (is_object($link)) {
@@ -113,17 +144,32 @@ class block_aipromptgen extends block_base {
                                     $competencyid = $link->competencyid;
                                 }
                             }
-                            if (empty($competencyid)) { continue; }
+                            if (empty($competencyid)) {
+                                continue;
+                            }
                             $cid = (int)$competencyid;
-                            if (isset($seen[$cid])) { continue; }
+                            if (isset($seen[$cid])) {
+                                continue;
+                            }
                             $comp = \core_competency\api::read_competency($cid);
-                            if (!$comp) { continue; }
-                            $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-                            $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+                            if (!$comp) {
+                                continue;
+                            }
+                            $shortname = '';
+                            if (method_exists($comp, 'get')) {
+                                $shortname = (string)$comp->get('shortname');
+                            }
+                            $idnumber = '';
+                            if (method_exists($comp, 'get')) {
+                                $idnumber = (string)$comp->get('idnumber');
+                            }
                             $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
                             if ($name === '') {
-                                $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
-                                $name = $idtxt !== '' ? $idtxt : get_string('competency', 'tool_lp');
+                                $idtxt = '';
+                                if (method_exists($comp, 'get')) {
+                                    $idtxt = (string)$comp->get('id');
+                                }
+                                $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
                             }
                             $compnames[] = $name;
                             $seen[$cid] = true;
@@ -131,6 +177,7 @@ class block_aipromptgen extends block_base {
                     }
                 }
             }
+
             // Gradebook outcomes: include both local (course) and global if feature enabled.
             if (!empty($CFG->enableoutcomes)) {
                 @require_once($CFG->libdir . '/gradelib.php');
@@ -147,7 +194,9 @@ class block_aipromptgen extends block_base {
                                     $name = format_string($o->fullname);
                                 }
                                 $name = trim((string)$name);
-                                if ($name !== '') { $outnames[] = $name; }
+                                if ($name !== '') {
+                                    $outnames[] = $name;
+                                }
                             }
                         }
                     }
@@ -162,55 +211,61 @@ class block_aipromptgen extends block_base {
                                     $name = format_string($o->fullname);
                                 }
                                 $name = trim((string)$name);
-                                if ($name !== '') { $outnames[] = $name; }
+                                if ($name !== '') {
+                                    $outnames[] = $name;
+                                }
                             }
                         }
                     }
                 }
             }
+
             $allnames = array_merge($compnames, $outnames);
             if (!empty($allnames)) {
                 $allnames = array_values(array_unique($allnames));
-                if (class_exists('core_collator')) { core_collator::asort($allnames); }
-                $labelprefix = get_string('competencies', 'tool_lp') . ' / ' . get_string('outcomes', 'grades');
+                // Sort naturally for readability.
+                sort($allnames, SORT_NATURAL | SORT_FLAG_CASE);
+                $labelprefix = get_string('competencies', 'core_competency') . ' / ' .
+                    get_string('outcomes', 'grades');
                 $label = $labelprefix . ': ' . implode(', ', $allnames);
-                $complabelhtml = html_writer::div(s($label), 'ai4t-competencies');
+                $complabelhtml = '<div class="ai4t-competencies">' . s($label) . '</div>';
             }
         } catch (\Throwable $e) {
             // Ignore if competencies are not available; label will be omitted.
+            debugging($e->getMessage(), DEBUG_DEVELOPER);
         }
-        // If rendered on a module page, include cmid for lesson defaulting.
+
+        // Include cmid/section params when available.
         if (!empty($this->page->cm) && !empty($this->page->cm->id)) {
             $params['cmid'] = (int)$this->page->cm->id;
         }
         if (!empty($sectionid)) {
             $params['section'] = $sectionid;
         }
-        $url = new moodle_url('/blocks/aipromptgen/view.php', $params);
-    $link = html_writer::link($url, get_string('openpromptbuilder', 'block_aipromptgen'), [
-            'class' => 'btn btn-primary',
-            'id' => 'ai4t-open',
-        ]);
-    // Prepend competencies label (if available).
-    $this->content->text = $complabelhtml . html_writer::div($link);
+
+        $href = $CFG->wwwroot . '/blocks/aipromptgen/view.php?' . http_build_query($params);
+        $linktext = get_string('openpromptbuilder', 'block_aipromptgen');
+        $link = '<a class="btn btn-primary" id="ai4t-open" href="' . s($href) . '">' . s($linktext) . '</a>';
+
+        // Prepend competencies label (if available).
+        $this->content->text = $complabelhtml . '<div>' . $link . '</div>';
         $this->content->footer = '';
+
         // Ensure the link carries the current section when present (all-formats friendly).
-        $js = "(function(){\n"
-            . "var a=document.getElementById('ai4t-open'); if(!a){return;}\n"
-            . "try{\n"
-            . "  var href=new URL(a.href, window.location.origin);\n"
-            . "  var sec=(new URLSearchParams(window.location.search)).get('section');\n"
-            . "  if(!sec && window.location.hash){ var m=window.location.hash.match(/section-(\\d+)/); if(m){sec=m[1];} }\n"
-            . "  if(!sec){ var el=document.querySelector('.course-content .current[id^=\\'section-\\'], .course-content .section.current[id^=\\'section-\\']');\n"
-            . "    if(el){ var m2=el.id.match(/section-(\\d+)/); if(m2){sec=m2[1];} } }\n"
-            . "  if(sec){ href.searchParams.set('section', sec); a.href=href.toString(); }\n"
-            . "  // Also propagate cmid if viewing a module page (URL like /mod/...&id=CMID).\n"
-            . "  var usp=new URLSearchParams(window.location.search);\n"
-            . "  var cmid=usp.get('id');\n"
-            . "  if(cmid && /\\/mod\\//.test(window.location.pathname)){ href.searchParams.set('cmid', cmid); a.href=href.toString(); }\n"
-            . "}catch(e){}\n"
-            . "})();";
+        $js = "(function(){\n" .
+            "var a=document.getElementById('ai4t-open'); if(!a){return;}\n" .
+            "try{\n" .
+            "  var href=new URL(a.href, window.location.origin);\n" .
+            "  var sec=(new URLSearchParams(window.location.search)).get('section');\n" .
+            "  if(!sec && window.location.hash){ var m=window.location.hash.match(/section-(\\d+)/); if(m){sec=m[1];} }\n" .
+            "  if(sec){ href.searchParams.set('section', sec); a.href=href.toString(); }\n" .
+            "  var usp=new URLSearchParams(window.location.search);\n" .
+            "  var cmid=usp.get('id');\n" .
+            "  if(cmid && /\\/mod\\//.test(window.location.pathname)){ href.searchParams.set('cmid', cmid); a.href=href.toString(); }\n" .
+            "}catch(e){}\n" .
+            "})();";
         $this->page->requires->js_amd_inline($js);
+
         return $this->content;
     }
 
@@ -238,13 +293,14 @@ class block_aipromptgen extends block_base {
      * @return bool
      */
     public function is_empty() {
-        $courseid = $this->page->course->id;
-        $context = context_course::instance($courseid);
+        $context = $this->page->context;
         return !has_capability('block/aipromptgen:manage', $context);
     }
 
     /**
      * Declare that this block has a global settings.php.
+     *
+     * @return bool
      */
     public function has_config(): bool {
         return true;

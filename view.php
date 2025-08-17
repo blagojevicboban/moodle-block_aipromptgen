@@ -48,7 +48,8 @@ if ($courseid == 0) {
                 $courseid = (int)$cm->course;
             }
         } catch (\Throwable $e) {
-            // Ignore; will try other options below.
+            // Log and continue with other options.
+            debugging('block_aipromptgen view: cmid -> course resolution failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
     // If still missing and we have a generic id, probe whether it's a cmid or a course id.
@@ -60,7 +61,8 @@ if ($courseid == 0) {
                 $courseid = (int)$cmprobe->course;
             }
         } catch (\Throwable $e) {
-            // Ignore; fall back to treating id as course id if no cm found.
+            // Log and fall back to treating id as course id if no cm found.
+            debugging('block_aipromptgen view: param id probe failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
         if (empty($courseid)) {
             // Treat as course id (e.g., /course/view.php?id=COURSEID or block added on course page).
@@ -76,7 +78,8 @@ if ($courseid == 0) {
             $courseid = (int)$cm->course;
         }
     } catch (\Throwable $e) {
-        // Ignore and try other fallbacks.
+        // Log and try other fallbacks.
+        debugging('block_aipromptgen view: course id resolution from cmid failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
     }
 }
 if ($courseid == 0) {
@@ -135,6 +138,7 @@ try {
                 continue;
             }
             $cmname = trim(format_string($cm->name));
+
             if ($cmname === '') {
                 continue;
             }
@@ -142,26 +146,46 @@ try {
             $mod = (string)$cm->modname;
             $icon = '📄';
             switch ($mod) {
-                case 'assign': $icon = '📝'; break;
-                case 'book': $icon = '📚'; break;
-                case 'chat': $icon = '💬'; break;
-                case 'choice': $icon = '☑️'; break;
-                case 'feedback': $icon = '🗳️'; break;
-                case 'folder': $icon = '📁'; break;
-                case 'forum': $icon = '💬'; break;
-                case 'glossary': $icon = '📔'; break;
-                case 'h5pactivity': $icon = '▶️'; break;
-                case 'label': $icon = '🏷️'; break;
-                case 'lesson': $icon = '📘'; break;
-                case 'lti': $icon = '🌐'; break;
-                case 'page': $icon = '📄'; break;
-                case 'quiz': $icon = '❓'; break;
-                case 'resource': $icon = '📄'; break;
-                case 'scorm': $icon = '🎯'; break;
-                case 'survey': $icon = '📊'; break;
-                case 'url': $icon = '🔗'; break;
-                case 'wiki': $icon = '🧭'; break;
-                case 'workshop': $icon = '🛠️'; break;
+                case 'assign': $icon = '📝';
+                break;
+                case 'book': $icon = '📚';
+                break;
+                case 'chat': $icon = '💬';
+                break;
+                case 'choice': $icon = '☑️';
+                break;
+                case 'feedback': $icon = '🗳️';
+                break;
+                case 'folder': $icon = '📁';
+                break;
+                case 'forum': $icon = '💬';
+                break;
+                case 'glossary': $icon = '📔';
+                break;
+                case 'h5pactivity': $icon = '▶️';
+                break;
+                case 'label': $icon = '🏷️';
+                break;
+                case 'lesson': $icon = '📘';
+                break;
+                case 'lti': $icon = '🌐';
+                break;
+                case 'page': $icon = '📄';
+                break;
+                case 'quiz': $icon = '❓';
+                break;
+                case 'resource': $icon = '📄';
+                break;
+                case 'scorm': $icon = '🎯';
+                break;
+                case 'survey': $icon = '📊';
+                break;
+                case 'url': $icon = '🔗';
+                break;
+                case 'wiki': $icon = '🧭';
+                break;
+                case 'workshop': $icon = '🛠️';
+                break;
                 default: $icon = '📄';
             }
             // Indent activities visually in the list with icon.
@@ -172,7 +196,8 @@ try {
         }
     }
 } catch (\Throwable $e) {
-    // Ignore; leave topics empty if anything goes wrong.
+    // Log; leave topics empty if anything goes wrong.
+    debugging('block_aipromptgen view: building topics/lessons failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
 }
 // Try to gather course competencies for the Outcomes modal (if competencies subsystem is enabled and accessible).
 // First, try to gather Gradebook Outcomes (local to course and global) if the feature is enabled.
@@ -196,14 +221,18 @@ try {
                         $name = format_string($o->fullname);
                     }
                     $name = trim((string)$name);
-                    if ($name === '') { continue; }
+                    if ($name === '') {
+                        continue;
+                    }
                     $desc = '';
                     if (!empty($o->description)) {
                         $desc = trim(strip_tags(format_text($o->description, FORMAT_HTML)));
                     }
                     $text = $name . ($desc !== '' ? ' — ' . $desc : '');
                     $competencies[] = $text;
-                    if (!empty($o->id)) { $seen[(int)$o->id] = true; }
+                    if (!empty($o->id)) {
+                        $seen[(int)$o->id] = true;
+                    }
                 }
             }
         }
@@ -213,7 +242,9 @@ try {
             if (!empty($globals) && is_array($globals)) {
                 foreach ($globals as $o) {
                     $oid = isset($o->id) ? (int)$o->id : 0;
-                    if ($oid && isset($seen[$oid])) { continue; }
+                    if ($oid && isset($seen[$oid])) {
+                        continue;
+                    }
                     $name = '';
                     if (!empty($o->shortname)) {
                         $name = format_string($o->shortname);
@@ -221,7 +252,9 @@ try {
                         $name = format_string($o->fullname);
                     }
                     $name = trim((string)$name);
-                    if ($name === '') { continue; }
+                    if ($name === '') {
+                        continue;
+                    }
                     $desc = '';
                     if (!empty($o->description)) {
                         $desc = trim(strip_tags(format_text($o->description, FORMAT_HTML)));
@@ -233,7 +266,8 @@ try {
         }
     }
 } catch (\Throwable $e) {
-    // Ignore issues with grade outcomes; we'll fall back to competencies below.
+    // Log issues with grade outcomes; we'll fall back to competencies below.
+    debugging('block_aipromptgen view: collecting grade outcomes failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
 }
 
 // Try to gather course competencies for the Outcomes modal (robust across versions).
@@ -266,7 +300,9 @@ try {
         } else if (is_array($cc) && isset($cc['competencyid'])) {
             $competencyid = $cc['competencyid'];
         }
-        if (empty($competencyid)) { continue; }
+        if (empty($competencyid)) {
+            continue;
+        }
 
         $comp = null;
         if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
@@ -275,11 +311,13 @@ try {
         if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
             $comp = \tool_lp\api::read_competency($competencyid);
         }
-        if (!$comp) { continue; }
+        if (!$comp) {
+            continue;
+        }
 
         // Access fields using persistent getters when available.
         $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-        $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+        $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber') : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
         $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
         $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML) : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
 
@@ -293,11 +331,14 @@ try {
             $desc = trim(strip_tags(format_text($descraw, $descfmt)));
         }
         $text = $name;
-        if ($desc !== '') { $text .= ' — ' . $desc; }
+        if ($desc !== '') {
+            $text .= ' — ' . $desc;
+        }
         $competencies[] = $text;
     }
 } catch (\Throwable $e) {
-    // Silently ignore if competencies are not configured or user lacks permissions.
+    // Log if competencies are not configured or user lacks permissions.
+    debugging('block_aipromptgen view: reading course competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
 }
 // Fallback: if no course-level competencies found, try collecting from visible course modules.
 if (empty($competencies)) {
@@ -306,11 +347,15 @@ if (empty($competencies)) {
             $seen = [];
             $modinfo = get_fast_modinfo($course);
             foreach ($modinfo->get_cms() as $cm) {
-                if (!$cm->uservisible) { continue; }
+                if (!$cm->uservisible) {
+                    continue;
+                }
                 $links = [];
                 try {
                     $links = \core_competency\api::list_course_module_competencies($cm->id);
-                } catch (\Throwable $ignore) { $links = []; }
+                } catch (\Throwable $ignore) {
+                    $links = [];
+                }
                 foreach ($links as $link) {
                     $competencyid = null;
                     if (is_object($link)) {
@@ -322,9 +367,13 @@ if (empty($competencies)) {
                             $competencyid = $link->get_competencyid();
                         }
                     }
-                    if (empty($competencyid)) { continue; }
+                    if (empty($competencyid)) {
+                        continue;
+                    }
                     $cid = (int)$competencyid;
-                    if (isset($seen[$cid])) { continue; }
+                    if (isset($seen[$cid])) {
+                        continue;
+                    }
                     $comp = null;
                     if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
                         $comp = \core_competency\api::read_competency($cid);
@@ -332,11 +381,14 @@ if (empty($competencies)) {
                     if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
                         $comp = \tool_lp\api::read_competency($cid);
                     }
-                    if (!$comp) { continue; }
+                    if (!$comp) {
+                        continue;
+                    }
                     $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-                    $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')  : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+                    $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber') : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
                     $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
-                    $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML) : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
+                    $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML)
+                    : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
                     $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
                     if ($name === '') {
                         $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
@@ -347,14 +399,17 @@ if (empty($competencies)) {
                         $desc = trim(strip_tags(format_text($descraw, $descfmt)));
                     }
                     $text = $name;
-                    if ($desc !== '') { $text .= ' — ' . $desc; }
+                    if ($desc !== '') {
+                        $text .= ' — ' . $desc;
+                    }
                     $competencies[] = $text;
                     $seen[$cid] = true;
                 }
             }
         }
     } catch (\Throwable $e) {
-        // Ignore fallback errors.
+        // Log fallback errors.
+        debugging('block_aipromptgen view: collecting module-level competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
     }
 }
 
@@ -374,9 +429,13 @@ if (empty($competencies)) {
             $descraw   = isset($r->description) ? $r->description : '';
             $descfmt   = isset($r->descriptionformat) ? (int)$r->descriptionformat : FORMAT_HTML;
             $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
-            if ($name === '') { $name = (string)$r->id; }
+            if ($name === '') {
+                $name = (string)$r->id;
+            }
             $desc = '';
-            if (!empty($descraw)) { $desc = trim(strip_tags(format_text($descraw, $descfmt))); }
+            if (!empty($descraw)) {
+                $desc = trim(strip_tags(format_text($descraw, $descfmt)));
+            }
             $text = $name . ($desc !== '' ? ' — ' . $desc : '');
             $competencies[] = $text;
         }
@@ -395,15 +454,20 @@ if (empty($competencies)) {
                 $descraw   = isset($r->description) ? $r->description : '';
                 $descfmt   = isset($r->descriptionformat) ? (int)$r->descriptionformat : FORMAT_HTML;
                 $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
-                if ($name === '') { $name = (string)$r->id; }
+                if ($name === '') {
+                    $name = (string)$r->id;
+                }
                 $desc = '';
-                if (!empty($descraw)) { $desc = trim(strip_tags(format_text($descraw, $descfmt))); }
+                if (!empty($descraw)) {
+                    $desc = trim(strip_tags(format_text($descraw, $descfmt)));
+                }
                 $text = $name . ($desc !== '' ? ' — ' . $desc : '');
                 $competencies[] = $text;
             }
         }
     } catch (\Throwable $e) {
-        // As a last resort we keep the list empty.
+        // Log last-resort failure; keep the list empty.
+        debugging('block_aipromptgen view: DB fallback for competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
     }
 }
 // Prepare a robust course name for defaults.
@@ -428,13 +492,15 @@ $sm = get_string_manager();
 $alllangs = $sm->get_list_of_languages();
 $pickcode = function(string $code) use ($alllangs): string {
     $code = trim($code);
-    if ($code === '') { return ''; }
+    if ($code === '') {
+        return '';
+    }
     $aliasmap = [
         'sr_cyrl' => 'sr_cr',
         'sr@cyrl' => 'sr_cr',
         'sr_cyr'  => 'sr_cr',
         'sr_latn' => 'sr_lt',
-        'sr@latin'=> 'sr_lt',
+        'sr@latin' => 'sr_lt',
     ];
     $norms = array_unique([
         $code,
@@ -443,21 +509,37 @@ $pickcode = function(string $code) use ($alllangs): string {
         str_replace('@', '_', $code),
     ]);
     foreach ($norms as $c) {
-        if (isset($alllangs[$c])) { return $c; }
-        if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) { return $aliasmap[$c]; }
+        if (isset($alllangs[$c])) {
+            return $c;
+        }
+        if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
+            return $aliasmap[$c];
+        }
     }
     $base = substr($code, 0, 2);
     if ($base === 'sr') {
-        foreach (['sr_lt', 'sr_cr', 'sr'] as $p) { if (isset($alllangs[$p])) { return $p; } }
+        foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
+            if (isset($alllangs[$p])) {
+                return $p;
+            }
+        }
     }
-    foreach (array_keys($alllangs) as $k) { if (stripos($k, $base) === 0) { return $k; } }
+    foreach (array_keys($alllangs) as $k) {
+        if (stripos($k, $base) === 0) {
+            return $k;
+        }
+    }
     return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
 };
 $defaultlangselect = $pickcode($defaultlangcode);
 
 $actionparams = ['courseid' => $course->id];
-if (!empty($sectionid)) { $actionparams['section'] = (int)$sectionid; }
-if (!empty($cmid)) { $actionparams['cmid'] = (int)$cmid; }
+if (!empty($sectionid)) {
+    $actionparams['section'] = (int)$sectionid;
+}
+if (!empty($cmid)) {
+    $actionparams['cmid'] = (int)$cmid;
+}
 $actionurl = new moodle_url('/blocks/aipromptgen/view.php', $actionparams);
 
 $form = new \block_aipromptgen\form\prompt_form($actionurl, [
@@ -524,9 +606,13 @@ if ($data = $form->get_data()) {
             }
             if (!empty($candidates)) {
                 // Prefer Latin over Cyrillic when both exist for Serbian.
-                if (in_array('sr_lt', $candidates, true)) { $langcode = 'sr_lt'; }
-                else if (in_array('sr_cr', $candidates, true)) { $langcode = 'sr_cr'; }
-                else { $langcode = $candidates[0]; }
+                if (in_array('sr_lt', $candidates, true)) {
+                    $langcode = 'sr_lt';
+                } else if (in_array('sr_cr', $candidates, true)) {
+                    $langcode = 'sr_cr';
+                } else {
+                    $langcode = $candidates[0];
+                }
             }
         }
         // Synonym fallback (simple heuristics).
@@ -536,23 +622,27 @@ if ($data = $form->get_data()) {
                 'serbian latin' => 'sr_lt', 'serbian (latin)' => 'sr_lt', 'srpski latinica' => 'sr_lt', 'srpski (latinica)' => 'sr_lt',
                 'serbian cyrillic' => 'sr_cr', 'serbian (cyrillic)' => 'sr_cr', 'srpski ćirilica' => 'sr_cr', 'srpski (ćirilica)' => 'sr_cr',
                 'serbian' => 'sr_lt', 'srpski' => 'sr_lt',
-                'english' => 'en', 'english (en)' => 'en'
+                'english' => 'en', 'english (en)' => 'en',
             ];
-            if (isset($syn[$tl])) { $langcode = $syn[$tl]; }
+            if (isset($syn[$tl])) {
+                $langcode = $syn[$tl];
+            }
         }
     }
 
     // Helper to normalize a language code to an installed pack (handles aliases like sr/sr_cyrl -> sr_lt/sr_cr).
     $normalizecode = function(string $code) use ($sm): string {
         $code = trim($code);
-        if ($code === '') { return ''; }
+        if ($code === '') {
+            return '';
+        }
         $alllangs = $sm->get_list_of_languages();
         $aliasmap = [
             'sr_cyrl' => 'sr_cr',
             'sr@cyrl' => 'sr_cr',
             'sr_cyr'  => 'sr_cr',
             'sr_latn' => 'sr_lt',
-            'sr@latin'=> 'sr_lt',
+            'sr@latin' => 'sr_lt',
         ];
         $variants = array_unique([
             $code,
@@ -561,17 +651,31 @@ if ($data = $form->get_data()) {
             str_replace('@', '_', $code),
         ]);
         foreach ($variants as $c) {
-            if (isset($alllangs[$c])) { return $c; }
-            if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) { return $aliasmap[$c]; }
+            if (isset($alllangs[$c])) {
+                return $c;
+            }
+            if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
+                return $aliasmap[$c];
+            }
         }
         $base = substr($code, 0, 2);
         if ($base === 'sr') {
-            foreach (['sr_lt', 'sr_cr', 'sr'] as $p) { if (isset($alllangs[$p])) { return $p; } }
+            foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
+                if (isset($alllangs[$p])) {
+                    return $p;
+                }
+            }
         }
-    foreach (array_keys($alllangs) as $k) { if (stripos($k, $base) === 0) { return $k; } }
-    $cur = (string)current_language();
-    if (isset($alllangs[$cur])) { return $cur; }
-    return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
+        foreach (array_keys($alllangs) as $k) {
+            if (stripos($k, $base) === 0) {
+                return $k;
+            }
+        }
+        $cur = (string)current_language();
+        if (isset($alllangs[$cur])) {
+            return $cur;
+        }
+        return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
     };
 
     // Fallback order for missing code: course language, user language, current UI language.
@@ -793,9 +897,9 @@ if (!$form->is_submitted() && $coursedefaultname !== '') {
 // Build the modal markup from $lessonoptions prepared above.
 echo html_writer::tag('style',
     '.ai4t-modal-backdrop{position:fixed;inset:0;display:none;background:rgba(0,0,0,.4);z-index:1050;}
-     .ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+     .ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;
+     max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
      .ai4t-modal header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #ddd;}
-     .ai4t-modal header h3{margin:0;font-size:1.1rem;}
      .ai4t-modal .ai4t-body{padding:8px 16px;overflow:auto;max-height:58vh;}
      .ai4t-list{list-style:none;margin:0;padding:0;}
      .ai4t-section{font-weight:600;margin:8px 0 4px;}
@@ -828,7 +932,7 @@ echo html_writer::start_tag('div');
 // Exact age option with radio.
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
-    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked'
+    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked',
 ]);
 echo html_writer::span(s('Exact age'));
 echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-exact', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;']);
@@ -838,7 +942,7 @@ echo html_writer::start_tag('div', ['style' => 'margin-top:8px;']);
 // Range option with radio.
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
-    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range'
+    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range',
 ]);
 echo html_writer::span(s('Range'));
 echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'From', 'style' => 'width:100px;']);
@@ -872,8 +976,12 @@ $agebrowsejs = "(function(){\n"
     . "var modeRange=document.getElementById('ai4t-age-mode-range');\n"
     . "function open(){ if(!modal||!backdrop){return;} prefill(); modal.style.display='block'; backdrop.style.display='block'; modal.focus(); }\n"
     . "function close(){ if(!modal||!backdrop){return;} modal.style.display='none'; backdrop.style.display='none'; }\n"
-    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked; if(useExact){ if(exact){ exact.removeAttribute('disabled'); } if(from){ from.setAttribute('disabled','disabled'); } if(to){ to.setAttribute('disabled','disabled'); } } else { if(exact){ exact.setAttribute('disabled','disabled'); } if(from){ from.removeAttribute('disabled'); } if(to){ to.removeAttribute('disabled'); } } }\n"
-    . "function prefill(){ if(!input){return;} var v=(input.value||'').trim(); if(!v){ if(modeExact){ modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled(); return; }\n"
+    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked; if(useExact){ if(exact){ exact.removeAttribute('disabled'); }"
+    . " if(from){ from.setAttribute('disabled','disabled'); }"
+    . "if(to){ to.setAttribute('disabled','disabled'); } } else { if(exact){ exact.setAttribute('disabled','disabled'); } if(from)"
+    . " { from.removeAttribute('disabled'); } if(to){ to.removeAttribute('disabled'); } } }\n"
+    . "function prefill(){ if(!input){return;} var v=(input.value||'').trim(); if(!v){ if(modeExact)"
+    . "  { modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled(); return; }\n"
     . "  if(/^\\d+$/.test(v)){ exact.value=v; from.value=''; to.value=''; if(modeExact){ modeExact.checked=true; } syncEnabled(); return; }\n"
     . "  var m=v.match(/^\s*(\\d+)\s*[-\\u2013]\s*(\\d+)\s*$/u);\n"
     . "  if(m){ exact.value=''; from.value=m[1]; to.value=m[2]; if(modeRange){ modeRange.checked=true; } syncEnabled(); return; }\n"
@@ -960,7 +1068,8 @@ $browsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-lesson-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($browsejs);
 
@@ -986,7 +1095,9 @@ echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
 foreach ($topics as $t) {
     $t = trim((string)$t);
-    if ($t === '') { continue; }
+    if ($t === '') {
+        continue;
+    }
     echo html_writer::tag('li', s($t), [
         'class' => 'ai4t-item ai4t-topic-item',
         'data-value' => $t,
@@ -1019,7 +1130,8 @@ $topicbrowsejs = "(function(){\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-topic-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($topicbrowsejs);
 
@@ -1064,7 +1176,7 @@ if (!empty($competencies)) {
 } else {
     echo html_writer::tag('li', get_string('none'), [
         'class' => 'ai4t-item',
-        'style' => 'color:#666;'
+        'style' => 'color:#666;',
     ]);
 }
 echo html_writer::end_tag('ul');
@@ -1093,7 +1205,9 @@ $outcomesbrowsejs = "(function(){\n"
     . "var ta=document.getElementById('id_outcomes');\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked'); var vals=[]; for(var i=0;i<boxes.length;i++){ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0){ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; } ta.value=cur+vals.join('\\n'); close(); }\n"
+    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked'); var vals=[]; for(var i=0;i<boxes.length;i++)"
+    . "{ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0){ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; }"
+    . "ta.value=cur+vals.join('\\n'); close(); }\n"
     . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
@@ -1107,7 +1221,11 @@ $PAGE->requires->js_amd_inline($outcomesbrowsejs);
 $langoptions = $sm->get_list_of_languages();
 $installed = $sm->get_list_of_translations();
 if (!empty($installed)) {
-    foreach ($installed as $code => $name) { if (isset($langoptions[$code]) && is_string($name) && $name !== '') { $langoptions[$code] = $name; } }
+    foreach ($installed as $code => $name) {
+        if (isset($langoptions[$code]) && is_string($name) && $name !== '') {
+            $langoptions[$code] = $name;
+        }
+    }
 }
 echo html_writer::start_tag('div', [
     'class' => 'ai4t-modal',
@@ -1152,14 +1270,16 @@ $languagebrowsejs = "(function(){\n"
     . "var codeEl=document.getElementById('id_languagecode');\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var t=e.currentTarget; var name=t.getAttribute('data-name'); var code=t.getAttribute('data-code'); if(input){ input.value=name; } if(codeEl){ codeEl.value=code; } close(); }\n"
+    . "function onPick(e){ var t=e.currentTarget; var name=t.getAttribute('data-name'); var code=t.getAttribute('data-code');"
+    . " if(input){ input.value=name; } if(codeEl){ codeEl.value=code; } close(); }\n"
     . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-language-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($languagebrowsejs);
 
@@ -1170,7 +1290,8 @@ $langsyncjs = "(function(){\n"
     . "function guess(){ if(!input||!codeEl){return;} var t=(input.value||'').trim(); if(!t){return;}\n"
     . "  var m=t.match(/\\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\\)/i); if(m){ codeEl.value=m[1].replace('-', '_').toLowerCase(); return; }\n"
     . "  var items=document.querySelectorAll('.ai4t-language-item'); var tl=t.toLowerCase();\n"
-    . "  for(var i=0;i<items.length;i++){ var name=items[i].getAttribute('data-name')||''; if(name.toLowerCase()===tl){ codeEl.value=items[i].getAttribute('data-code'); return; } }\n"
+    . "  for(var i=0;i<items.length;i++){ var name=items[i].getAttribute('data-name')||''; if(name.toLowerCase()===tl)"
+    . "{ codeEl.value=items[i].getAttribute('data-code'); return; } }\n"
     . "}\n"
     . "if(input){ input.addEventListener('blur', guess); input.addEventListener('change', guess); }\n"
     . "})();";
@@ -1218,7 +1339,8 @@ $purposebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-purpose-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($purposebrowsejs);
 
@@ -1228,7 +1350,9 @@ $audiencelist = [
     get_string('option:teacher', 'block_aipromptgen'),
 ];
 echo html_writer::start_tag('div', [
-    'class' => 'ai4t-modal', 'id' => 'ai4t-audience-modal', 'role' => 'dialog', 'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-audience-modal-title', 'style' => 'display:none;',
+    'class' => 'ai4t-modal', 'id' => 'ai4t-audience-modal', 'role' => 'dialog',
+    'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-audience-modal-title',
+    'style' => 'display:none;',
 ]);
 echo html_writer::start_tag('header');
 echo html_writer::tag('h3', get_string('form:audience', 'block_aipromptgen'), ['id' => 'ai4t-audience-modal-title']);
@@ -1262,7 +1386,8 @@ $audiencebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-audience-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($audiencebrowsejs);
 
@@ -1331,7 +1456,8 @@ $classtypebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-classtype-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' ')"
+    . "{ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($classtypebrowsejs);
 
@@ -1377,7 +1503,7 @@ if ($generated) {
         echo html_writer::tag('h4', get_string('form:response', 'block_aipromptgen'));
         echo html_writer::tag('pre', s($airesponse), [
             'class' => 'form-control',
-            'style' => 'white-space:pre-wrap;padding:12px;'
+            'style' => 'white-space:pre-wrap;padding:12px;',
         ]);
     } else if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
         echo html_writer::div('', 'ai4t-airesponse', ['id' => 'ai4t-airesponse']);
