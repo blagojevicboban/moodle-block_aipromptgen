@@ -23,83 +23,65 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'AI tools for teachers - prompt generator';
-$string['openpromptbuilder'] = 'Open AI Prompt Builder';
-$string['notallowed'] = 'This tool is only available to teachers and managers in this course.';
-$string['privacy:metadata'] = 'The AI Prompt Generator block does not store personal data.';
-
-// Capabilities.
-$string['aipromptgen:manage'] = 'Use the AI Prompt Generator block in a course';
 $string['aipromptgen:addinstance'] = 'Add a new AI Prompt Generator block';
+$string['aipromptgen:manage'] = 'Use the AI Prompt Generator block in a course';
 $string['aipromptgen:myaddinstance'] = 'Add the AI Prompt Generator block to the Dashboard';
-
-// Form strings.
-$string['form:subjectlabel'] = 'Subject';
+$string['classtype:assessment'] = 'Assessment/Test';
+$string['classtype:discussion'] = 'Discussion';
+$string['classtype:groupwork'] = 'Group work';
+$string['classtype:lab'] = 'Lab/Practical';
+$string['classtype:lecture'] = 'Lecture';
+$string['classtype:project'] = 'Project-based';
+$string['classtype:review'] = 'Review/Revision';
 $string['form:agerangelabel'] = 'Student age/grade';
-$string['form:topiclabel'] = 'Teaching topic (area)';
-$string['form:topicbrowse'] = 'Browse…';
-$string['form:lessonlabel'] = 'Lesson title';
-$string['form:lessonbrowse'] = 'Browse…';
-$string['form:class_typelabel'] = 'Class type';
-$string['form:outcomeslabel'] = 'Outcomes / objectives';
-$string['form:language'] = 'Prompt language';
-$string['form:purpose'] = 'Prompt purpose (e.g., lesson plan, quiz, rubric)';
-$string['form:course'] = 'Course';
-$string['form:submit'] = 'Generate prompt';
-$string['form:result'] = 'Generated AI prompt';
 $string['form:audience'] = 'Audience (teacher-facing or student-facing)';
-
-// Actions.
-$string['form:copy'] = 'Copy to clipboard';
-$string['form:copied'] = 'Copied!';
-$string['form:download'] = 'Download .txt';
-$string['form:sendtochatgpt'] = 'Send to ChatGPT';
-$string['form:response'] = 'AI response';
-$string['form:reset'] = 'Clear saved prompt';
 $string['form:backtocourse'] = 'Back to course';
+$string['form:class_typelabel'] = 'Class type';
+$string['form:copied'] = 'Copied!';
+$string['form:copy'] = 'Copy to clipboard';
+$string['form:course'] = 'Course';
+$string['form:download'] = 'Download .txt';
+$string['form:language'] = 'Prompt language';
+$string['form:lessonbrowse'] = 'Browse…';
+$string['form:lessonlabel'] = 'Lesson title';
 $string['form:outcomesbrowse'] = 'Browse…';
-
-// Options.
-$string['option:lessonplan'] = 'Lesson plan';
-$string['option:quiz'] = 'Quiz questions';
-$string['option:rubric'] = 'Assessment rubric';
-$string['option:worksheet'] = 'Worksheet / activities';
-$string['option:teacher'] = 'Teacher-facing';
-$string['option:student'] = 'Student-facing';
-
-// Language names.
-$string['lang:sr'] = 'Serbian';
+$string['form:outcomeslabel'] = 'Outcomes / objectives';
+$string['form:purpose'] = 'Prompt purpose (e.g., lesson plan, quiz, rubric)';
+$string['form:reset'] = 'Clear saved prompt';
+$string['form:response'] = 'AI response';
+$string['form:result'] = 'Generated AI prompt';
+$string['form:sendtochatgpt'] = 'Send to ChatGPT';
+$string['form:subjectlabel'] = 'Subject';
+$string['form:submit'] = 'Generate prompt';
+$string['form:topicbrowse'] = 'Browse…';
+$string['form:topiclabel'] = 'Teaching topic (area)';
+$string['label:agerange'] = 'Student age/grade';
+$string['label:audience'] = 'Audience';
+$string['label:classtype'] = 'Class type';
+$string['label:language'] = 'Language';
+$string['label:lesson'] = 'Lesson title';
+$string['label:outcomes'] = 'Outcomes';
+$string['label:purpose'] = 'Purpose';
+$string['label:subject'] = 'Subject';
+$string['label:topic'] = 'Teaching topic (area)';
 $string['lang:en'] = 'English';
 $string['lang:pt'] = 'Portuguese';
 $string['lang:sk'] = 'Slovak';
+$string['lang:sr'] = 'Serbian';
 $string['lang:sr_cr'] = 'Serbian (Cyrillic)';
-
-// Prompt labels.
-$string['label:purpose'] = 'Purpose';
-$string['label:audience'] = 'Audience';
-$string['label:language'] = 'Language';
-$string['label:subject'] = 'Subject';
-$string['label:agerange'] = 'Student age/grade';
-$string['label:topic'] = 'Teaching topic (area)';
-$string['label:lesson'] = 'Lesson title';
-$string['label:classtype'] = 'Class type';
-$string['label:outcomes'] = 'Outcomes';
-
-// Prompt templates.
-$string['prompt:prefix'] = 'You are an expert instructional designer helping a teacher in the Moodle course {$a->course}.';
+$string['notallowed'] = 'This tool is only available to teachers and managers in this course.';
+$string['openpromptbuilder'] = 'Open AI Prompt Builder';
+$string['option:lessonplan'] = 'Lesson plan';
+$string['option:quiz'] = 'Quiz questions';
+$string['option:rubric'] = 'Assessment rubric';
+$string['option:student'] = 'Student-facing';
+$string['option:teacher'] = 'Teacher-facing';
+$string['option:worksheet'] = 'Worksheet / activities';
+$string['pluginname'] = 'AI tools for teachers - prompt generator';
+$string['privacy:metadata'] = 'The AI Prompt Generator block does not store personal data.';
 $string['prompt:instructions'] = 'Generate the output fully in the specified language. Ensure that the content is appropriate for the given student age/grade, matches the local curriculum when applicable, and directly supports the stated objectives. Structure the output clearly, using headings, subheadings, and bullet points where appropriate.';
-
-// Settings.
+$string['prompt:prefix'] = 'You are an expert instructional designer helping a teacher in the Moodle course {$a->course}.';
 $string['setting:apikey'] = 'OpenAI API key';
 $string['setting:apikey_desc'] = 'API key for OpenAI. Stored in Moodle configuration.';
 $string['setting:model'] = 'OpenAI model';
 $string['setting:model_desc'] = 'Chat completion model to use when sending the prompt to ChatGPT.';
-
-// Class type options.
-$string['classtype:lecture'] = 'Lecture';
-$string['classtype:discussion'] = 'Discussion';
-$string['classtype:groupwork'] = 'Group work';
-$string['classtype:lab'] = 'Lab/Practical';
-$string['classtype:project'] = 'Project-based';
-$string['classtype:review'] = 'Review/Revision';
-$string['classtype:assessment'] = 'Assessment/Test';

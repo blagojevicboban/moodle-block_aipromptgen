@@ -60,7 +60,7 @@ class prompt_form extends \moodleform {
         }
         $mform->getElement('subject')->setAttributes($subjectattrs);
         // Make subject required (server-side; client-side optional to add later if needed).
-        // $mform->addRule('subject', get_string('required'), 'required');
+        $mform->addRule('subject', get_string('required'), 'required');
 
         // Student age/grade: free text with a Browse button to open a modal for exact age or range selection.
         $ageelems = [];
@@ -135,7 +135,8 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => 'Type a class type or click Browse to pick from a list',
         ]);
-        $classgroupelems[] = $mform->createElement('button', 'classtypebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+        $classgroupelems[] = $mform->createElement('button', 'classtypebrowse',
+        get_string('form:lessonbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-classtype-browse',
             'class' => 'btn btn-secondary btn-sm',
@@ -151,7 +152,8 @@ class prompt_form extends \moodleform {
             'wrap' => 'virtual', 'rows' => 6, 'cols' => 60,
             'title' => 'List outcomes/objectives (one or more)',
         ]);
-        $outcomeselems[] = $mform->createElement('button', 'outcomesbrowse', get_string('form:outcomesbrowse', 'block_aipromptgen'), [
+        $outcomeselems[] = $mform->createElement('button', 'outcomesbrowse',
+        get_string('form:outcomesbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-outcomes-browse',
             'class' => 'btn btn-secondary btn-sm',
@@ -167,7 +169,8 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => 'Type a language or click Browse to pick from installed languages',
         ]);
-        $langgroupelems[] = $mform->createElement('button', 'languagebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
+        $langgroupelems[] = $mform->createElement('button', 'languagebrowse',
+        get_string('form:lessonbrowse', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-language-browse',
             'class' => 'btn btn-secondary btn-sm',

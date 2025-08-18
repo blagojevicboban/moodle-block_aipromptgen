@@ -23,68 +23,54 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'AI nástroje pre učiteľov – generátor promptov';
-$string['openpromptbuilder'] = 'Otvoriť generátor AI promptov';
-$string['notallowed'] = 'Tento nástroj je dostupný iba pre učiteľov a manažérov v tomto kurze.';
-$string['privacy:metadata'] = 'Blok Generátor AI promptov neukladá osobné údaje.';
-
-// Form.
-$string['form:subjectlabel'] = 'Predmet';
-$string['form:agerangelabel'] = 'Vek/ročník žiakov';
-$string['form:lessonlabel'] = 'Názov lekcie';
-$string['form:lessonbrowse'] = 'Prehľadávať…';
-$string['form:class_typelabel'] = 'Typ hodiny';
-$string['form:outcomeslabel'] = 'Výstupy / ciele';
-$string['form:topiclabel'] = 'Vyučovacia téma (oblasť)';
-$string['form:topicbrowse'] = 'Prehľadávať…';
-$string['form:language'] = 'Jazyk promptu';
-$string['form:purpose'] = 'Účel promptu (napr. príprava, test, rubrika)';
-$string['form:course'] = 'Kurz';
-$string['form:submit'] = 'Vygenerovať prompt';
-$string['form:result'] = 'Vygenerovaný AI prompt';
-$string['form:audience'] = 'Publikum (pre učiteľa alebo pre žiaka)';
-
-// Options.
-$string['option:lessonplan'] = 'Príprava na hodinu';
-$string['option:quiz'] = 'Testové otázky';
-$string['option:rubric'] = 'Hodnotiaca rubrika';
-$string['option:worksheet'] = 'Pracovný list / aktivity';
-$string['option:teacher'] = 'Pre učiteľa';
-$string['option:student'] = 'Pre žiaka';
-
-// Language names.
-$string['lang:sr'] = 'Srbčina';
-$string['lang:en'] = 'Angličtina';
-$string['lang:pt'] = 'Portugalčina';
-$string['lang:sk'] = 'Slovenčina';
-$string['lang:sr_cr'] = 'Srbčina (cyrilika)';
-
-// Prompt labels.
-$string['label:purpose'] = 'Účel';
-$string['label:audience'] = 'Publikum';
-$string['label:language'] = 'Jazyk';
-$string['label:subject'] = 'Predmet';
-$string['label:agerange'] = 'Vek/ročník žiakov';
-$string['label:lesson'] = 'Názov lekcie';
-$string['label:classtype'] = 'Typ hodiny';
-$string['label:outcomes'] = 'Výstupy';
-$string['label:topic'] = 'Vyučovacia téma (oblasť)';
-
-// Prompt templates.
-$string['prompt:prefix'] = 'Ste expert na didaktický dizajn a pomáhate učiteľovi v kurze Moodle {$a->course}.';
-
-// Class type options.
-$string['classtype:lecture'] = 'Výklad';
+$string['classtype:assessment'] = 'Skúška/Test';
 $string['classtype:discussion'] = 'Diskusia';
 $string['classtype:groupwork'] = 'Skupinová práca';
 $string['classtype:lab'] = 'Laboratórna/praktická';
+$string['classtype:lecture'] = 'Výklad';
 $string['classtype:project'] = 'Projektová';
 $string['classtype:review'] = 'Opakovanie/Revizia';
-$string['classtype:assessment'] = 'Skúška/Test';
-
-// Actions.
-$string['form:copy'] = 'Kopírovať do schránky';
-$string['form:copied'] = 'Skopírované!';
-$string['form:download'] = 'Stiahnuť .txt';
-$string['form:reset'] = 'Vymazať uložený prompt';
+$string['form:agerangelabel'] = 'Vek/ročník žiakov';
+$string['form:audience'] = 'Publikum (pre učiteľa alebo pre žiaka)';
 $string['form:backtocourse'] = 'Späť do kurzu';
+$string['form:class_typelabel'] = 'Typ hodiny';
+$string['form:copied'] = 'Skopírované!';
+$string['form:copy'] = 'Kopírovať do schránky';
+$string['form:course'] = 'Kurz';
+$string['form:download'] = 'Stiahnuť .txt';
+$string['form:language'] = 'Jazyk promptu';
+$string['form:lessonbrowse'] = 'Prehľadávať…';
+$string['form:lessonlabel'] = 'Názov lekcie';
+$string['form:outcomeslabel'] = 'Výstupy / ciele';
+$string['form:purpose'] = 'Účel promptu (napr. príprava, test, rubrika)';
+$string['form:reset'] = 'Vymazať uložený prompt';
+$string['form:result'] = 'Vygenerovaný AI prompt';
+$string['form:subjectlabel'] = 'Predmet';
+$string['form:submit'] = 'Vygenerovať prompt';
+$string['form:topicbrowse'] = 'Prehľadávať…';
+$string['form:topiclabel'] = 'Vyučovacia téma (oblasť)';
+$string['label:agerange'] = 'Vek/ročník žiakov';
+$string['label:audience'] = 'Publikum';
+$string['label:classtype'] = 'Typ hodiny';
+$string['label:language'] = 'Jazyk';
+$string['label:lesson'] = 'Názov lekcie';
+$string['label:outcomes'] = 'Výstupy';
+$string['label:purpose'] = 'Účel';
+$string['label:subject'] = 'Predmet';
+$string['label:topic'] = 'Vyučovacia téma (oblasť)';
+$string['lang:en'] = 'Angličtina';
+$string['lang:pt'] = 'Portugalčina';
+$string['lang:sk'] = 'Slovenčina';
+$string['lang:sr'] = 'Srbčina';
+$string['lang:sr_cr'] = 'Srbčina (cyrilika)';
+$string['notallowed'] = 'Tento nástroj je dostupný iba pre učiteľov a manažérov v tomto kurze.';
+$string['openpromptbuilder'] = 'Otvoriť generátor AI promptov';
+$string['option:lessonplan'] = 'Príprava na hodinu';
+$string['option:quiz'] = 'Testové otázky';
+$string['option:rubric'] = 'Hodnotiaca rubrika';
+$string['option:student'] = 'Pre žiaka';
+$string['option:teacher'] = 'Pre učiteľa';
+$string['option:worksheet'] = 'Pracovný list / aktivity';
+$string['pluginname'] = 'AI nástroje pre učiteľov – generátor promptov';
+$string['privacy:metadata'] = 'Blok Generátor AI promptov neukladá osobné údaje.';
+$string['prompt:prefix'] = 'Ste expert na didaktický dizajn a pomáhate učiteľovi v kurze Moodle {$a->course}.';

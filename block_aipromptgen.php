@@ -23,8 +23,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Block class for AI Prompt Generator.
  *
@@ -261,7 +259,8 @@ class block_aipromptgen extends block_base {
             "  if(sec){ href.searchParams.set('section', sec); a.href=href.toString(); }\n" .
             "  var usp=new URLSearchParams(window.location.search);\n" .
             "  var cmid=usp.get('id');\n" .
-            "  if(cmid && /\\/mod\\//.test(window.location.pathname)){ href.searchParams.set('cmid', cmid); a.href=href.toString(); }\n" .
+            "  if(cmid && /\\/mod\\//.test(window.location.pathname))" .
+            "  { href.searchParams.set('cmid', cmid); a.href=href.toString(); }\n" .
             "}catch(e){}\n" .
             "})();";
         $this->page->requires->js_amd_inline($js);

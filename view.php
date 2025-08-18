@@ -146,47 +146,68 @@ try {
             $mod = (string)$cm->modname;
             $icon = '📄';
             switch ($mod) {
-                case 'assign': $icon = '📝';
-                break;
-                case 'book': $icon = '📚';
-                break;
-                case 'chat': $icon = '💬';
-                break;
-                case 'choice': $icon = '☑️';
-                break;
-                case 'feedback': $icon = '🗳️';
-                break;
-                case 'folder': $icon = '📁';
-                break;
-                case 'forum': $icon = '💬';
-                break;
-                case 'glossary': $icon = '📔';
-                break;
-                case 'h5pactivity': $icon = '▶️';
-                break;
-                case 'label': $icon = '🏷️';
-                break;
-                case 'lesson': $icon = '📘';
-                break;
-                case 'lti': $icon = '🌐';
-                break;
-                case 'page': $icon = '📄';
-                break;
-                case 'quiz': $icon = '❓';
-                break;
-                case 'resource': $icon = '📄';
-                break;
-                case 'scorm': $icon = '🎯';
-                break;
-                case 'survey': $icon = '📊';
-                break;
-                case 'url': $icon = '🔗';
-                break;
-                case 'wiki': $icon = '🧭';
-                break;
-                case 'workshop': $icon = '🛠️';
-                break;
-                default: $icon = '📄';
+                case 'assign':
+                    $icon = '📝';
+                    break;
+                case 'book':
+                    $icon = '📚';
+                    break;
+                case 'chat':
+                    $icon = '💬';
+                    break;
+                case 'choice':
+                    $icon = '☑️';
+                    break;
+                case 'feedback':
+                    $icon = '🗳️';
+                    break;
+                case 'folder':
+                    $icon = '📁';
+                    break;
+                case 'forum':
+                    $icon = '💬';
+                    break;
+                case 'glossary':
+                    $icon = '📔';
+                    break;
+                case 'h5pactivity':
+                    $icon = '▶️';
+                    break;
+                case 'label':
+                    $icon = '🏷️';
+                    break;
+                case 'lesson':
+                    $icon = '📘';
+                    break;
+                case 'lti':
+                    $icon = '🌐';
+                    break;
+                case 'page':
+                    $icon = '📄';
+                    break;
+                case 'quiz':
+                    $icon = '❓';
+                    break;
+                case 'resource':
+                    $icon = '📄';
+                    break;
+                case 'scorm':
+                    $icon = '🎯';
+                    break;
+                case 'survey':
+                    $icon = '📊';
+                    break;
+                case 'url':
+                    $icon = '🔗';
+                    break;
+                case 'wiki':
+                    $icon = '🧭';
+                    break;
+                case 'workshop':
+                    $icon = '🛠️';
+                    break;
+                default:
+                    $icon = '📄';
             }
             // Indent activities visually in the list with icon.
             $group['options']['    ' . $icon . ' ' . $cmname] = $cmname;
@@ -213,7 +234,7 @@ try {
             $locals = grade_outcome::fetch_all_local($course->id);
             if (!empty($locals) && is_array($locals)) {
                 foreach ($locals as $o) {
-                    // grade_outcome is a legacy class with public props.
+                    // Grade_outcome is a legacy class with public props.
                     $name = '';
                     if (!empty($o->shortname)) {
                         $name = format_string($o->shortname);
@@ -282,7 +303,8 @@ try {
         }
     }
     // Fallback to tool_lp API if core_competency call returned empty but tool_lp exposes a method.
-    if (empty($coursecompetencies) && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'list_course_competencies')) {
+    if (empty($coursecompetencies) && class_exists('\\tool_lp\\api')
+        && method_exists('\\tool_lp\\api', 'list_course_competencies')) {
         $coursecompetencies = \tool_lp\api::list_course_competencies($course->id);
     }
 
@@ -316,10 +338,14 @@ try {
         }
 
         // Access fields using persistent getters when available.
-        $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-        $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber') : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
-        $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
-        $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML) : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
+        $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname')
+        : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
+        $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')
+        : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+        $descraw   = method_exists($comp, 'get') ? $comp->get('description')
+        : (isset($comp->description) ? $comp->description : '');
+        $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML)
+        : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
 
         $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
         if ($name === '') {
@@ -384,14 +410,18 @@ if (empty($competencies)) {
                     if (!$comp) {
                         continue;
                     }
-                    $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname') : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
-                    $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber') : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
-                    $descraw   = method_exists($comp, 'get') ? $comp->get('description') : (isset($comp->description) ? $comp->description : '');
+                    $shortname = method_exists($comp, 'get') ? (string)$comp->get('shortname')
+                    : ((isset($comp->shortname) ? (string)$comp->shortname : ''));
+                    $idnumber  = method_exists($comp, 'get') ? (string)$comp->get('idnumber')
+                    : ((isset($comp->idnumber) ? (string)$comp->idnumber : ''));
+                    $descraw   = method_exists($comp, 'get') ? $comp->get('description')
+                    : (isset($comp->description) ? $comp->description : '');
                     $descfmt   = method_exists($comp, 'get') ? ($comp->get('descriptionformat') ?? FORMAT_HTML)
                     : (isset($comp->descriptionformat) ? $comp->descriptionformat : FORMAT_HTML);
                     $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
                     if ($name === '') {
-                        $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id') : (isset($comp->id) ? (string)$comp->id : '');
+                        $idtxt = method_exists($comp, 'get') ? (string)$comp->get('id')
+                        : (isset($comp->id) ? (string)$comp->id : '');
                         $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
                     }
                     $desc = '';
@@ -542,13 +572,20 @@ if (!empty($cmid)) {
 }
 $actionurl = new moodle_url('/blocks/aipromptgen/view.php', $actionparams);
 
-$form = new \block_aipromptgen\form\prompt_form($actionurl, [
-    'topics' => $topics,
-    'lessonoptions' => $lessonoptions,
-    'subjectdefault' => $coursedefaultname,
-    'defaultlanguage' => $defaultlangcode,
-    'coursename' => $coursedefaultname,
-]);
+$form = new \block_aipromptgen\form\prompt_form(
+    $actionurl,
+    [
+        'topics' => $topics,
+        'lessonoptions' => $lessonoptions,
+        'subjectdefault' => $coursedefaultname,
+        'defaultlanguage' => $defaultlangcode,
+        'coursename' => $coursedefaultname,
+    ],
+    'post',
+    '',
+    [],
+    true
+);
 
 $generated = null;
 $airesponse = null;
@@ -594,7 +631,7 @@ if ($data = $form->get_data()) {
                 }
             }
         }
-        // If still not found, strip any trailing variant parentheses in names and match base (e.g., 'Serbian' matching 'Serbian (Latin)').
+        // If still not found, strip any trailing variant parentheses in names.
         if ($langcode === '' && $typedname !== '') {
             $typedbase = core_text::strtolower(trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', $typedname)));
             $candidates = [];
@@ -619,10 +656,18 @@ if ($data = $form->get_data()) {
         if ($langcode === '' && $typedname !== '') {
             $tl = core_text::strtolower($typedname);
             $syn = [
-                'serbian latin' => 'sr_lt', 'serbian (latin)' => 'sr_lt', 'srpski latinica' => 'sr_lt', 'srpski (latinica)' => 'sr_lt',
-                'serbian cyrillic' => 'sr_cr', 'serbian (cyrillic)' => 'sr_cr', 'srpski ćirilica' => 'sr_cr', 'srpski (ćirilica)' => 'sr_cr',
-                'serbian' => 'sr_lt', 'srpski' => 'sr_lt',
-                'english' => 'en', 'english (en)' => 'en',
+                'serbian latin' => 'sr_lt',
+                'serbian (latin)' => 'sr_lt',
+                'srpski latinica' => 'sr_lt',
+                'srpski (latinica)' => 'sr_lt',
+                'serbian cyrillic' => 'sr_cr',
+                'serbian (cyrillic)' => 'sr_cr',
+                'srpski ćirilica' => 'sr_cr',
+                'srpski (ćirilica)' => 'sr_cr',
+                'serbian' => 'sr_lt',
+                'srpski' => 'sr_lt',
+                'english' => 'en',
+                'english (en)' => 'en',
             ];
             if (isset($syn[$tl])) {
                 $langcode = $syn[$tl];
@@ -724,7 +769,8 @@ if ($data = $form->get_data()) {
     } else {
         $langname = $displaybase;
     }
-    // Append code only if it's meaningful (e.g., sr_lt, sr_cr). Avoid appending '(en)' when user typed a different language but packs are missing.
+    // Append code only if it's meaningful (e.g., sr_lt, sr_cr).
+    // Avoid appending '(en)' when user typed a different language but packs are missing.
     if (!empty($langcode)) {
         $lc = core_text::strtolower($langcode);
         $isenglish = (strpos(core_text::strtolower($langname), 'english') !== false);
@@ -887,11 +933,10 @@ $form->display();
 
 // Client-side fallback: if Subject is still empty on first load, set it to the course name.
 if (!$form->is_submitted() && $coursedefaultname !== '') {
-    $jsfill = "(function(){var el=document.getElementById('id_subject'); if(el && !el.value){ el.value='" . addslashes($coursedefaultname) . "'; }})();";
+    $jsfill = "(function(){var el=document.getElementById('id_subject'); if(el && !el.value)"
+    . "{ el.value='" . addslashes($coursedefaultname) . "'; }})();";
     $PAGE->requires->js_amd_inline($jsfill);
 }
-
-// Age field is plain text; no numeric spinner enforcement.
 
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.
@@ -899,7 +944,8 @@ echo html_writer::tag('style',
     '.ai4t-modal-backdrop{position:fixed;inset:0;display:none;background:rgba(0,0,0,.4);z-index:1050;}
      .ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;
      max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
-     .ai4t-modal header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #ddd;}
+     .ai4t-modal header{display:flex;justify-content:space-between;align-items:center;
+     padding:12px 16px;border-bottom:1px solid #ddd;}
      .ai4t-modal .ai4t-body{padding:8px 16px;overflow:auto;max-height:58vh;}
      .ai4t-list{list-style:none;margin:0;padding:0;}
      .ai4t-section{font-weight:600;margin:8px 0 4px;}
@@ -935,7 +981,8 @@ echo html_writer::empty_tag('input', [
     'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked',
 ]);
 echo html_writer::span(s('Exact age'));
-echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-exact', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;']);
+echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-exact',
+'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;']);
 echo html_writer::end_tag('label');
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('div', ['style' => 'margin-top:8px;']);
@@ -945,8 +992,10 @@ echo html_writer::empty_tag('input', [
     'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range',
 ]);
 echo html_writer::span(s('Range'));
-echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'From', 'style' => 'width:100px;']);
-echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'To', 'style' => 'width:100px;']);
+echo html_writer::empty_tag('input', ['type' => 'number',
+'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'From', 'style' => 'width:100px;']);
+echo html_writer::empty_tag('input', ['type' => 'number',
+'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'To', 'style' => 'width:100px;']);
 echo html_writer::end_tag('label');
 echo html_writer::end_tag('div');
 echo html_writer::end_tag('div');
@@ -974,23 +1023,28 @@ $agebrowsejs = "(function(){\n"
     . "var to=document.getElementById('ai4t-age-to');\n"
     . "var modeExact=document.getElementById('ai4t-age-mode-exact');\n"
     . "var modeRange=document.getElementById('ai4t-age-mode-range');\n"
-    . "function open(){ if(!modal||!backdrop){return;} prefill(); modal.style.display='block'; backdrop.style.display='block'; modal.focus(); }\n"
+    . "function open(){ if(!modal||!backdrop){return;} prefill();"
+    . "modal.style.display='block'; backdrop.style.display='block'; modal.focus(); }\n"
     . "function close(){ if(!modal||!backdrop){return;} modal.style.display='none'; backdrop.style.display='none'; }\n"
-    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked; if(useExact){ if(exact){ exact.removeAttribute('disabled'); }"
+    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked;"
+    . "if(useExact){ if(exact){ exact.removeAttribute('disabled'); }"
     . " if(from){ from.setAttribute('disabled','disabled'); }"
     . "if(to){ to.setAttribute('disabled','disabled'); } } else { if(exact){ exact.setAttribute('disabled','disabled'); } if(from)"
     . " { from.removeAttribute('disabled'); } if(to){ to.removeAttribute('disabled'); } } }\n"
     . "function prefill(){ if(!input){return;} var v=(input.value||'').trim(); if(!v){ if(modeExact)"
     . "  { modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled(); return; }\n"
-    . "  if(/^\\d+$/.test(v)){ exact.value=v; from.value=''; to.value=''; if(modeExact){ modeExact.checked=true; } syncEnabled(); return; }\n"
+    . "  if(/^\\d+$/.test(v)){ exact.value=v; from.value=''; to.value='';"
+    . "if(modeExact){ modeExact.checked=true; } syncEnabled(); return; }\n"
     . "  var m=v.match(/^\s*(\\d+)\s*[-\\u2013]\s*(\\d+)\s*$/u);\n"
     . "  if(m){ exact.value=''; from.value=m[1]; to.value=m[2]; if(modeRange){ modeRange.checked=true; } syncEnabled(); return; }\n"
     . "  if(modeExact){ modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled();\n"
     . "}\n"
-    . "function onInsert(){ if(!input){ close(); return; } var ev=(exact.value||'').trim(); var fv=(from.value||'').trim(); var tv=(to.value||'').trim();\n"
+    . "function onInsert(){ if(!input){ close(); return; } var ev=(exact.value||'').trim();"
+    . "var fv=(from.value||'').trim(); var tv=(to.value||'').trim();\n"
     . "  var useExact = modeExact && modeExact.checked;\n"
     . "  if(useExact && ev){ input.value=ev; close(); return; }\n"
-    . "  if(!useExact && fv && tv){ var a=parseInt(fv,10); var b=parseInt(tv,10); if(!isNaN(a)&&!isNaN(b)){ if(a>b){ var t=a;a=b;b=t; } input.value=a+'-'+b; close(); return; } }\n"
+    . "  if(!useExact && fv && tv){ var a=parseInt(fv,10); var b=parseInt(tv,10);"
+    . "if(!isNaN(a)&&!isNaN(b)){ if(a>b){ var t=a;a=b;b=t; } input.value=a+'-'+b; close(); return; } }\n"
     . "  close();\n"
     . "}\n"
     . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
@@ -1049,7 +1103,7 @@ echo html_writer::tag('button', get_string('cancel'), [
     'id' => 'ai4t-modal-cancel',
 ]);
 echo html_writer::end_tag('footer');
-echo html_writer::end_tag('div'); // .ai4t-modal
+echo html_writer::end_tag('div');
 
 // Wire up open/close and selection handlers.
 $browsejs = "(function(){\n"
@@ -1068,7 +1122,8 @@ $browsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-lesson-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev)"
     . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($browsejs);
@@ -1130,7 +1185,8 @@ $topicbrowsejs = "(function(){\n"
     . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-topic-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev)"
     . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($topicbrowsejs);
@@ -1205,8 +1261,10 @@ $outcomesbrowsejs = "(function(){\n"
     . "var ta=document.getElementById('id_outcomes');\n"
     . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
     . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked'); var vals=[]; for(var i=0;i<boxes.length;i++)"
-    . "{ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0){ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; }"
+    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked');"
+    . "var vals=[]; for(var i=0;i<boxes.length;i++)"
+    . "{ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0)"
+    . "{ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; }"
     . "ta.value=cur+vals.join('\\n'); close(); }\n"
     . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
     . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
@@ -1278,7 +1336,8 @@ $languagebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-language-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev)"
     . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($languagebrowsejs);
@@ -1288,7 +1347,8 @@ $langsyncjs = "(function(){\n"
     . "var input=document.getElementById('id_language');\n"
     . "var codeEl=document.getElementById('id_languagecode');\n"
     . "function guess(){ if(!input||!codeEl){return;} var t=(input.value||'').trim(); if(!t){return;}\n"
-    . "  var m=t.match(/\\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\\)/i); if(m){ codeEl.value=m[1].replace('-', '_').toLowerCase(); return; }\n"
+    . "  var m=t.match(/\\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\\)/i);"
+    . "if(m){ codeEl.value=m[1].replace('-', '_').toLowerCase(); return; }\n"
     . "  var items=document.querySelectorAll('.ai4t-language-item'); var tl=t.toLowerCase();\n"
     . "  for(var i=0;i<items.length;i++){ var name=items[i].getAttribute('data-name')||''; if(name.toLowerCase()===tl)"
     . "{ codeEl.value=items[i].getAttribute('data-code'); return; } }\n"
@@ -1305,11 +1365,13 @@ $purposelist = [
     get_string('option:worksheet', 'block_aipromptgen'),
 ];
 echo html_writer::start_tag('div', [
-    'class' => 'ai4t-modal', 'id' => 'ai4t-purpose-modal', 'role' => 'dialog', 'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-purpose-modal-title', 'style' => 'display:none;',
+    'class' => 'ai4t-modal', 'id' => 'ai4t-purpose-modal', 'role' => 'dialog',
+    'aria-modal' => 'true', 'aria-labelledby' => 'ai4t-purpose-modal-title', 'style' => 'display:none;',
 ]);
 echo html_writer::start_tag('header');
 echo html_writer::tag('h3', get_string('form:purpose', 'block_aipromptgen'), ['id' => 'ai4t-purpose-modal-title']);
-echo html_writer::tag('button', '&times;', ['type' => 'button', 'id' => 'ai4t-purpose-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::tag('button', '&times;',
+['type' => 'button', 'id' => 'ai4t-purpose-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
 echo html_writer::end_tag('header');
 echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
@@ -1319,7 +1381,8 @@ foreach ($purposelist as $p) {
 echo html_writer::end_tag('ul');
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');
-echo html_writer::tag('button', get_string('cancel'), ['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-purpose-modal-cancel']);
+echo html_writer::tag('button', get_string('cancel'),
+['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-purpose-modal-cancel']);
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
@@ -1339,7 +1402,8 @@ $purposebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-purpose-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev)"
     . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($purposebrowsejs);
@@ -1356,7 +1420,8 @@ echo html_writer::start_tag('div', [
 ]);
 echo html_writer::start_tag('header');
 echo html_writer::tag('h3', get_string('form:audience', 'block_aipromptgen'), ['id' => 'ai4t-audience-modal-title']);
-echo html_writer::tag('button', '&times;', ['type' => 'button', 'id' => 'ai4t-audience-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::tag('button', '&times;', ['type' => 'button',
+'id' => 'ai4t-audience-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
 echo html_writer::end_tag('header');
 echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
@@ -1366,7 +1431,8 @@ foreach ($audiencelist as $a) {
 echo html_writer::end_tag('ul');
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');
-echo html_writer::tag('button', get_string('cancel'), ['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-audience-modal-cancel']);
+echo html_writer::tag('button', get_string('cancel'),
+['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-audience-modal-cancel']);
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
@@ -1386,7 +1452,8 @@ $audiencebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-audience-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev)"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev)"
     . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($audiencebrowsejs);
@@ -1456,7 +1523,8 @@ $classtypebrowsejs = "(function(){\n"
     . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
     . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
     . "var items=document.querySelectorAll('.ai4t-classtype-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick); items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' ')"
+    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
+    . "items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' ')"
     . "{ ev.preventDefault(); onPick(ev); } }); }\n"
     . "})();";
 $PAGE->requires->js_amd_inline($classtypebrowsejs);
@@ -1544,7 +1612,8 @@ if ($generated) {
         . "  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},0);\n"
         . "});}\n"
     . "if(send && form){ send.addEventListener('click', function(){\n"
-    . "  try{ var i=document.createElement('input'); i.type='hidden'; i.name='sendtochat'; i.value='1'; form.appendChild(i); form.submit(); }catch(e){}\n"
+    . "  try{ var i=document.createElement('input'); i.type='hidden'; i.name='sendtochat';"
+    . "i.value='1'; form.appendChild(i); form.submit(); }catch(e){}\n"
     . "}); }\n"
         . "})();";
     $PAGE->requires->js_amd_inline($copyjs);
