@@ -575,16 +575,16 @@ $actionurl = new moodle_url('/blocks/aipromptgen/view.php', $actionparams);
 $form = new \block_aipromptgen\form\prompt_form(
     $actionurl,
     [
-        'topics' => $topics,
-        'lessonoptions' => $lessonoptions,
-        'subjectdefault' => $coursedefaultname,
-        'defaultlanguage' => $defaultlangcode,
-        'coursename' => $coursedefaultname,
+        'topics' => $topics ?? [],
+        'lessonoptions' => $lessonoptions ?? [],
+        'subjectdefault' => $coursedefaultname ?? '',
+        'defaultlanguage' => $defaultlangselect ?? 'en',
+        'coursename' => $coursedefaultname ?? '',
     ],
-    'post',
-    '',
-    [],
-    true
+    'post',     // method
+    '',         // target (empty string, not null)
+    [],         // attributes
+    true        // editable
 );
 
 $generated = null;
@@ -695,32 +695,32 @@ if ($data = $form->get_data()) {
             str_replace('_', '-', $code),
             str_replace('@', '_', $code),
         ]);
-        foreach ($variants as $c) {
-            if (isset($alllangs[$c])) {
-                return $c;
-            }
-            if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
-                return $aliasmap[$c];
-            }
+    foreach ($variants as $c) {
+        if (isset($alllangs[$c])) {
+            return $c;
         }
-        $base = substr($code, 0, 2);
-        if ($base === 'sr') {
-            foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
-                if (isset($alllangs[$p])) {
-                    return $p;
-                }
-            }
+        if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
+            return $aliasmap[$c];
         }
-        foreach (array_keys($alllangs) as $k) {
-            if (stripos($k, $base) === 0) {
-                return $k;
+    }
+    $base = substr($code, 0, 2);
+    if ($base === 'sr') {
+        foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
+            if (isset($alllangs[$p])) {
+                return $p;
             }
         }
-        $cur = (string)current_language();
-        if (isset($alllangs[$cur])) {
-            return $cur;
+    }
+    foreach (array_keys($alllangs) as $k) {
+        if (stripos($k, $base) === 0) {
+            return $k;
         }
-        return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
+    }
+    $cur = (string)current_language();
+    if (isset($alllangs[$cur])) {
+        return $cur;
+    }
+    return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
     };
 
     // Fallback order for missing code: course language, user language, current UI language.
