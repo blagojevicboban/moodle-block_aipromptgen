@@ -145,13 +145,21 @@ class prompt_form extends \moodleform {
         $mform->addElement('text', 'lessoncount', get_string('form:lessoncount', 'block_aipromptgen'), [
             'id' => 'id_lessoncount',
             'size' => 6,
-            'type' => 'number',
+            // QuickForm "text" may render as type="text"; we'll enforce type via updateAttributes and JS fallback.
             'min' => 1,
             'step' => 1,
             'title' => get_string('form:lessoncount', 'block_aipromptgen'),
+            'inputmode' => 'numeric',
+            'pattern' => '[0-9]*',
         ]);
         $mform->setType('lessoncount', PARAM_INT);
         $mform->setDefault('lessoncount', 1);
+        // Enforce HTML5 number type where supported.
+        if ($mform->elementExists('lessoncount')) {
+            $mform->getElement('lessoncount')->updateAttributes(['type' => 'number']);
+        }
+        // Client-side numeric rule (helps validation even if the input type falls back to text).
+        $mform->addRule('lessoncount', get_string('err_numeric', 'form'), 'numeric', null, 'client');
 
         // Lesson duration: choose 45 or 60 minutes (default 45).
         $mform->addElement('select', 'lessonduration', get_string('form:lessonduration', 'block_aipromptgen'), [

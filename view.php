@@ -38,59 +38,31 @@ $sectionid = optional_param('section', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $paramid = optional_param('id', 0, PARAM_INT); // Could be cmid (on /mod/*) or course id (on /course/view.php).
 
-// If courseid not provided, try to infer from id/cmid.
-if ($courseid == 0) {
-    // First, if we have an explicit cmid use it to derive course.
-    if (!empty($cmid)) {
-        try {
-            $cm = get_coursemodule_from_id(null, $cmid, 0, MUST_EXIST);
-            if (!empty($cm) && !empty($cm->course)) {
-                $courseid = (int)$cm->course;
-            }
-        } catch (\Throwable $e) {
-            // Log and continue with other options.
-            debugging('block_aipromptgen view: cmid -> course resolution failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-        }
-    }
-    // If still missing and we have a generic id, probe whether it's a cmid or a course id.
-    if (empty($courseid) && !empty($paramid)) {
-        try {
-            $cmprobe = get_coursemodule_from_id(null, $paramid, 0, IGNORE_MISSING);
-            if (!empty($cmprobe) && !empty($cmprobe->course)) {
-                $cmid = $paramid;
-                $courseid = (int)$cmprobe->course;
-            }
-        } catch (\Throwable $e) {
-            // Log and fall back to treating id as course id if no cm found.
-            debugging('block_aipromptgen view: param id probe failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-        }
-        if (empty($courseid)) {
-            // Treat as course id (e.g., /course/view.php?id=COURSEID or block added on course page).
-            $courseid = (int)$paramid;
-        }
-    }
-}
-if ($courseid == 0) {
-    // Derive course from module if provided.
-    try {
-        $cm = get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
-        if (!empty($cm->course)) {
-            $courseid = (int)$cm->course;
-        }
-    } catch (\Throwable $e) {
-        // Log and try other fallbacks.
-        debugging('block_aipromptgen view: course id resolution from cmid failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-    }
-}
-if ($courseid == 0) {
-    // As a last resort, use current course in global context if not the site course.
-    global $COURSE;
-    if (!empty($COURSE) && !empty($COURSE->id) && (int)$COURSE->id !== (int)SITEID) {
-        $courseid = (int)$COURSE->id;
-    }
-}
 if (empty($courseid)) {
-    throw new moodle_exception('missingparam', 'error', '', 'courseid');
+    // Show an informational message instead of throwing an exception – the block must be run from a course page.
+    $PAGE->set_url(new moodle_url('/blocks/aipromptgen/view.php'));
+    $PAGE->set_context(context_system::instance());
+    $PAGE->set_pagelayout('standard');
+    $PAGE->set_title(get_string('pluginname', 'block_aipromptgen'));
+    $PAGE->set_heading(get_string('pluginname', 'block_aipromptgen'));
+
+    echo $OUTPUT->header();
+
+    $msg = 'This block must be run from within a course.';
+    if (class_exists('\core\output\notification')) {
+        echo $OUTPUT->notification($msg, \core\output\notification::NOTIFY_INFO);
+    } else {
+        echo $OUTPUT->notification($msg, 'notifymessage');
+    }
+
+    // Link back to Home/Dashboard.
+    echo html_writer::div(
+        html_writer::link(new moodle_url('/'), get_string('back')),
+        'mt-3'
+    );
+
+    echo $OUTPUT->footer();
+    exit;
 }
 $course = get_course($courseid);
 $context = context_course::instance($course->id);
