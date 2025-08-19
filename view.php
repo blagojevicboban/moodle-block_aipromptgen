@@ -581,10 +581,10 @@ $form = new \block_aipromptgen\form\prompt_form(
         'defaultlanguage' => $defaultlangselect ?? 'en',
         'coursename' => $coursedefaultname ?? '',
     ],
-    'post',     // method
-    '',         // target (empty string, not null)
-    [],         // attributes
-    true        // editable
+    'post',
+    '',
+    ['id' => 'promptform'],
+    true
 );
 
 $generated = null;
@@ -596,8 +596,9 @@ $typedname = '';
 if ($data = $form->get_data()) {
     // Keep a copy of submitted values so we can repopulate the form after rendering results.
     $posteddata = $data;
-    // Preserve underscores in language code (e.g., sr_cr). Use hidden languagecode when present.
-    $langcode = clean_param(($data->languagecode ?? ''), PARAM_ALPHANUMEXT);
+    // Capture typed language name (always), and hidden code (may be stale if user didn't blur the field).
+    $typedname = trim((string)($data->language ?? ''));
+    $langcodehidden = clean_param(($data->languagecode ?? ''), PARAM_ALPHANUMEXT);
 
     // Resolve installed languages list (code => name) and translations for display names.
     $sm = get_string_manager();
@@ -612,27 +613,25 @@ if ($data = $form->get_data()) {
         }
     }
 
-    // If hidden code missing, try to infer from typed language name.
-    if ($langcode === '') {
-        $typedname = trim((string)($data->language ?? ''));
-        if ($typedname !== '') {
-            // First, try to parse a code in parentheses e.g., "Português - Portugal (pt)" or "Português (pt_br)".
-            if (preg_match('/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i', $typedname, $m)) {
-                $langcode = str_replace('-', '_', core_text::strtolower($m[1]));
-            }
+    // Resolve code from typed language first; fall back to hidden code if needed.
+    $langcodetyped = '';
+    if ($typedname !== '') {
+        // Try code in parentheses, e.g., "Português (pt_br)".
+        if (preg_match('/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i', $typedname, $m)) {
+            $langcodetyped = str_replace('-', '_', core_text::strtolower($m[1]));
         }
-        // If still not found, try exact name match against installed lists.
-        if ($langcode === '' && $typedname !== '') {
+        // Exact name match against installed lists.
+        if ($langcodetyped === '') {
             $typedlow = core_text::strtolower($typedname);
             foreach ($installedlangs as $code => $name) {
                 if (core_text::strtolower((string)$name) === $typedlow) {
-                    $langcode = (string)$code;
+                    $langcodetyped = (string)$code;
                     break;
                 }
             }
         }
-        // If still not found, strip any trailing variant parentheses in names.
-        if ($langcode === '' && $typedname !== '') {
+        // Match base name with parentheses stripped.
+        if ($langcodetyped === '') {
             $typedbase = core_text::strtolower(trim(preg_replace('/\s*\([^\)]*\)\s*$/', '', $typedname)));
             $candidates = [];
             foreach ($installedlangs as $code => $name) {
@@ -642,18 +641,17 @@ if ($data = $form->get_data()) {
                 }
             }
             if (!empty($candidates)) {
-                // Prefer Latin over Cyrillic when both exist for Serbian.
                 if (in_array('sr_lt', $candidates, true)) {
-                    $langcode = 'sr_lt';
+                    $langcodetyped = 'sr_lt';
                 } else if (in_array('sr_cr', $candidates, true)) {
-                    $langcode = 'sr_cr';
+                    $langcodetyped = 'sr_cr';
                 } else {
-                    $langcode = $candidates[0];
+                    $langcodetyped = $candidates[0];
                 }
             }
         }
-        // Synonym fallback (simple heuristics).
-        if ($langcode === '' && $typedname !== '') {
+        // Synonyms.
+        if ($langcodetyped === '') {
             $tl = core_text::strtolower($typedname);
             $syn = [
                 'serbian latin' => 'sr_lt',
@@ -670,10 +668,12 @@ if ($data = $form->get_data()) {
                 'english (en)' => 'en',
             ];
             if (isset($syn[$tl])) {
-                $langcode = $syn[$tl];
+                $langcodetyped = $syn[$tl];
             }
         }
     }
+    // Choose typed-derived code when available; otherwise keep the hidden code.
+    $langcode = $langcodetyped !== '' ? $langcodetyped : $langcodehidden;
 
     // Helper to normalize a language code to an installed pack (handles aliases like sr/sr_cyrl -> sr_lt/sr_cr).
     $normalizecode = function(string $code) use ($sm): string {
@@ -695,32 +695,32 @@ if ($data = $form->get_data()) {
             str_replace('_', '-', $code),
             str_replace('@', '_', $code),
         ]);
-    foreach ($variants as $c) {
-        if (isset($alllangs[$c])) {
-            return $c;
-        }
-        if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
-            return $aliasmap[$c];
-        }
-    }
-    $base = substr($code, 0, 2);
-    if ($base === 'sr') {
-        foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
-            if (isset($alllangs[$p])) {
-                return $p;
+        foreach ($variants as $c) {
+            if (isset($alllangs[$c])) {
+                return $c;
+            }
+            if (isset($aliasmap[$c]) && isset($alllangs[$aliasmap[$c]])) {
+                return $aliasmap[$c];
             }
         }
-    }
-    foreach (array_keys($alllangs) as $k) {
-        if (stripos($k, $base) === 0) {
-            return $k;
+        $base = substr($code, 0, 2);
+        if ($base === 'sr') {
+            foreach (['sr_lt', 'sr_cr', 'sr'] as $p) {
+                if (isset($alllangs[$p])) {
+                    return $p;
+                }
+            }
         }
-    }
-    $cur = (string)current_language();
-    if (isset($alllangs[$cur])) {
-        return $cur;
-    }
-    return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
+        foreach (array_keys($alllangs) as $k) {
+            if (stripos($k, $base) === 0) {
+                return $k;
+            }
+        }
+        $cur = (string)current_language();
+        if (isset($alllangs[$cur])) {
+            return $cur;
+        }
+        return isset($alllangs['en']) ? 'en' : (string)array_key_first($alllangs);
     };
 
     // Fallback order for missing code: course language, user language, current UI language.
@@ -748,6 +748,8 @@ if ($data = $form->get_data()) {
         'lesson' => $sm->get_string('label:lesson', 'block_aipromptgen', null, $langcode),
         'classtype' => $sm->get_string('label:classtype', 'block_aipromptgen', null, $langcode),
         'outcomes' => $sm->get_string('label:outcomes', 'block_aipromptgen', null, $langcode),
+        'lessoncount' => $sm->get_string('label:lessoncount', 'block_aipromptgen', null, $langcode),
+        'lessonduration' => $sm->get_string('label:lessonduration', 'block_aipromptgen', null, $langcode),
     ];
 
     // Use free-text values from the form for purpose, audience, and class type.
@@ -789,20 +791,30 @@ if ($data = $form->get_data()) {
     }
     $refillsubject = $subjectval;
     $agerangeval = trim((string)($data->agerange ?? ''));
-    // Format with Serbian unit as requested, and normalize ranges to hyphen.
+    // Decide unit based on selected language: English => "years", Serbian => "godina"; default to English.
+    $ageunit = 'years';
+    $lclc = core_text::strtolower($langcode);
+    if ($lclc === 'sr' || strpos($lclc, 'sr_') === 0) {
+        $ageunit = 'godina';
+    } else if ($lclc === 'en' || strpos($lclc, 'en_') === 0) {
+        $ageunit = 'years';
+    }
+    // Format with appropriate unit and normalize ranges to hyphen.
     $agerangedisplay = $agerangeval;
     if ($agerangeval !== '') {
         if (preg_match('/^\d+$/', $agerangeval)) {
-            $agerangedisplay = $agerangeval . ' godina';
+            $agerangedisplay = $agerangeval . ' ' . $ageunit;
         } else if (preg_match('/^\s*\d+\s*[\x{2013}-]\s*\d+\s*$/u', $agerangeval)) { // 10-12 or 10–12
             // Normalize any spaces and dashes to a simple hyphen.
             $norm = preg_replace('/\s*[\x{2013}-]\s*/u', '-', $agerangeval);
             $norm = trim($norm);
-            $agerangedisplay = $norm . ' godina';
+            $agerangedisplay = $norm . ' ' . $ageunit;
         }
     }
     $topicval = (string)($data->topic ?? '');
     $lessonval = (string)($data->lesson ?? '');
+    $lessoncount = (int)($data->lessoncount ?? 0);
+    $lessonduration = (int)($data->lessonduration ?? 0);
     $outcomesval = (string)($data->outcomes ?? '');
     $parts[] = $labels['subject'] . ': ' . $subjectval;
     $parts[] = $labels['agerange'] . ': ' . $agerangedisplay;
@@ -810,6 +822,12 @@ if ($data = $form->get_data()) {
         $parts[] = $labels['topic'] . ': ' . $topicval;
     }
     $parts[] = $labels['lesson'] . ': ' . $lessonval;
+    if ($lessoncount > 0) {
+        $parts[] = $labels['lessoncount'] . ': ' . $lessoncount;
+    }
+    if ($lessonduration > 0) {
+        $parts[] = $labels['lessonduration'] . ': ' . $lessonduration . ' min';
+    }
     $parts[] = $labels['classtype'] . ': ' . $classtypevalue;
     if (trim($outcomesval) !== '') {
         $parts[] = $labels['outcomes'] . ': ' . preg_replace('/\s+/', ' ', trim($outcomesval));

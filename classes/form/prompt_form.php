@@ -59,8 +59,7 @@ class prompt_form extends \moodleform {
             $subjectattrs['placeholder'] = format_string($coursename);
         }
         $mform->getElement('subject')->setAttributes($subjectattrs);
-        // Make subject required (server-side; client-side optional to add later if needed).
-        $mform->addRule('subject', get_string('required'), 'required');
+        // Subject is optional; prompt generation will fall back to course name if left blank.
 
         // Student age/grade: free text with a Browse button to open a modal for exact age or range selection.
         $ageelems = [];
@@ -98,10 +97,7 @@ class prompt_form extends \moodleform {
         ]);
         $mform->addGroup($topicelems, 'topicgroup', get_string('form:topiclabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('topic', PARAM_TEXT);
-        // Make topic required (element is inside a group, so use group rule to avoid QuickForm errors).
-        $grouprules = [];
-        $grouprules['topic'][] = [get_string('required'), 'required'];
-        $mform->addGroupRule('topicgroup', $grouprules);
+        // Topic is optional; users can generate a prompt without selecting a topic.
         // Attach HTML5 datalist for suggestions while allowing free text.
         if (!empty($topics) && is_array($topics)) {
             $optionshtml = '';
@@ -144,6 +140,26 @@ class prompt_form extends \moodleform {
         ]);
         $mform->addGroup($classgroupelems, 'classtypegroup', get_string('form:class_typelabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('classtype', PARAM_TEXT);
+
+        // Number of classes: HTML5 numeric spinner (min 1, step 1), default 1.
+        $mform->addElement('text', 'lessoncount', get_string('form:lessoncount', 'block_aipromptgen'), [
+            'id' => 'id_lessoncount',
+            'size' => 6,
+            'type' => 'number',
+            'min' => 1,
+            'step' => 1,
+            'title' => get_string('form:lessoncount', 'block_aipromptgen'),
+        ]);
+        $mform->setType('lessoncount', PARAM_INT);
+        $mform->setDefault('lessoncount', 1);
+
+        // Lesson duration: choose 45 or 60 minutes (default 45).
+        $mform->addElement('select', 'lessonduration', get_string('form:lessonduration', 'block_aipromptgen'), [
+            45 => '45',
+            60 => '60',
+        ]);
+        $mform->setType('lessonduration', PARAM_INT);
+        $mform->setDefault('lessonduration', 45);
 
         // Outcomes textarea with a Browse button to pick competencies.
         $outcomeselems = [];
