@@ -41,6 +41,10 @@ class prompt_form extends \moodleform {
         $subjectdefault = $this->_customdata['subjectdefault'] ?? '';
         $coursename = $this->_customdata['coursename'] ?? '';
 
+        // Main title at the beginning of the form.
+        $mform->addElement('header', 'aipromptgen_title', 'AI tools for teachers - prompt generator');
+        $mform->setExpanded('aipromptgen_title');
+
         $mform->addElement('text', 'subject', get_string('form:subjectlabel', 'block_aipromptgen'));
         $mform->setType('subject', PARAM_TEXT);
         // Set a default only if provided and not empty.
