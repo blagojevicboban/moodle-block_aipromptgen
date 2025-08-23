@@ -10,7 +10,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: 'postgres'
+          POSTGRES_DB: moodle
+          POSTGRES_USER: moodle
+          POSTGRES_PASSWORD: moodle
           POSTGRES_HOST_AUTH_METHOD: 'trust'
         ports:
           - 5432:5432
@@ -31,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.4', '8.0', '8.1']
-        moodle-branch: ['MOODLE_401_STABLE', 'MOODLE_401_STABLE']
+        moodle-branch: ['MOODLE_401_STABLE', 'MOODLE_500_STABLE']
         database: [pgsql, mariadb]
 
     steps:
