@@ -44,11 +44,19 @@ export const attachPicker = (config) => {
         close();
     };
 
-    openBtn?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(); });
+        openBtn?.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            open();
+        });
     closeBtn?.addEventListener('click', close);
     cancelBtn?.addEventListener('click', close);
     backdrop?.addEventListener('click', close);
-    document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { close(); } });
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') {
+            close();
+        }
+    });
     $$(itemSelector).forEach(li => {
         li.addEventListener('click', () => pick(li));
         li.addEventListener('keydown', ev => {
@@ -86,22 +94,36 @@ export const attachOutcomesModal = () => {
         }
     };
 
-    openBtn?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(); });
+    openBtn?.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        open();
+    });
     closeBtn?.addEventListener('click', close);
     cancelBtn?.addEventListener('click', close);
-    insertBtn?.addEventListener('click', () => {
-        if (!ta) { close(); return; }
-        const vals = $$('.ai4t-outcome-checkbox:checked').map(cb => cb.value).filter(Boolean);
-        if (!vals.length) { close(); return; }
-        let cur = ta.value || '';
-        if (cur && !/\n$/.test(cur)) {
-            cur += '\n';
-        }
-        ta.value = cur + vals.join('\n');
-        close();
-    });
+        insertBtn?.addEventListener('click', () => {
+            if (!ta) {
+                close();
+                return;
+            }
+            const vals = $$('.ai4t-outcome-checkbox:checked').map(cb => cb.value).filter(Boolean);
+            if (!vals.length) {
+                close();
+                return;
+            }
+            let cur = ta.value || '';
+            if (cur && !/\n$/.test(cur)) {
+                cur += '\n';
+            }
+            ta.value = cur + vals.join('\n');
+            close();
+        });
     backdrop?.addEventListener('click', close);
-    document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { close(); } });
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') {
+            close();
+        }
+    });
 };
 
 /**
@@ -129,30 +151,42 @@ export const initLanguageModal = () => {
             backdrop.style.display = 'none';
         }
     };
-    const sync = () => {
-        if (!input || !codeEl) { return; }
-        const t = (input.value || '').trim();
-        if (!t) { return; }
-        const m = t.match(/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i);
-        if (m) {
-            codeEl.value = m[1].replace('-', '_').toLowerCase();
-            return;
-        }
-        $$('.ai4t-language-item').some(li => {
-            const name = li.getAttribute('data-name') || '';
-            if (name.toLowerCase() === t.toLowerCase()) {
-                codeEl.value = li.getAttribute('data-code');
-                return true;
+        const sync = () => {
+            if (!input || !codeEl) {
+                return;
             }
-            return false;
-        });
-    };
+            const t = (input.value || '').trim();
+            if (!t) {
+                return;
+            }
+            const m = t.match(/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i);
+            if (m) {
+                codeEl.value = m[1].replace('-', '_').toLowerCase();
+                return;
+            }
+            $$('.ai4t-language-item').some(li => {
+                const name = li.getAttribute('data-name') || '';
+                if (name.toLowerCase() === t.toLowerCase()) {
+                    codeEl.value = li.getAttribute('data-code');
+                    return true;
+                }
+                return false;
+            });
+        };
 
-    openBtn?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(); });
+    openBtn?.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        open();
+    });
     closeBtn?.addEventListener('click', close);
     cancelBtn?.addEventListener('click', close);
     backdrop?.addEventListener('click', close);
-    document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { close(); } });
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') {
+            close();
+        }
+    });
     $$('.ai4t-language-item').forEach(li => {
         li.addEventListener('click', () => {
             if (input) {
