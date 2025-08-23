@@ -34,6 +34,6 @@ class provider implements \core_privacy\local\metadata\null_provider {
      * @return string The language string with the reason.
      */
     public static function get_reason(): string {
-        return get_string('privacy:metadata', 'block_aipromptgen');
+        return 'privacy:metadata';
     }
 }
