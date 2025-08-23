@@ -26,12 +26,14 @@
 require_once(__DIR__ . '/../../config.php');
 require_login();
 
-// Ensure Moodle's PEAR library is loaded first to avoid PHP fatal
-// "Non-static method PEAR::getStaticProperty() cannot be called statically"
-// when external/global PEAR versions are present in include_path.
-require_once($CFG->libdir . '/pear/PEAR.php');
-// For HTTP client (curl) used to call OpenAI API when enabled.
-require_once($CFG->libdir . '/filelib.php');
+// Added explicit core includes (normally pulled in via config.php, but required for static analysis tools).
+require_once($CFG->libdir . '/moodlelib.php');
+require_once($CFG->libdir . '/weblib.php');
+require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->libdir . '/accesslib.php');
+require_once($CFG->dirroot . '/course/lib.php');
+
+use core_text;
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
@@ -190,7 +192,9 @@ try {
     }
 } catch (\Throwable $e) {
     // Log; leave topics empty if anything goes wrong.
-    debugging('block_aipromptgen view: building topics/lessons failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    if (function_exists('debugging') && defined('DEBUG_DEVELOPER')) {
+        debugging('block_aipromptgen view: building topics/lessons failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    }
 }
 // Try to gather course competencies for the Outcomes modal (if competencies subsystem is enabled and accessible).
 // First, try to gather Gradebook Outcomes (local to course and global) if the feature is enabled.
@@ -260,7 +264,9 @@ try {
     }
 } catch (\Throwable $e) {
     // Log issues with grade outcomes; we'll fall back to competencies below.
-    debugging('block_aipromptgen view: collecting grade outcomes failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    if (function_exists('debugging') && defined('DEBUG_DEVELOPER')) {
+        debugging('block_aipromptgen view: collecting grade outcomes failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    }
 }
 
 // Try to gather course competencies for the Outcomes modal (robust across versions).
@@ -336,7 +342,9 @@ try {
     }
 } catch (\Throwable $e) {
     // Log if competencies are not configured or user lacks permissions.
-    debugging('block_aipromptgen view: reading course competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    if (function_exists('debugging') && defined('DEBUG_DEVELOPER')) {
+        debugging('block_aipromptgen view: reading course competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    }
 }
 // Fallback: if no course-level competencies found, try collecting from visible course modules.
 if (empty($competencies)) {
@@ -411,7 +419,9 @@ if (empty($competencies)) {
         }
     } catch (\Throwable $e) {
         // Log fallback errors.
-        debugging('block_aipromptgen view: collecting module-level competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        if (function_exists('debugging') && defined('DEBUG_DEVELOPER')) {
+            debugging('block_aipromptgen view: collecting module-level competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
 }
 
@@ -469,7 +479,9 @@ if (empty($competencies)) {
         }
     } catch (\Throwable $e) {
         // Log last-resort failure; keep the list empty.
-        debugging('block_aipromptgen view: DB fallback for competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        if (function_exists('debugging') && defined('DEBUG_DEVELOPER')) {
+            debugging('block_aipromptgen view: DB fallback for competencies failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
 }
 // Prepare a robust course name for defaults.
