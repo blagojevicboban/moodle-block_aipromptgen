@@ -1,7 +1,24 @@
 {
     "name": "blagojevicboban/moodle-block_aipromptgen",
+    "description": "AI for Teachers – Moodle block providing an AI prompt generator with language selection, competencies/outcomes integration, and optional OpenAI response fetch.",
     "type": "moodle-block",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/blagojevicboban/ai4teachers",
+    "keywords": [
+        "moodle", "block", "ai", "teachers", "prompt", "openai"
+    ],
+    "authors": [
+        {
+            "name": "Boban Blagojevic",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/blagojevicboban/ai4teachers/issues",
+        "source": "https://github.com/blagojevicboban/ai4teachers"
+    },
     "require": {
+        "php": ">=8.1",
         "composer/installers": "~1.0"
     },
     "extra": {
