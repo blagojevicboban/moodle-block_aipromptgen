@@ -136,7 +136,7 @@ jobs:
           composer global require moodlehq/moodle-plugin-ci:^4
           echo "${HOME}/.composer/vendor/bin" >> $GITHUB_PATH
       - name: Install Moodle minimal
-        run: moodle-plugin-ci install --skip-init --plugin blocks/aipromptgen --moodle=MOODLE_404_STABLE --db-host=127.0.0.1 --db-user=root --db-pass=root --db-name=moodle
+        run: moodle-plugin-ci install --skip-init --plugin blocks/aipromptgen --moodle=MOODLE_500_STABLE --db-host=127.0.0.1 --db-user=root --db-pass=root --db-name=moodle
       - name: PHPCS strict
         run: moodle-plugin-ci phpcs blocks/aipromptgen
 
