@@ -12,18 +12,30 @@ class SimpleModal {
         this.backdrop = document.getElementById('ai4t-modal-backdrop');
     }
     open(prefill) {
-        if (!this.node) { return; }
+        if (!this.node) {
+            return;
+        }
         if (typeof prefill === 'function') {
-            try { prefill(); } catch (e) { /* ignore */ }
+            try {
+                prefill();
+            } catch (e) {
+                // Ignore prefill errors.
+            }
         }
         this.node.style.display = 'block';
-        if (this.backdrop) { this.backdrop.style.display = 'block'; }
+        if (this.backdrop) {
+            this.backdrop.style.display = 'block';
+        }
         this.node.focus();
     }
     close() {
-        if (!this.node) { return; }
+        if (!this.node) {
+            return;
+        }
         this.node.style.display = 'none';
-        if (this.backdrop) { this.backdrop.style.display = 'none'; }
+        if (this.backdrop) {
+            this.backdrop.style.display = 'none';
+        }
     }
 }
 
@@ -46,18 +58,22 @@ export const initAgeModal = () => {
             exact?.removeAttribute('disabled');
             from?.setAttribute('disabled', 'disabled');
             to?.setAttribute('disabled', 'disabled');
-        } else {
-            exact?.setAttribute('disabled', 'disabled');
-            from?.removeAttribute('disabled');
-            to?.removeAttribute('disabled');
+            return;
         }
+        exact?.setAttribute('disabled', 'disabled');
+        from?.removeAttribute('disabled');
+        to?.removeAttribute('disabled');
     };
 
     const prefill = () => {
-        if (!input) { return; }
+        if (!input) {
+            return;
+        }
         const v = (input.value || '').trim();
         if (!v) {
-            if (modeExact) { modeExact.checked = true; }
+            if (modeExact) {
+                modeExact.checked = true;
+            }
             exact.value = '';
             from.value = '';
             to.value = '';
@@ -68,7 +84,9 @@ export const initAgeModal = () => {
             exact.value = v;
             from.value = '';
             to.value = '';
-            if (modeExact) { modeExact.checked = true; }
+            if (modeExact) {
+                modeExact.checked = true;
+            }
             syncEnabled();
             return;
         }
@@ -77,11 +95,15 @@ export const initAgeModal = () => {
             exact.value = '';
             from.value = m[1];
             to.value = m[2];
-            if (modeRange) { modeRange.checked = true; }
+            if (modeRange) {
+                modeRange.checked = true;
+            }
             syncEnabled();
             return;
         }
-        if (modeExact) { modeExact.checked = true; }
+        if (modeExact) {
+            modeExact.checked = true;
+        }
         exact.value = '';
         from.value = '';
         to.value = '';
@@ -89,7 +111,10 @@ export const initAgeModal = () => {
     };
 
     const onInsert = () => {
-        if (!input) { modal.close(); return; }
+        if (!input) {
+            modal.close();
+            return;
+        }
         const ev = (exact.value || '').trim();
         const fv = (from.value || '').trim();
         const tv = (to.value || '').trim();
@@ -103,7 +128,9 @@ export const initAgeModal = () => {
             let a = parseInt(fv, 10);
             let b = parseInt(tv, 10);
             if (!Number.isNaN(a) && !Number.isNaN(b)) {
-                if (a > b) { [a, b] = [b, a]; }
+                if (a > b) {
+                    [a, b] = [b, a];
+                }
                 input.value = `${a}-${b}`;
                 modal.close();
                 return;
@@ -122,5 +149,9 @@ export const initAgeModal = () => {
     insertBtn?.addEventListener('click', onInsert);
     modeExact?.addEventListener('change', syncEnabled);
     modeRange?.addEventListener('change', syncEnabled);
-    document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { modal.close(); } });
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') {
+            modal.close();
+        }
+    });
 };

@@ -974,7 +974,11 @@ echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('div');
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
-    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked',
+    'type' => 'radio',
+    'name' => 'ai4t-age-mode',
+    'id' => 'ai4t-age-mode-exact',
+    'value' => 'exact',
+    'checked' => 'checked',
 ]);
 echo html_writer::span(s('Exact age'));
 echo html_writer::empty_tag('input', [
@@ -986,19 +990,34 @@ echo html_writer::end_tag('div');
 echo html_writer::start_tag('div', ['style' => 'margin-top:8px;']);
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
-    'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range',
+    'type' => 'radio',
+    'name' => 'ai4t-age-mode',
+    'id' => 'ai4t-age-mode-range',
+    'value' => 'range',
 ]);
 echo html_writer::span(s('Age range'));
 echo html_writer::empty_tag('input', [
-    'type' => 'number', 'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;', 'disabled' => 'disabled',
+    'type' => 'number',
+    'id' => 'ai4t-age-from',
+    'min' => 1,
+    'max' => 120,
+    'step' => 1,
+    'style' => 'width:100px;',
+    'disabled' => 'disabled',
 ]);
 echo html_writer::span('–');
 echo html_writer::empty_tag('input', [
-    'type' => 'number', 'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;', 'disabled' => 'disabled',
+    'type' => 'number',
+    'id' => 'ai4t-age-to',
+    'min' => 1,
+    'max' => 120,
+    'step' => 1,
+    'style' => 'width:100px;',
+    'disabled' => 'disabled',
 ]);
 echo html_writer::end_tag('label');
 echo html_writer::end_tag('div');
-echo html_writer::end_tag('div'); // body.
+echo html_writer::end_tag('div'); // Body.
 echo html_writer::start_tag('footer');
 echo html_writer::tag('button', get_string('add'), [
     'type' => 'button', 'class' => 'btn btn-primary', 'id' => 'ai4t-age-modal-insert',

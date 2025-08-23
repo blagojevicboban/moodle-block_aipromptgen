@@ -19,37 +19,51 @@ export const attachCopyDownload = () => {
     const copied = $('#ai4t-copied');
 
     copyBtn?.addEventListener('click', () => {
-        if (!ta) { return; }
+        if (!ta) {
+            return;
+        }
         ta.select();
         ta.setSelectionRange(0, ta.value.length);
         const copyPromise = navigator.clipboard?.writeText
             ? navigator.clipboard.writeText(ta.value)
             : Promise.resolve(document.execCommand('copy'));
-        copyPromise.catch(() => {/* ignore */});
+        copyPromise.catch(() => {
+            // Ignore copy failure silently.
+        });
         if (copied) {
-            getString('form:copied', 'block_aipromptgen').then(str => {
+            void getString('form:copied', 'block_aipromptgen').then(str => {
                 copied.textContent = str;
                 copied.style.display = 'inline';
-                setTimeout(() => { copied.style.display = 'none'; }, 1500);
+                setTimeout(() => {
+                    copied.style.display = 'none';
+                }, 1500);
+                return true;
             });
         }
     });
 
     dlBtn?.addEventListener('click', () => {
-        if (!ta) { return; }
+        if (!ta) {
+            return;
+        }
         const title = document.querySelector('title')?.textContent || 'prompt';
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        const blob = new Blob([ta.value || ''], { type: 'text/plain' });
+        const blob = new Blob([ta.value || ''], {type: 'text/plain'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `${slug}-ai-prompt.txt`;
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+        setTimeout(() => {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+        }, 0);
     });
 
     sendBtn?.addEventListener('click', () => {
-        if (!form) { return; }
+        if (!form) {
+            return;
+        }
         const i = document.createElement('input');
         i.type = 'hidden';
         i.name = 'sendtochat';
