@@ -933,12 +933,7 @@ if (!$form->is_submitted()) {
 }
 $form->display();
 
-// Client-side fallback: if Subject is still empty on first load, set it to the course name.
-if (!$form->is_submitted() && $coursedefaultname !== '') {
-    $jsfill = "(function(){var el=document.getElementById('id_subject'); if(el && !el.value)"
-    . "{ el.value='" . addslashes($coursedefaultname) . "'; }})();";
-    $PAGE->requires->js_amd_inline($jsfill);
-}
+// Subject default already handled server-side via set_data(); removed legacy client-side fallback JS.
 
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.
@@ -959,7 +954,7 @@ echo html_writer::tag('style',
 // Modal backdrop and container.
 echo html_writer::div('', 'ai4t-modal-backdrop', ['id' => 'ai4t-modal-backdrop']);
 
-// Age modal: pick exact age or range and insert into the textbox.
+// Age modal: exact or range selection (markup only; JS handled by AMD module).
 echo html_writer::start_tag('div', [
     'class' => 'ai4t-modal',
     'id' => 'ai4t-age-modal',
@@ -975,32 +970,35 @@ echo html_writer::tag('button', '&times;', [
 ]);
 echo html_writer::end_tag('header');
 echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
-// Simple controls: one number for exact, or two numbers for range.
+// Exact age option.
 echo html_writer::start_tag('div');
-// Exact age option with radio.
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
     'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-exact', 'value' => 'exact', 'checked' => 'checked',
 ]);
 echo html_writer::span(s('Exact age'));
-echo html_writer::empty_tag('input', ['type' => 'number', 'id' => 'ai4t-age-exact',
-'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;']);
+echo html_writer::empty_tag('input', [
+    'type' => 'number', 'id' => 'ai4t-age-exact', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;',
+]);
 echo html_writer::end_tag('label');
 echo html_writer::end_tag('div');
+// Range option.
 echo html_writer::start_tag('div', ['style' => 'margin-top:8px;']);
-// Range option with radio.
 echo html_writer::start_tag('label', ['style' => 'display:flex;align-items:center;gap:8px;']);
 echo html_writer::empty_tag('input', [
     'type' => 'radio', 'name' => 'ai4t-age-mode', 'id' => 'ai4t-age-mode-range', 'value' => 'range',
 ]);
-echo html_writer::span(s('Range'));
-echo html_writer::empty_tag('input', ['type' => 'number',
-'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'From', 'style' => 'width:100px;']);
-echo html_writer::empty_tag('input', ['type' => 'number',
-'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'placeholder' => 'To', 'style' => 'width:100px;']);
+echo html_writer::span(s('Age range'));
+echo html_writer::empty_tag('input', [
+    'type' => 'number', 'id' => 'ai4t-age-from', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;', 'disabled' => 'disabled',
+]);
+echo html_writer::span('–');
+echo html_writer::empty_tag('input', [
+    'type' => 'number', 'id' => 'ai4t-age-to', 'min' => 1, 'max' => 120, 'step' => 1, 'style' => 'width:100px;', 'disabled' => 'disabled',
+]);
 echo html_writer::end_tag('label');
 echo html_writer::end_tag('div');
-echo html_writer::end_tag('div');
+echo html_writer::end_tag('div'); // body.
 echo html_writer::start_tag('footer');
 echo html_writer::tag('button', get_string('add'), [
     'type' => 'button', 'class' => 'btn btn-primary', 'id' => 'ai4t-age-modal-insert',
@@ -1010,55 +1008,6 @@ echo html_writer::tag('button', get_string('cancel'), [
 ]);
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
-
-// Wire up Age modal open/close and insertion logic.
-$agebrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-age-browse');\n"
-    . "var modal=document.getElementById('ai4t-age-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-age-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-age-modal-cancel');\n"
-    . "var insertBtn=document.getElementById('ai4t-age-modal-insert');\n"
-    . "var input=document.getElementById('id_agerange');\n"
-    . "var exact=document.getElementById('ai4t-age-exact');\n"
-    . "var from=document.getElementById('ai4t-age-from');\n"
-    . "var to=document.getElementById('ai4t-age-to');\n"
-    . "var modeExact=document.getElementById('ai4t-age-mode-exact');\n"
-    . "var modeRange=document.getElementById('ai4t-age-mode-range');\n"
-    . "function open(){ if(!modal||!backdrop){return;} prefill();"
-    . "modal.style.display='block'; backdrop.style.display='block'; modal.focus(); }\n"
-    . "function close(){ if(!modal||!backdrop){return;} modal.style.display='none'; backdrop.style.display='none'; }\n"
-    . "function syncEnabled(){ var useExact = modeExact && modeExact.checked;"
-    . "if(useExact){ if(exact){ exact.removeAttribute('disabled'); }"
-    . " if(from){ from.setAttribute('disabled','disabled'); }"
-    . "if(to){ to.setAttribute('disabled','disabled'); } } else { if(exact){ exact.setAttribute('disabled','disabled'); } if(from)"
-    . " { from.removeAttribute('disabled'); } if(to){ to.removeAttribute('disabled'); } } }\n"
-    . "function prefill(){ if(!input){return;} var v=(input.value||'').trim(); if(!v){ if(modeExact)"
-    . "  { modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled(); return; }\n"
-    . "  if(/^\\d+$/.test(v)){ exact.value=v; from.value=''; to.value='';"
-    . "if(modeExact){ modeExact.checked=true; } syncEnabled(); return; }\n"
-    . "  var m=v.match(/^\s*(\\d+)\s*[-\\u2013]\s*(\\d+)\s*$/u);\n"
-    . "  if(m){ exact.value=''; from.value=m[1]; to.value=m[2]; if(modeRange){ modeRange.checked=true; } syncEnabled(); return; }\n"
-    . "  if(modeExact){ modeExact.checked=true; } exact.value=''; from.value=''; to.value=''; syncEnabled();\n"
-    . "}\n"
-    . "function onInsert(){ if(!input){ close(); return; } var ev=(exact.value||'').trim();"
-    . "var fv=(from.value||'').trim(); var tv=(to.value||'').trim();\n"
-    . "  var useExact = modeExact && modeExact.checked;\n"
-    . "  if(useExact && ev){ input.value=ev; close(); return; }\n"
-    . "  if(!useExact && fv && tv){ var a=parseInt(fv,10); var b=parseInt(tv,10);"
-    . "if(!isNaN(a)&&!isNaN(b)){ if(a>b){ var t=a;a=b;b=t; } input.value=a+'-'+b; close(); return; } }\n"
-    . "  close();\n"
-    . "}\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "if(insertBtn){ insertBtn.addEventListener('click', onInsert); }\n"
-    . "if(modeExact){ modeExact.addEventListener('change', syncEnabled); }\n"
-    . "if(modeRange){ modeRange.addEventListener('change', syncEnabled); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($agebrowsejs);
 echo html_writer::start_tag('div', [
     'class' => 'ai4t-modal',
     'id' => 'ai4t-modal',
@@ -1107,28 +1056,7 @@ echo html_writer::tag('button', get_string('cancel'), [
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-// Wire up open/close and selection handlers.
-$browsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-lesson-browse');\n"
-    . "var modal=document.getElementById('ai4t-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-modal-cancel');\n"
-    . "var input=document.getElementById('id_lesson');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-lesson-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev)"
-    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($browsejs);
+// JS handled by AMD module (lesson picker).
 
 // Add a second modal dedicated to browsing Topics (course sections only).
 echo html_writer::start_tag('div', [
@@ -1172,26 +1100,7 @@ echo html_writer::tag('button', get_string('cancel'), [
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$topicbrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-topic-browse');\n"
-    . "var modal=document.getElementById('ai4t-topic-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-topic-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-topic-modal-cancel');\n"
-    . "var input=document.getElementById('id_topic');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-topic-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev)"
-    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($topicbrowsejs);
+// JS handled by AMD module (topic picker).
 
 // Add a third modal for browsing Course Competencies and appending to Outcomes.
 // Remove duplicates and sort for a tidy list.
@@ -1253,29 +1162,7 @@ echo html_writer::tag('button', get_string('cancel'), [
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$outcomesbrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-outcomes-browse');\n"
-    . "var modal=document.getElementById('ai4t-outcomes-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-outcomes-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-outcomes-modal-cancel');\n"
-    . "var insertBtn=document.getElementById('ai4t-outcomes-modal-insert');\n"
-    . "var ta=document.getElementById('id_outcomes');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onInsert(){ if(!ta){ close(); return; } var boxes=document.querySelectorAll('.ai4t-outcome-checkbox:checked');"
-    . "var vals=[]; for(var i=0;i<boxes.length;i++)"
-    . "{ if(boxes[i].value){ vals.push(boxes[i].value); } } if(vals.length===0)"
-    . "{ close(); return; } var cur=ta.value||''; if(cur && !/\\n$/.test(cur)){ cur+='\\n'; }"
-    . "ta.value=cur+vals.join('\\n'); close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(insertBtn){ insertBtn.addEventListener('click', onInsert); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($outcomesbrowsejs);
+// JS handled by AMD module (outcomes modal).
 
 // Language modal: list installed languages and set both text and hidden code.
 $langoptions = $sm->get_list_of_languages();
@@ -1320,44 +1207,10 @@ echo html_writer::tag('button', get_string('cancel'), [
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$languagebrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-language-browse');\n"
-    . "var modal=document.getElementById('ai4t-language-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-language-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-language-modal-cancel');\n"
-    . "var input=document.getElementById('id_language');\n"
-    . "var codeEl=document.getElementById('id_languagecode');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var t=e.currentTarget; var name=t.getAttribute('data-name'); var code=t.getAttribute('data-code');"
-    . " if(input){ input.value=name; } if(codeEl){ codeEl.value=code; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-language-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev)"
-    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($languagebrowsejs);
+// JS handled by AMD module (language modal).
 
 // Auto-sync hidden language code when the user types/pastes a language name without using the modal.
-$langsyncjs = "(function(){\n"
-    . "var input=document.getElementById('id_language');\n"
-    . "var codeEl=document.getElementById('id_languagecode');\n"
-    . "function guess(){ if(!input||!codeEl){return;} var t=(input.value||'').trim(); if(!t){return;}\n"
-    . "  var m=t.match(/\\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\\)/i);"
-    . "if(m){ codeEl.value=m[1].replace('-', '_').toLowerCase(); return; }\n"
-    . "  var items=document.querySelectorAll('.ai4t-language-item'); var tl=t.toLowerCase();\n"
-    . "  for(var i=0;i<items.length;i++){ var name=items[i].getAttribute('data-name')||''; if(name.toLowerCase()===tl)"
-    . "{ codeEl.value=items[i].getAttribute('data-code'); return; } }\n"
-    . "}\n"
-    . "if(input){ input.addEventListener('blur', guess); input.addEventListener('change', guess); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($langsyncjs);
+// JS handled by AMD module (language code sync).
 
 // Purpose modal: fixed list of purposes.
 $purposelist = [
@@ -1388,27 +1241,7 @@ echo html_writer::tag('button', get_string('cancel'),
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$purposebrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-purpose-browse');\n"
-    . "var modal=document.getElementById('ai4t-purpose-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-purpose-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-purpose-modal-cancel');\n"
-    . "var input=document.getElementById('id_purpose');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-purpose-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev)"
-    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($purposebrowsejs);
+// JS handled by AMD module (purpose picker).
 
 // Audience modal: two options.
 $audiencelist = [
@@ -1438,27 +1271,7 @@ echo html_writer::tag('button', get_string('cancel'),
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$audiencebrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-audience-browse');\n"
-    . "var modal=document.getElementById('ai4t-audience-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-audience-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-audience-modal-cancel');\n"
-    . "var input=document.getElementById('id_audience');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-audience-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev)"
-    . "{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($audiencebrowsejs);
+// JS handled by AMD module (audience picker).
 
 // Add a fourth modal for browsing Class types and inserting into the textbox.
 // Use the same small set as before and localize labels for display.
@@ -1509,27 +1322,7 @@ echo html_writer::tag('button', get_string('cancel'), [
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
-$classtypebrowsejs = "(function(){\n"
-    . "var openBtn=document.getElementById('ai4t-classtype-browse');\n"
-    . "var modal=document.getElementById('ai4t-classtype-modal');\n"
-    . "var backdrop=document.getElementById('ai4t-modal-backdrop');\n"
-    . "var closeBtn=document.getElementById('ai4t-classtype-modal-close');\n"
-    . "var cancelBtn=document.getElementById('ai4t-classtype-modal-cancel');\n"
-    . "var input=document.getElementById('id_classtype');\n"
-    . "function open(){ if(modal&&backdrop){ modal.style.display='block'; backdrop.style.display='block'; modal.focus(); } }\n"
-    . "function close(){ if(modal&&backdrop){ modal.style.display='none'; backdrop.style.display='none'; } }\n"
-    . "function onPick(e){ var v=e.currentTarget.getAttribute('data-value'); if(input && v!=null){ input.value=v; } close(); }\n"
-    . "if(openBtn){ openBtn.addEventListener('click', function(e){ if(e){e.preventDefault(); e.stopPropagation();} open(); }); }\n"
-    . "if(closeBtn){ closeBtn.addEventListener('click', close); }\n"
-    . "if(cancelBtn){ cancelBtn.addEventListener('click', close); }\n"
-    . "if(backdrop){ backdrop.addEventListener('click', close); }\n"
-    . "document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ close(); } });\n"
-    . "var items=document.querySelectorAll('.ai4t-classtype-item');\n"
-    . "for(var i=0;i<items.length;i++){ items[i].addEventListener('click', onPick);"
-    . "items[i].addEventListener('keydown', function(ev){ if(ev.key==='Enter' || ev.key===' ')"
-    . "{ ev.preventDefault(); onPick(ev); } }); }\n"
-    . "})();";
-$PAGE->requires->js_amd_inline($classtypebrowsejs);
+// JS handled by AMD module (classtype picker).
 
 if ($generated) {
     echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));
@@ -1580,45 +1373,7 @@ if ($generated) {
     }
     echo html_writer::end_tag('div');
 
-    // Inline JS for copy and download.
-    $courseslug = preg_replace(
-        '/[^a-z0-9]+/i',
-        '-',
-        core_text::strtolower(format_string($course->shortname ?: $course->fullname))
-    );
-    $filename = $courseslug . '-ai-prompt.txt';
-    $copyjs = "(function(){\n"
-        . "var btn=document.getElementById('ai4t-copy');\n"
-        . "var dl=document.getElementById('ai4t-download');\n"
-        . "var send=document.getElementById('ai4t-sendtochat');\n"
-        . "var form=document.querySelector('form.mform');\n"
-        . "var ta=document.getElementById('ai4t-generated');\n"
-        . "var ok=document.getElementById('ai4t-copied');\n"
-        . "if(btn){btn.addEventListener('click',function(){\n"
-        . "  ta.select(); ta.setSelectionRange(0, 99999);\n"
-        . "  try{\n"
-        . "    if(navigator.clipboard && navigator.clipboard.writeText){\n"
-        . "      navigator.clipboard.writeText(ta.value);\n"
-        . "    } else {\n"
-        . "      document.execCommand('copy');\n"
-        . "    }\n"
-    . "    ok.textContent='" . addslashes(get_string('form:copied', 'block_aipromptgen')) . "';\n"
-        . "    ok.style.display='inline'; setTimeout(function(){ ok.style.display='none'; }, 1500);\n"
-        . "  }catch(e){}\n"
-        . "});}\n"
-        . "if(dl){dl.addEventListener('click',function(){\n"
-        . "  var blob=new Blob([ta.value||''],{type:'text/plain'});\n"
-        . "  var a=document.createElement('a');\n"
-        . "  a.href=URL.createObjectURL(blob);\n"
-        . "  a.download='" . addslashes($filename) . "';\n"
-        . "  document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},0);\n"
-        . "});}\n"
-    . "if(send && form){ send.addEventListener('click', function(){\n"
-    . "  try{ var i=document.createElement('input'); i.type='hidden'; i.name='sendtochat';"
-    . "i.value='1'; form.appendChild(i); form.submit(); }catch(e){}\n"
-    . "}); }\n"
-        . "})();";
-    $PAGE->requires->js_amd_inline($copyjs);
+    // JS handled by AMD module (copy/download/send actions).
 }
 
 // Back to course button/link.
@@ -1632,5 +1387,8 @@ echo html_writer::div(
     ),
     'mt-3'
 );
+
+// Initialise AMD orchestrator.
+$PAGE->requires->js_call_amd('block_aipromptgen/ui', 'init');
 
 echo $OUTPUT->footer();
