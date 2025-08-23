@@ -10,7 +10,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: 'postgres'
+          POSTGRES_DB: moodle
+          POSTGRES_USER: moodle
+          POSTGRES_PASSWORD: moodle
           POSTGRES_HOST_AUTH_METHOD: 'trust'
         ports:
           - 5432:5432
