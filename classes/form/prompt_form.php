@@ -136,13 +136,17 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => \get_string('help:classtype', 'block_aipromptgen'),
         ]);
-        $classgroupelems[] = $mform->createElement('button', 'classtypebrowse',
-        get_string('form:lessonbrowse', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-classtype-browse',
-            'class' => 'btn btn-secondary btn-sm',
-            'title' => \get_string('form:classtypebrowse', 'block_aipromptgen'),
-        ]);
+        $classgroupelems[] = $mform->createElement(
+            'button',
+            'classtypebrowse',
+            get_string('form:lessonbrowse', 'block_aipromptgen'),
+            [
+                'type' => 'button',
+                'id' => 'ai4t-classtype-browse',
+                'class' => 'btn btn-secondary btn-sm',
+                'title' => \get_string('form:classtypebrowse', 'block_aipromptgen'),
+            ]
+        );
         $mform->addGroup($classgroupelems, 'classtypegroup', get_string('form:class_typelabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('classtype', PARAM_TEXT);
 
@@ -181,13 +185,17 @@ class prompt_form extends \moodleform {
             'wrap' => 'virtual', 'rows' => 6, 'cols' => 60,
             'title' => \get_string('help:outcomes', 'block_aipromptgen'),
         ]);
-        $outcomeselems[] = $mform->createElement('button', 'outcomesbrowse',
-        get_string('form:outcomesbrowse', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-outcomes-browse',
-            'class' => 'btn btn-secondary btn-sm',
-            'title' => \get_string('help:outcomesbrowse', 'block_aipromptgen'),
-        ]);
+        $outcomeselems[] = $mform->createElement(
+            'button',
+            'outcomesbrowse',
+            get_string('form:outcomesbrowse', 'block_aipromptgen'),
+            [
+                'type' => 'button',
+                'id' => 'ai4t-outcomes-browse',
+                'class' => 'btn btn-secondary btn-sm',
+                'title' => \get_string('help:outcomesbrowse', 'block_aipromptgen'),
+            ]
+        );
         $mform->addGroup($outcomeselems, 'outcomesgroup', get_string('form:outcomeslabel', 'block_aipromptgen'), ' ', false);
         $mform->setType('outcomes', PARAM_TEXT);
 
@@ -198,13 +206,17 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => \get_string('help:language', 'block_aipromptgen'),
         ]);
-        $langgroupelems[] = $mform->createElement('button', 'languagebrowse',
-        get_string('form:lessonbrowse', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-language-browse',
-            'class' => 'btn btn-secondary btn-sm',
-            'title' => 'Browse languages',
-        ]);
+        $langgroupelems[] = $mform->createElement(
+            'button',
+            'languagebrowse',
+            get_string('form:lessonbrowse', 'block_aipromptgen'),
+            [
+                'type' => 'button',
+                'id' => 'ai4t-language-browse',
+                'class' => 'btn btn-secondary btn-sm',
+                'title' => 'Browse languages',
+            ]
+        );
         $mform->addGroup($langgroupelems, 'languagegroup', get_string('form:language', 'block_aipromptgen'), ' ', false);
         $mform->setType('language', PARAM_TEXT);
         $mform->addElement('hidden', 'languagecode');
@@ -217,12 +229,17 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => \get_string('help:purpose', 'block_aipromptgen'),
         ]);
-        $purposeelems[] = $mform->createElement('button', 'purposebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-purpose-browse',
-            'class' => 'btn btn-secondary btn-sm',
-            'title' => 'Browse purposes',
-        ]);
+        $purposeelems[] = $mform->createElement(
+            'button',
+            'purposebrowse',
+            get_string('form:lessonbrowse', 'block_aipromptgen'),
+            [
+                'type' => 'button',
+                'id' => 'ai4t-purpose-browse',
+                'class' => 'btn btn-secondary btn-sm',
+                'title' => 'Browse purposes',
+            ]
+        );
         $mform->addGroup($purposeelems, 'purposegroup', get_string('form:purpose', 'block_aipromptgen'), ' ', false);
         $mform->setType('purpose', PARAM_TEXT);
 
@@ -233,12 +250,17 @@ class prompt_form extends \moodleform {
             'size' => 40,
             'title' => \get_string('help:audience', 'block_aipromptgen'),
         ]);
-        $audienceelems[] = $mform->createElement('button', 'audiencebrowse', get_string('form:lessonbrowse', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-audience-browse',
-            'class' => 'btn btn-secondary btn-sm',
-            'title' => 'Browse audiences',
-        ]);
+        $audienceelems[] = $mform->createElement(
+            'button',
+            'audiencebrowse',
+            get_string('form:lessonbrowse', 'block_aipromptgen'),
+            [
+                'type' => 'button',
+                'id' => 'ai4t-audience-browse',
+                'class' => 'btn btn-secondary btn-sm',
+                'title' => 'Browse audiences',
+            ]
+        );
         $mform->addGroup($audienceelems, 'audiencegroup', get_string('form:audience', 'block_aipromptgen'), ' ', false);
         $mform->setType('audience', PARAM_TEXT);
 

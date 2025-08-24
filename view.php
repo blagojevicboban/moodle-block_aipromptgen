@@ -281,9 +281,11 @@ try {
         }
     }
     // Fallback to tool_lp API if core_competency call returned empty but tool_lp exposes a method.
-    if (empty($coursecompetencies) && class_exists('\\tool_lp\\api')
-        && method_exists('\\tool_lp\\api', 'list_course_competencies')) {
-        $coursecompetencies = \tool_lp\api::list_course_competencies($course->id);
+    if (empty($coursecompetencies)) {
+        $toollpapi = '\\tool_lp\\api';
+        if (class_exists($toollpapi) && method_exists($toollpapi, 'list_course_competencies')) {
+            $coursecompetencies = $toollpapi::list_course_competencies($course->id);
+        }
     }
 
     foreach ($coursecompetencies as $cc) {
@@ -308,8 +310,11 @@ try {
         if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
             $comp = \core_competency\api::read_competency($competencyid);
         }
-        if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
-            $comp = \tool_lp\api::read_competency($competencyid);
+        if (!$comp) {
+            $toollpapi = '\\tool_lp\\api';
+            if (class_exists($toollpapi) && method_exists($toollpapi, 'read_competency')) {
+                $comp = $toollpapi::read_competency($competencyid);
+            }
         }
         if (!$comp) {
             continue;
@@ -384,8 +389,11 @@ if (empty($competencies)) {
                     if (class_exists('\\core_competency\\api') && method_exists('\\core_competency\\api', 'read_competency')) {
                         $comp = \core_competency\api::read_competency($cid);
                     }
-                    if (!$comp && class_exists('\\tool_lp\\api') && method_exists('\\tool_lp\\api', 'read_competency')) {
-                        $comp = \tool_lp\api::read_competency($cid);
+                    if (!$comp) {
+                        $toollpapi = '\\tool_lp\\api';
+                        if (class_exists($toollpapi) && method_exists($toollpapi, 'read_competency')) {
+                            $comp = $toollpapi::read_competency($cid);
+                        }
                     }
                     if (!$comp) {
                         continue;
@@ -504,7 +512,7 @@ if (!empty($course->lang)) {
 // Compute a concrete option code that exists in the language dropdown.
 $sm = get_string_manager();
 $alllangs = $sm->get_list_of_languages();
-$pickcode = function(string $code) use ($alllangs): string {
+$pickcode = function (string $code) use ($alllangs): string {
     $code = trim($code);
     if ($code === '') {
         return '';
@@ -660,7 +668,7 @@ if ($data = $form->get_data()) {
     $langcode = $langcodetyped !== '' ? $langcodetyped : $langcodehidden;
 
     // Helper to normalize a language code to an installed pack (handles aliases like sr/sr_cyrl -> sr_lt/sr_cr).
-    $normalizecode = function(string $code) use ($sm): string {
+    $normalizecode = function (string $code) use ($sm): string {
         $code = trim($code);
         if ($code === '') {
             return '';
@@ -1244,8 +1252,16 @@ echo html_writer::start_tag('div', [
 ]);
 echo html_writer::start_tag('header');
 echo html_writer::tag('h3', get_string('form:purpose', 'block_aipromptgen'), ['id' => 'ai4t-purpose-modal-title']);
-echo html_writer::tag('button', '&times;',
-['type' => 'button', 'id' => 'ai4t-purpose-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::tag(
+    'button',
+    '&times;',
+    [
+        'type' => 'button',
+        'id' => 'ai4t-purpose-modal-close',
+        'class' => 'btn btn-link',
+        'aria-label' => get_string('cancel'),
+    ]
+);
 echo html_writer::end_tag('header');
 echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
@@ -1255,8 +1271,15 @@ foreach ($purposelist as $p) {
 echo html_writer::end_tag('ul');
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');
-echo html_writer::tag('button', get_string('cancel'),
-['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-purpose-modal-cancel']);
+echo html_writer::tag(
+    'button',
+    get_string('cancel'),
+    [
+        'type' => 'button',
+        'class' => 'btn btn-secondary',
+        'id' => 'ai4t-purpose-modal-cancel',
+    ]
+);
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
@@ -1274,8 +1297,16 @@ echo html_writer::start_tag('div', [
 ]);
 echo html_writer::start_tag('header');
 echo html_writer::tag('h3', get_string('form:audience', 'block_aipromptgen'), ['id' => 'ai4t-audience-modal-title']);
-echo html_writer::tag('button', '&times;', ['type' => 'button',
-'id' => 'ai4t-audience-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel')]);
+echo html_writer::tag(
+    'button',
+    '&times;',
+    [
+        'type' => 'button',
+        'id' => 'ai4t-audience-modal-close',
+        'class' => 'btn btn-link',
+        'aria-label' => get_string('cancel'),
+    ]
+);
 echo html_writer::end_tag('header');
 echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::start_tag('ul', ['class' => 'ai4t-list']);
@@ -1285,8 +1316,15 @@ foreach ($audiencelist as $a) {
 echo html_writer::end_tag('ul');
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');
-echo html_writer::tag('button', get_string('cancel'),
-['type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-audience-modal-cancel']);
+echo html_writer::tag(
+    'button',
+    get_string('cancel'),
+    [
+        'type' => 'button',
+        'class' => 'btn btn-secondary',
+        'id' => 'ai4t-audience-modal-cancel',
+    ]
+);
 echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
@@ -1401,7 +1439,7 @@ $backurl = new moodle_url('/course/view.php', ['id' => $course->id]);
 echo html_writer::div(
     html_writer::link(
         $backurl,
-    get_string('form:backtocourse', 'block_aipromptgen'),
+        get_string('form:backtocourse', 'block_aipromptgen'),
         ['class' => 'btn btn-secondary mt-3']
     ),
     'mt-3'
