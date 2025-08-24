@@ -1,4 +1,4 @@
-# AI for Teachers (Moodle block)
+# AI for Teachers - prompt generator (Moodle block)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -7,7 +7,7 @@ Compatibility
 - Optional: Competencies (Learning plans) and Gradebook Outcomes.
 
 Features
-- Visible only to roles with capability `block/aipromptgen:manage` (editing teachers/managers by default).
+- Visible only to roles with capability (editing teachers/managers by default).
 - Per‑course prompt builder form with tooltips and Browse modals:
   - Subject (prefilled with course name on first load if empty)
   - Student age/grade
@@ -15,12 +15,10 @@ Features
   - Lesson title + Browse (sections/activities)
   - Class type: text input + Browse (common class types)
   - Outcomes/objectives: textarea + Browse (course competencies and, if enabled, gradebook outcomes; multi‑select)
-  - Prompt language: text input + Browse (installed languages; stores hidden language code)
+  - Prompt language: text input + Browse
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
-- Generated prompt reflects the selected Prompt language. The visible language name is preserved and a single normalized code (e.g., `sr_lt`) is appended once: e.g., `Serbian (sr_lt)`.
-- Block header can show a comma‑separated label of course Competencies/Outcomes when available.
-- No session‑based prefill: form does not restore previous session values.
+- Generated prompt reflects the selected Prompt language.
 - Optional: "Send to ChatGPT" button that submits the generated prompt to OpenAI and displays the response (when configured with an API key).
 
 Install
@@ -50,7 +48,7 @@ Notes
   - If Gradebook Outcomes are enabled, local and global outcomes will be listed too.
 - Language field:
   - The visible field accepts a language name (with optional code in parentheses). A hidden `languagecode` is maintained automatically when using Browse.
-  - The generated prompt honors the selected language and appends a single normalized code to the displayed name (e.g., `Serbian (sr_lt)`). If no meaningful code is available, `(en)` is only appended when the language is actually English.
+  - The generated prompt honors the selected language and appends a single normalized code to the displayed name.
 - Data cleaning/security:
   - All inputs have explicit `$mform->setType(...)` (e.g., `PARAM_TEXT`, `PARAM_INT`, `PARAM_ALPHANUMEXT` for codes).
   - Language string placeholders use single‑quoted strings in lang files to avoid premature interpolation.
@@ -66,14 +64,9 @@ Troubleshooting
   - Ensure Competencies and/or Outcomes are enabled.
   - Link competencies to the course or activities; define outcomes if needed.
   - Check role permissions to view competencies.
-- Language appears wrong in prompt:
-  - Use the Browse list to set a known language and ensure the hidden `languagecode` is set.
-  - Typed names are supported (with synonyms like “Serbian”), and the code is appended once. If you still see a mismatch, verify installed language packs and share the exact typed value to extend the mapping.
-- “Send to ChatGPT” button not visible:
-  - Configure the OpenAI API key under Site administration → Plugins → Blocks → AI for Teachers, then reload the page.
+
 
 Roadmap
-- Optional setting to “Force English output” regardless of selection.
 - Save user presets per course.
 - Integrations with external LLM providers (preview outputs).
 - Additional localized strings and templates
