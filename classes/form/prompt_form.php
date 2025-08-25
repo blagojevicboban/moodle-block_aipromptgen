@@ -58,6 +58,8 @@ class prompt_form extends \moodleform {
         // Tooltip and placeholder showing the course name inside the control.
         $subjectattrs = [
             'id' => 'id_subject',
+            // Explicit name attribute for compatibility with custom JS selectors or validation.
+            'name' => 'subject',
             'title' => \get_string('help:subjectchange', 'block_aipromptgen'),
         ];
         if (is_string($coursename) && trim($coursename) !== '') {
@@ -266,7 +268,10 @@ class prompt_form extends \moodleform {
 
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
-        $mform->getElement('courseid')->setAttributes(['id' => 'id_courseid']);
+        $mform->getElement('courseid')->setAttributes([
+            'id' => 'id_courseid',
+            'name' => 'courseid',
+        ]);
 
         $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
 
