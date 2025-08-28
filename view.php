@@ -1395,17 +1395,28 @@ if ($generated) {
         // Show currently selected AI model and link to settings for quick adjustment.
         $modelname = '';
         if ($provider === 'openai') {
-            $modelname = (string)(get_config('block_aipromptgen', 'model') ?? '');
+            // Correct config key for OpenAI model is 'openai_model'. Provide legacy fallback to old 'model' key if present.
+            $modelname = (string)(get_config('block_aipromptgen', 'openai_model') ?? '');
+            if ($modelname === '') {
+                $legacy = (string)(get_config('block_aipromptgen', 'model') ?? '');
+                if ($legacy !== '') {
+                    $modelname = $legacy; // Migration fallback.
+                }
+            }
+            if ($modelname === '') {
+                $modelname = 'gpt-4o-mini'; // Factory default.
+            }
         } else if ($provider === 'ollama') {
             $modelname = (string)(get_config('block_aipromptgen', 'ollama_model') ?? '');
-        }
-        if ($modelname === '') {
-            $modelname = '?';
+            if ($modelname === '') {
+                $modelname = 'llama3'; // Factory default.
+            }
         }
         $settingsurl = new moodle_url('/admin/settings.php', ['section' => 'blocksettingaipromptgen']);
         // Show provider label first, then specific model label.
+        $providerlabel = $provider === 'openai' ? 'OpenAI' : ($provider === 'ollama' ? 'Ollama' : $provider);
         echo html_writer::span(
-            get_string('form:selectedexternal', 'block_aipromptgen', format_string($provider)),
+            get_string('form:selectedexternal', 'block_aipromptgen', format_string($providerlabel)),
             'ai4t-externalinfo',
             ['style' => 'margin-left:12px; font-style:italic;']
         );
