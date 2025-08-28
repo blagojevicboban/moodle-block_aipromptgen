@@ -1392,6 +1392,27 @@ if ($generated) {
             'class' => 'btn btn-primary',
             'style' => 'margin-left:8px;',
         ]);
+        // Show currently selected AI model and link to settings for quick adjustment.
+        $modelname = '';
+        if ($provider === 'openai') {
+            $modelname = (string)(get_config('block_aipromptgen', 'model') ?? '');
+        } else if ($provider === 'ollama') {
+            $modelname = (string)(get_config('block_aipromptgen', 'ollama_model') ?? '');
+        }
+        if ($modelname === '') {
+            $modelname = '?';
+        }
+        $settingsurl = new moodle_url('/admin/settings.php', ['section' => 'blocksettingaipromptgen']);
+        echo html_writer::span(
+            get_string('form:selectedmodel', 'block_aipromptgen', format_string($modelname)),
+            'ai4t-modelinfo',
+            ['style' => 'margin-left:12px; font-style:italic;']
+        );
+        echo html_writer::link(
+            $settingsurl,
+            get_string('form:config', 'block_aipromptgen'),
+            ['class' => 'btn btn-link', 'style' => 'margin-left:4px;']
+        );
     }
     echo html_writer::tag('span', '', [
         'id' => 'ai4t-copied',
