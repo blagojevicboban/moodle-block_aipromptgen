@@ -79,7 +79,7 @@ export const wireSendButton = () => {
                 return true;
             });
     // Ajax call promise chain (has catch; no return from event handler required).
-    Ajax.call([
+    void Ajax.call([
             {methodname: 'block_aipromptgen_send_prompt', args: {courseid, prompt}}
         ])[0]
             .then(resp => {
