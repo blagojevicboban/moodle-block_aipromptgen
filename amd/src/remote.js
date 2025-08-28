@@ -54,6 +54,8 @@ export const wireSendButton = () => {
         if (!prompt) {
             return;
         }
+    const provider = btn.getAttribute('data-provider') || '';
+    const streamingEnabled = btn.getAttribute('data-streaming') === '1';
         const form = document.querySelector('form.mform');
         const courseInput = form?.querySelector('input[name="courseid"]');
         const courseid = courseInput ? parseInt(courseInput.value, 10) : 0;
@@ -78,7 +80,49 @@ export const wireSendButton = () => {
                 container.innerHTML = '<div class="alert alert-info" role="status">Loading…</div>';
                 return true;
             });
-    // Ajax call promise chain (has catch; no return from event handler required).
+        // If Ollama streaming is enabled, use streaming endpoint instead of AJAX external function.
+        if (provider === 'ollama' && streamingEnabled) {
+            // Build streaming UI.
+            container.innerHTML = '<div class="alert alert-info" role="status">Streaming…</div>' +
+                '<h4 style="margin-top:12px;">' + (btn.getAttribute('data-response-label') || 'AI response') + '</h4>' +
+                '<pre id="ai4t-stream" class="form-control" style="white-space:pre-wrap;padding:12px;min-height:140px;"></pre>';
+            const pre = document.getElementById('ai4t-stream');
+            const doStream = async() => {
+                const fd = new FormData();
+                fd.append('courseid', String(courseid));
+                fd.append('prompt', prompt);
+                const root = (window.M && window.M.cfg && window.M.cfg.wwwroot) ? window.M.cfg.wwwroot : '';
+                const url = root + '/blocks/aipromptgen/stream_ollama.php';
+                const resp = await fetch(url, {method: 'POST', body: fd, credentials: 'same-origin'});
+                if (!resp.ok || !resp.body) {
+                    throw new Error('Streaming request failed (' + resp.status + ')');
+                }
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let done = false;
+                let buffer = '';
+                while (!done) {
+                    const r = await reader.read();
+                    done = r.done;
+                    if (r.value) {
+                        buffer += decoder.decode(r.value, {stream: !done});
+                        pre.textContent = buffer;
+                    }
+                }
+                return null;
+            };
+            void doStream()
+                .catch(err => {
+                    container.innerHTML = '<div class="alert alert-danger">' + (err.message || 'Streaming error') + '</div>';
+                    return null;
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                    btn.textContent = originalText;
+                });
+        }
+        // Ajax call promise chain (has catch; no return from event handler required) for non-streaming or other providers.
     void Ajax.call([
             {methodname: 'block_aipromptgen_send_prompt', args: {courseid, prompt}}
         ])[0]

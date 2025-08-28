@@ -1386,11 +1386,14 @@ if ($generated) {
         $hasprovider = true;
     }
     if ($hasprovider) {
+        $streaming = ($provider === 'ollama' && (int)get_config('block_aipromptgen', 'ollama_stream') === 1);
         echo html_writer::tag('button', get_string('form:sendtochatgpt', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-sendtochat',
             'class' => 'btn btn-primary',
             'style' => 'margin-left:8px;',
+            'data-provider' => $provider,
+            'data-streaming' => $streaming ? '1' : '0',
         ]);
         // Show currently selected AI model and link to settings for quick adjustment.
         $modelname = '';
