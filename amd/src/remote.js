@@ -68,18 +68,18 @@ export const wireSendButton = () => {
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.classList.add('disabled');
-        // Use a generic core string; 'loading' is widely present.
-    // Start loading indicator (fire-and-forget).
-    getStr('loading', 'core')
-            .then(str => {
+        // Start loading indicator (fire-and-forget, intentionally not awaited).
+        void getStr('loading', 'core')
+            .then(str => { // Return to satisfy promise/always-return.
                 container.innerHTML = '<div class="alert alert-info" role="status">' + str + '…</div>';
                 return true;
             })
-            .catch(() => {
+            .catch(() => { // Return fallback.
                 container.innerHTML = '<div class="alert alert-info" role="status">Loading…</div>';
+                return true;
             });
-    // Chain Ajax call (no return needed from event handler) with proper catch.
-    Ajax.call([
+        // Ajax call promise chain (not returned from handler; full catch provided).
+        Ajax.call([
             {methodname: 'block_aipromptgen_send_prompt', args: {courseid, prompt}}
         ])[0]
             .then(resp => {
@@ -90,11 +90,12 @@ export const wireSendButton = () => {
                     container.innerHTML = '<h4>' + (btn.getAttribute('data-response-label') || 'AI response') + '</h4>' +
                         '<pre class="form-control" style="white-space:pre-wrap;padding:12px;">' + safe + '</pre>';
                 }
-                return true;
+                return null; // Always return for lint rule.
             })
             .catch(err => {
                 const msg = (err && (err.error || err.message)) ? (err.error || err.message) : 'Unknown error';
                 container.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+                return null;
             })
             .finally(() => {
                 btn.disabled = false;
