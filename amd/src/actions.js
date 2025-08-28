@@ -29,9 +29,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
 export const attachCopyDownload = () => {
     const copyBtn = $('#ai4t-copy');
     const dlBtn = $('#ai4t-download');
-    const sendBtn = $('#ai4t-sendtochat');
     const ta = $('#ai4t-generated');
-    const form = document.querySelector('form.mform');
+    // (form reference removed; send now handled via AJAX in remote.js)
     const copied = $('#ai4t-copied');
 
     copyBtn?.addEventListener('click', () => {
@@ -76,15 +75,4 @@ export const attachCopyDownload = () => {
         }, 0);
     });
 
-    sendBtn?.addEventListener('click', () => {
-        if (!form) {
-            return;
-        }
-        const i = document.createElement('input');
-        i.type = 'hidden';
-        i.name = 'sendtochat';
-        i.value = '1';
-        form.appendChild(i);
-        form.submit();
-    });
 };

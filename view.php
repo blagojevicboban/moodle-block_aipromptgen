@@ -830,40 +830,15 @@ if ($data = $form->get_data()) {
     $instructions = $sm->get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
 
-    // Optional: send to ChatGPT if requested and configured.
+    // Optional: synchronous server-side provider call (legacy fallback) if requested.
     $sendtochat = optional_param('sendtochat', 0, PARAM_BOOL);
     if ($sendtochat && !empty($generated)) {
-        $apikey = (string)(get_config('block_aipromptgen', 'openai_apikey') ?? '');
-        $model = (string)(get_config('block_aipromptgen', 'openai_model') ?? 'gpt-4o-mini');
-        if ($apikey !== '') {
-            $endpoint = 'https://api.openai.com/v1/chat/completions';
-            $payload = [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'user', 'content' => $generated],
-                ],
-                'temperature' => 0.7,
-            ];
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $apikey,
-            ];
-            try {
-                $curl = new curl();
-                $resp = $curl->post($endpoint, json_encode($payload), $headers);
-                $json = json_decode($resp);
-                if (isset($json->choices[0]->message->content)) {
-                    $airesponse = (string)$json->choices[0]->message->content;
-                } else if (isset($json->error->message)) {
-                    $airesponse = 'Error: ' . (string)$json->error->message;
-                } else {
-                    $airesponse = 'No response content received.';
-                }
-            } catch (\Throwable $e) {
-                $airesponse = 'Error contacting OpenAI: ' . $e->getMessage();
-            }
-        } else {
-            $airesponse = 'OpenAI is not configured.';
+        try {
+            require_once($CFG->dirroot . '/blocks/aipromptgen/classes/local/provider/factory.php');
+            $provider = \block_aipromptgen\local\provider\factory::make();
+            $airesponse = $provider->complete($generated);
+        } catch (\Throwable $e) {
+            $airesponse = 'AI error: ' . $e->getMessage();
         }
     }
 
@@ -1404,8 +1379,15 @@ if ($generated) {
         'class' => 'btn btn-secondary',
         'style' => 'margin-left:8px;',
     ]);
-    // Send to ChatGPT button if API key configured.
-    if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
+    // Send to AI provider button if provider appears configured (OpenAI key or Ollama endpoint).
+    $provider = get_config('block_aipromptgen', 'provider') ?: 'openai';
+    $hasprovider = false;
+    if ($provider === 'openai' && !empty(get_config('block_aipromptgen', 'openai_apikey'))) {
+        $hasprovider = true;
+    } else if ($provider === 'ollama' && !empty(get_config('block_aipromptgen', 'ollama_endpoint'))) {
+        $hasprovider = true;
+    }
+    if ($hasprovider) {
         echo html_writer::tag('button', get_string('form:sendtochatgpt', 'block_aipromptgen'), [
             'type' => 'button',
             'id' => 'ai4t-sendtochat',
@@ -1425,7 +1407,7 @@ if ($generated) {
             'class' => 'form-control',
             'style' => 'white-space:pre-wrap;padding:12px;',
         ]);
-    } else if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
+    } else if ($hasprovider) {
         echo html_writer::div('', 'ai4t-airesponse', ['id' => 'ai4t-airesponse']);
     }
     echo html_writer::end_tag('div');

@@ -25,8 +25,19 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Only add fields when the full admin tree is being built.
-if ($ADMIN->fulltree) {
+// Moodle supplies $settings (admin_settingpage) when building the admin tree.
+if ($ADMIN->fulltree && isset($settings)) {
+    // Provider selection (OpenAI default, Ollama optional self-hosted).
+    $settings->add(new admin_setting_configselect(
+        'block_aipromptgen/provider',
+        get_string('setting:provider', 'block_aipromptgen'),
+        get_string('setting:provider_desc', 'block_aipromptgen'),
+        'openai',
+        [
+            'openai' => get_string('setting:provider_openai', 'block_aipromptgen'),
+            'ollama' => get_string('setting:provider_ollama', 'block_aipromptgen'),
+        ]
+    ));
     // OpenAI API key (password-unmask field).
     $settings->add(new admin_setting_configpasswordunmask(
         'block_aipromptgen/openai_apikey',
@@ -35,12 +46,29 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
-    // Default model to use.
+    // OpenAI default model.
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/openai_model',
         get_string('setting:model', 'block_aipromptgen'),
         get_string('setting:model_desc', 'block_aipromptgen'),
         'gpt-4o-mini',
         PARAM_TEXT
+    ));
+
+    // Ollama endpoint (local server) – default local daemon.
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_endpoint',
+        get_string('setting:ollama_endpoint', 'block_aipromptgen'),
+        get_string('setting:ollama_endpoint_desc', 'block_aipromptgen'),
+        'http://localhost:11434',
+        PARAM_RAW_TRIMMED
+    ));
+    // Ollama model (must exist locally, e.g., llama3, mistral, codellama, etc.).
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_model',
+        get_string('setting:ollama_model', 'block_aipromptgen'),
+        get_string('setting:ollama_model_desc', 'block_aipromptgen'),
+        'llama3',
+        PARAM_ALPHANUMEXT
     ));
 }

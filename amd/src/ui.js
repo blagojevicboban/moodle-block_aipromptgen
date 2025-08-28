@@ -24,6 +24,7 @@
 import {initAgeModal} from 'block_aipromptgen/age';
 import {attachPicker, attachOutcomesModal, initLanguageModal} from 'block_aipromptgen/pickers';
 import {attachCopyDownload} from 'block_aipromptgen/actions';
+import {wireSendButton} from 'block_aipromptgen/remote';
 
 export const init = () => {
     initAgeModal();
@@ -70,4 +71,5 @@ export const init = () => {
         targetId: 'id_classtype'
     });
     attachCopyDownload();
+    wireSendButton();
 };
