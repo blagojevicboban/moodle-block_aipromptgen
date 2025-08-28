@@ -1403,10 +1403,16 @@ if ($generated) {
             $modelname = '?';
         }
         $settingsurl = new moodle_url('/admin/settings.php', ['section' => 'blocksettingaipromptgen']);
+        // Show provider label first, then specific model label.
+        echo html_writer::span(
+            get_string('form:selectedexternal', 'block_aipromptgen', format_string($provider)),
+            'ai4t-externalinfo',
+            ['style' => 'margin-left:12px; font-style:italic;']
+        );
         echo html_writer::span(
             get_string('form:selectedmodel', 'block_aipromptgen', format_string($modelname)),
             'ai4t-modelinfo',
-            ['style' => 'margin-left:12px; font-style:italic;']
+            ['style' => 'margin-left:8px; font-style:italic;']
         );
         echo html_writer::link(
             $settingsurl,

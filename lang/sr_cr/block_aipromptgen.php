@@ -57,6 +57,7 @@ $string['form:response'] = 'АИ одговор';
 $string['form:result'] = 'Генерисани АИ промпт';
 $string['form:sendtochatgpt'] = 'Пошаљи у АИ';
 $string['form:selectedmodel'] = 'Изабрани модел: {$a}';
+$string['form:selectedexternal'] = 'Изабрана екстерна АИ: {$a}';
 $string['form:config'] = 'Подешавања';
 $string['form:subjectlabel'] = 'Предмет';
 $string['form:submit'] = 'Генериши промпт';

@@ -57,6 +57,7 @@ $string['form:response'] = 'Resposta da IA';
 $string['form:result'] = 'Prompt de IA gerado';
 $string['form:sendtochatgpt'] = 'Enviar para IA';
 $string['form:selectedmodel'] = 'Modelo selecionado: {$a}';
+$string['form:selectedexternal'] = 'IA Externa selecionada: {$a}';
 $string['form:config'] = 'Configurações';
 $string['form:subjectlabel'] = 'Disciplina';
 $string['form:submit'] = 'Gerar prompt';

@@ -56,6 +56,7 @@ $string['form:response'] = 'Odpoveď AI';
 $string['form:result'] = 'Vygenerovaný AI prompt';
 $string['form:sendtochatgpt'] = 'Odoslať do AI';
 $string['form:selectedmodel'] = 'Vybraný model: {$a}';
+$string['form:selectedexternal'] = 'Vybraná externá AI: {$a}';
 $string['form:config'] = 'Nastavenia';
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:submit'] = 'Vygenerovať prompt';

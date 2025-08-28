@@ -58,6 +58,7 @@ $string['form:response'] = 'AI odgovor';
 $string['form:result'] = 'Generisani AI prompt';
 $string['form:sendtochatgpt'] = 'Pošalji u AI';
 $string['form:selectedmodel'] = 'Izabrani model: {$a}';
+$string['form:selectedexternal'] = 'Izabrana eksterna AI: {$a}';
 $string['form:config'] = 'Podešavanja';
 $string['form:subjectlabel'] = 'Predmet';
 $string['form:submit'] = 'Generiši prompt';
