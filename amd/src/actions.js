@@ -13,9 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
- * Copy / download / send actions for generated prompt.
+ * Copy / download / (legacy) send actions for generated prompt.
+ * The send action has moved to remote.js (AJAX) but copy / download remain here.
+ * Keeps UI concerns separated from transport logic and simplifies testing.
+ *
  * @module     block_aipromptgen/actions
- * @author     Boban Blagojevic
+ * @author     Boban Blagojevic <your-email@example.com>
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

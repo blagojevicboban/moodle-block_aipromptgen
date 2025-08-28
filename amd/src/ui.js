@@ -15,8 +15,10 @@
 /**
  * ES6 orchestrator module: aggregates individual feature modules for the AI Prompt Generator block.
  * Split into smaller modules for clarity, testability, and alignment with Moodle JS module guidelines.
+ * Provides a single init() entry point invoked from PHP via $PAGE->requires->js_call_amd().
  *
  * @module     block_aipromptgen/ui
+ * @author     Boban Blagojevic <your-email@example.com>
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

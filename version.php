@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_aipromptgen';
-$plugin->version   = 2025082801; // YYYYMMDDHH - provider OpenAI curl fix.
+$plugin->version   = 2025082802; // YYYYMMDDHH - regenerated AMD build files.
 $plugin->release   = '0.3.2';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2020061500; // Moodle 3.9+.

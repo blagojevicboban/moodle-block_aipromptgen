@@ -33,8 +33,6 @@ require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
-use core_text;
-
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);

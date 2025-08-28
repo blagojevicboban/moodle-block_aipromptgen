@@ -13,10 +13,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
- * AJAX sending of generated prompt to AI provider via external function.
- * Progressive enhancement: falls back to synchronous form submit if generation field absent.
+ * AJAX sending of generated prompt to AI provider via external function endpoint.
+ * Progressive enhancement: if the generated textarea is absent (no prompt yet) the button retains
+ * its original / no-op behaviour. Provides user feedback (loading, error, response) inline.
+ *
+ * Responsibilities:
+ *  - Read current prompt text and course id
+ *  - Call external function block_aipromptgen_send_prompt via core/ajax
+ *  - Render loading, error and success states with minimal DOM mutation
+ *  - Keep UI responsive and restore original button state
  *
  * @module     block_aipromptgen/remote
+ * @author     Boban Blagojevic <your-email@example.com>
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -61,36 +69,38 @@ export const wireSendButton = () => {
         btn.disabled = true;
         btn.classList.add('disabled');
         // Use a generic core string; 'loading' is widely present.
-        getStr('loading', 'core')
+    // Start loading indicator (fire-and-forget).
+    getStr('loading', 'core')
             .then(str => {
                 container.innerHTML = '<div class="alert alert-info" role="status">' + str + '…</div>';
-                return true; // Satisfy promise-lint rule.
+                return true;
             })
             .catch(() => {
                 container.innerHTML = '<div class="alert alert-info" role="status">Loading…</div>';
             });
-        Ajax.call([
+    // Chain Ajax call (no return needed from event handler) with proper catch.
+    Ajax.call([
             {methodname: 'block_aipromptgen_send_prompt', args: {courseid, prompt}}
         ])[0]
-        .then(resp => {
-            if (!resp || !resp.success) {
-                container.innerHTML = '<div class="alert alert-danger">' + (resp?.error || 'Error') + '</div>';
-            } else {
-                const safe = resp.response.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-                container.innerHTML = '<h4>' + (btn.getAttribute('data-response-label') || 'AI response') + '</h4>' +
-                    '<pre class="form-control" style="white-space:pre-wrap;padding:12px;">' + safe + '</pre>';
-            }
-            return true;
-        })
-        .catch(err => {
-            const msg = (err && (err.error || err.message)) ? (err.error || err.message) : 'Unknown error';
-            container.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.classList.remove('disabled');
-            btn.textContent = originalText;
-        });
+            .then(resp => {
+                if (!resp || !resp.success) {
+                    container.innerHTML = '<div class="alert alert-danger">' + (resp?.error || 'Error') + '</div>';
+                } else {
+                    const safe = resp.response.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                    container.innerHTML = '<h4>' + (btn.getAttribute('data-response-label') || 'AI response') + '</h4>' +
+                        '<pre class="form-control" style="white-space:pre-wrap;padding:12px;">' + safe + '</pre>';
+                }
+                return true;
+            })
+            .catch(err => {
+                const msg = (err && (err.error || err.message)) ? (err.error || err.message) : 'Unknown error';
+                container.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+                btn.textContent = originalText;
+            });
     }, {once: false});
 };
 

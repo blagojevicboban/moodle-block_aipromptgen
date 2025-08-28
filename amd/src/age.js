@@ -13,9 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
- * Age modal logic separated from orchestrator.
+ * Age modal logic separated from orchestrator. Provides exact or range selection
+ * and writes normalized value back into the age/grade input field. Non-intrusive:
+ * if elements are missing it quietly aborts without errors.
+ *
  * @module     block_aipromptgen/age
- * @author     Boban Blagojevic
+ * @author     Boban Blagojevic <your-email@example.com>
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

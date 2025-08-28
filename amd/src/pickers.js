@@ -14,8 +14,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 /**
  * Generic picker + outcomes + language modal logic.
+ * Provides reusable attachPicker(), multi-select outcomes modal, and language picker
+ * including simple language code inference from typed name. Each segment fails
+ * gracefully if its container elements are absent.
+ *
  * @module     block_aipromptgen/pickers
- * @author     Boban Blagojevic
+ * @author     Boban Blagojevic <your-email@example.com>
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
