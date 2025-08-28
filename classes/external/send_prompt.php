@@ -34,6 +34,9 @@ use block_aipromptgen\local\provider\factory as provider_factory;
  * External web service function to send a prompt to configured AI provider and return response.
  *
  * @package   block_aipromptgen
+ * @category  external
+ * @copyright 2025 AI4Teachers
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class send_prompt extends external_api {
     /**
@@ -58,9 +61,9 @@ class send_prompt extends external_api {
             'courseid' => $courseid,
             'prompt' => $prompt,
         ]);
-    $context = context_course::instance($params['courseid']);
-    self::validate_context($context);
-    \require_capability('block/aipromptgen:manage', $context);
+        $context = context_course::instance($params['courseid']);
+        self::validate_context($context);
+        \require_capability('block/aipromptgen:manage', $context);
 
         $provider = provider_factory::make();
         try {
