@@ -11,6 +11,8 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: 'postgres'
+          DB_USER: postgres
+          DB_PASS: postgres
           POSTGRES_HOST_AUTH_METHOD: 'trust'
         ports:
           - 5432:5432
