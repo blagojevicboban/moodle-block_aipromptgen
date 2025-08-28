@@ -78,8 +78,8 @@ export const wireSendButton = () => {
                 container.innerHTML = '<div class="alert alert-info" role="status">Loading…</div>';
                 return true;
             });
-        // Ajax call promise chain (not returned from handler; full catch provided).
-        Ajax.call([
+    // Ajax call promise chain (has catch; no return from event handler required).
+    Ajax.call([
             {methodname: 'block_aipromptgen_send_prompt', args: {courseid, prompt}}
         ])[0]
             .then(resp => {
@@ -90,7 +90,7 @@ export const wireSendButton = () => {
                     container.innerHTML = '<h4>' + (btn.getAttribute('data-response-label') || 'AI response') + '</h4>' +
                         '<pre class="form-control" style="white-space:pre-wrap;padding:12px;">' + safe + '</pre>';
                 }
-                return null; // Always return for lint rule.
+        return null; // Always return for lint rule.
             })
             .catch(err => {
                 const msg = (err && (err.error || err.message)) ? (err.error || err.message) : 'Unknown error';
