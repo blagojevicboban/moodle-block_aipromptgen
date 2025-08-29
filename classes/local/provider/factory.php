@@ -34,6 +34,12 @@ class factory {
      * @return provider_interface
      */
     public static function make(): provider_interface {
+        // Prefer core AI manager if available.
+        if (class_exists('core_ai\\manager') || class_exists('\\core_ai\\manager')) {
+            $model = get_config('block_aipromptgen', 'openai_model') ?: get_config('block_aipromptgen', 'ollama_model') ?: null;
+            return new coreai_provider($model);
+        }
+        // Fallback legacy.
         $provider = get_config('block_aipromptgen', 'provider') ?: 'openai';
         if ($provider === 'ollama') {
             $endpoint = get_config('block_aipromptgen', 'ollama_endpoint') ?: 'http://localhost:11434';

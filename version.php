@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_aipromptgen';
-$plugin->version   = 2025082802; // YYYYMMDDHH - regenerated AMD build files.
-$plugin->release   = '0.3.2';
+$plugin->version   = 2025082904; // YYYYMMDDHH - core AI method autodetect & override setting.
+$plugin->release   = '0.4.3';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2020061500; // Moodle 3.9+.

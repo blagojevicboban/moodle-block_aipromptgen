@@ -38,19 +38,35 @@ if ($hassiteconfig) {
     }
 
     if ($ADMIN->fulltree) {
-        // Provider selection (OpenAI or Ollama) if not already added elsewhere.
-        if (!$settings->get_setting('block_aipromptgen/provider')) {
-            $settings->add(new admin_setting_configselect(
-                'block_aipromptgen/provider',
-                get_string('setting:provider', 'block_aipromptgen'),
-                get_string('setting:provider_desc', 'block_aipromptgen'),
-                'openai',
-                [
-                    'openai' => get_string('setting:provider_openai', 'block_aipromptgen'),
-                    'ollama' => get_string('setting:provider_ollama', 'block_aipromptgen'),
-                ]
+        // If core AI manager exists, inform admin that legacy settings are fallback only.
+        if (class_exists('core_ai\\manager') || class_exists('\\core_ai\\manager')) {
+            $settings->add(new admin_setting_heading(
+                'block_aipromptgen/coreaiinfo',
+                get_string('pluginname', 'block_aipromptgen'),
+                'Core AI manager detected: the block will delegate to core AI; provider-specific settings below act only as a fallback.'
             ));
+            // Optional override for method name on core AI manager.
+            if (method_exists('core_ai\\manager', 'instance') || method_exists('\\core_ai\\manager', 'instance')) {
+                $settings->add(new admin_setting_configtext(
+                    'block_aipromptgen/coreai_method',
+                    get_string('setting:coreai_method', 'block_aipromptgen'),
+                    get_string('setting:coreai_method_desc', 'block_aipromptgen'),
+                    '',
+                    PARAM_ALPHANUMEXT
+                ));
+            }
         }
+        // Provider selection (OpenAI or Ollama).
+        $settings->add(new admin_setting_configselect(
+            'block_aipromptgen/provider',
+            get_string('setting:provider', 'block_aipromptgen'),
+            get_string('setting:provider_desc', 'block_aipromptgen'),
+            'openai',
+            [
+                'openai' => get_string('setting:provider_openai', 'block_aipromptgen'),
+                'ollama' => get_string('setting:provider_ollama', 'block_aipromptgen'),
+            ]
+        ));
         // OpenAI API key (password-unmask field).
         $setting = new admin_setting_configpasswordunmask(
             'block_aipromptgen/openai_apikey',
@@ -69,33 +85,27 @@ if ($hassiteconfig) {
         );
         $settings->add($setting);
 
-        // Ollama endpoint & model (only show if provider enabled, but inexpensive so always display).
-        if (!$settings->get_setting('block_aipromptgen/ollama_endpoint')) {
-            $settings->add(new admin_setting_configtext(
-                'block_aipromptgen/ollama_endpoint',
-                get_string('setting:ollama_endpoint', 'block_aipromptgen'),
-                get_string('setting:ollama_endpoint_desc', 'block_aipromptgen'),
-                'http://localhost:11434',
-                PARAM_RAW_TRIMMED
-            ));
-        }
-        if (!$settings->get_setting('block_aipromptgen/ollama_model')) {
-            $settings->add(new admin_setting_configtext(
-                'block_aipromptgen/ollama_model',
-                get_string('setting:ollama_model', 'block_aipromptgen'),
-                get_string('setting:ollama_model_desc', 'block_aipromptgen'),
-                'llama3',
-                PARAM_ALPHANUMEXT
-            ));
-        }
+        // Ollama endpoint & model (always present; admin can ignore if using OpenAI).
+        $settings->add(new admin_setting_configtext(
+            'block_aipromptgen/ollama_endpoint',
+            get_string('setting:ollama_endpoint', 'block_aipromptgen'),
+            get_string('setting:ollama_endpoint_desc', 'block_aipromptgen'),
+            'http://localhost:11434',
+            PARAM_RAW_TRIMMED
+        ));
+        $settings->add(new admin_setting_configtext(
+            'block_aipromptgen/ollama_model',
+            get_string('setting:ollama_model', 'block_aipromptgen'),
+            get_string('setting:ollama_model_desc', 'block_aipromptgen'),
+            'llama3',
+            PARAM_ALPHANUMEXT
+        ));
         // Streaming enable toggle for Ollama.
-        if (!$settings->get_setting('block_aipromptgen/ollama_stream')) {
-            $settings->add(new admin_setting_configcheckbox(
-                'block_aipromptgen/ollama_stream',
-                get_string('setting:ollama_stream', 'block_aipromptgen'),
-                get_string('setting:ollama_stream_desc', 'block_aipromptgen'),
-                0
-            ));
-        }
+        $settings->add(new admin_setting_configcheckbox(
+            'block_aipromptgen/ollama_stream',
+            get_string('setting:ollama_stream', 'block_aipromptgen'),
+            get_string('setting:ollama_stream_desc', 'block_aipromptgen'),
+            0
+        ));
     }
 }
