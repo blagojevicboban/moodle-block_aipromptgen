@@ -15,9 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Prompt builder page for the AI for Teachers block.
+ * Main prompt builder UI page for the AI Prompt Generator block.
+ *
+ * This script renders the interactive form for assembling an instructional design
+ * prompt (purpose, audience, language, lesson/topic metadata, outcomes, etc.),
+ * and optionally sends the generated prompt to configured AI providers (OpenAI / Ollama)
+ * for a response. It gathers course structure (sections, activities) and competencies
+ * defensively across Moodle versions, providing rich browse modals. It also supports
+ * user-side post‑generation editing of the prompt before submission to AI.
  *
  * @package    block_aipromptgen
+ * @category   page
+ * @since      0.3.0
  * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -33,7 +42,7 @@ require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
-use core_text;
+// Removed unused 'use core_text;' (core_text is available globally in Moodle core).
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $sectionid = optional_param('section', 0, PARAM_INT);
@@ -77,6 +86,14 @@ $PAGE->set_title(get_string('pluginname', 'block_aipromptgen'));
 $PAGE->set_heading(format_string($course->fullname));
 
 $renderer = $PAGE->get_renderer('core');
+
+// Provider configuration (defined early so defaults and form repopulation can use them).
+$openaiapikey = (string)(get_config('block_aipromptgen', 'openai_apikey') ?? '');
+$openaimodel = (string)(get_config('block_aipromptgen', 'openai_model') ?? '');
+$openaiok = ($openaiapikey !== '' && $openaimodel !== '');
+$ollamaendpoint = (string)(get_config('block_aipromptgen', 'ollama_endpoint') ?? '');
+$ollamamodel = (string)(get_config('block_aipromptgen', 'ollama_model') ?? '');
+$ollamaok = ($ollamaendpoint !== '' && $ollamamodel !== '');
 
 // Load form.
 require_once($CFG->dirroot . '/blocks/aipromptgen/classes/form/prompt_form.php');
@@ -512,6 +529,10 @@ if (!empty($course->lang)) {
 // Compute a concrete option code that exists in the language dropdown.
 $sm = get_string_manager();
 $alllangs = $sm->get_list_of_languages();
+// Normalize a raw language code or alias to an installed language pack code.
+// Handles Serbian Latin/Cyrillic variants and common alias fallbacks.
+// Param: string $code Raw language code or alias.
+// Return: string Normalized installed code (falls back to 'en' or first available).
 $pickcode = function (string $code) use ($alllangs): string {
     $code = trim($code);
     if ($code === '') {
@@ -829,45 +850,217 @@ if ($data = $form->get_data()) {
     $prefix = $sm->get_string('prompt:prefix', 'block_aipromptgen', (object)['course' => $coursename], $langcode);
     $instructions = $sm->get_string('prompt:instructions', 'block_aipromptgen', null, $langcode);
     $generated = $prefix . "\n" . implode("\n", $parts) . "\n" . $instructions;
-
-    // Optional: send to ChatGPT if requested and configured.
-    $sendtochat = optional_param('sendtochat', 0, PARAM_BOOL);
-    if ($sendtochat && !empty($generated)) {
-        $apikey = (string)(get_config('block_aipromptgen', 'openai_apikey') ?? '');
-        $model = (string)(get_config('block_aipromptgen', 'openai_model') ?? 'gpt-4o-mini');
-        if ($apikey !== '') {
-            $endpoint = 'https://api.openai.com/v1/chat/completions';
-            $payload = [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'user', 'content' => $generated],
-                ],
-                'temperature' => 0.7,
-            ];
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $apikey,
-            ];
-            try {
-                $curl = new curl();
-                $resp = $curl->post($endpoint, json_encode($payload), $headers);
-                $json = json_decode($resp);
-                if (isset($json->choices[0]->message->content)) {
-                    $airesponse = (string)$json->choices[0]->message->content;
-                } else if (isset($json->error->message)) {
-                    $airesponse = 'Error: ' . (string)$json->error->message;
-                } else {
-                    $airesponse = 'No response content received.';
-                }
-            } catch (\Throwable $e) {
-                $airesponse = 'Error contacting OpenAI: ' . $e->getMessage();
-            }
-        } else {
-            $airesponse = 'OpenAI is not configured.';
+    // If user edited the generated prompt client-side (textarea with name ai4t_generated), prefer that value.
+    if (isset($_POST['ai4t_generated'])) {
+        $edited = trim((string)optional_param('ai4t_generated', '', PARAM_RAW));
+        if ($edited !== '') {
+            $generated = $edited;
         }
     }
 
-}
+    // Unified AI provider send (OpenAI or Ollama). Backward compat: legacy sendtochat param.
+    /**
+     * Helper to resolve the selected AI provider from request parameters.
+     * @return string 'openai', 'ollama', or '' if none selected
+     */
+    function resolve_provider(): string {
+        $sendto = optional_param('sendto', '', PARAM_ALPHANUMEXT);
+        if ($sendto !== '') {
+            return $sendto;
+        }
+        if (isset($_POST['aiprovider'])) {
+            $providerfield = clean_param($_POST['aiprovider'], PARAM_ALPHA);
+            if (in_array($providerfield, ['openai', 'ollama'], true)) {
+                return $providerfield;
+            }
+        }
+        if (optional_param('sendtochat', 0, PARAM_BOOL)) { // Legacy hidden field.
+            return 'openai';
+        }
+        return '';
+    }
+
+    /**
+     * Unified function to send prompt to AI provider (OpenAI or Ollama).
+     * @param string $provider 'openai' or 'ollama'
+     * @param string $prompt
+     * @return string AI response or error message
+     */
+    function send_to_ai(string $provider, string $prompt): string {
+        global $CFG;
+        if (!class_exists('curl')) {
+            require_once($CFG->libdir . '/filelib.php');
+        }
+
+        if ($provider === 'openai') {
+            $apikey = (string)(get_config('block_aipromptgen', 'openai_apikey') ?? '');
+            $model  = (string)(get_config('block_aipromptgen', 'openai_model') ?? '');
+            if ($apikey === '' || $model === '') {
+                return 'OpenAI is not configured. Please set your OpenAI API key and model in the block configuration.';
+            }
+            $endpoint = 'https://api.openai.com/v1/chat/completions';
+            $payload = json_encode([
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a helpful teaching assistant.'],
+                    ['role' => 'user',   'content' => $prompt],
+                ],
+                'temperature' => 0.7,
+            ], JSON_UNESCAPED_UNICODE);
+            $curl = new curl();
+            $options = [
+                'CURLOPT_HTTPHEADER' => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apikey,
+                ],
+                'CURLOPT_TIMEOUT' => 60,
+                'CURLOPT_CONNECTTIMEOUT' => 15,
+            ];
+            try {
+                $resp = $curl->post($endpoint, $payload, $options);
+            } catch (\Throwable $e) {
+                return 'Error contacting OpenAI: ' . $e->getMessage();
+            }
+            $json = json_decode($resp, true);
+            if (isset($json['choices'][0]['message']['content'])) {
+                return (string)$json['choices'][0]['message']['content'];
+            }
+            if (isset($json['error']['message'])) {
+                return 'Error: ' . $json['error']['message'];
+            }
+            return 'No response content received.';
+        }
+
+        if ($provider === 'ollama') {
+            $base  = (string)(get_config('block_aipromptgen', 'ollama_endpoint') ?? '');
+            $model = (string)(get_config('block_aipromptgen', 'ollama_model') ?? '');
+            if ($base === '' || $model === '') {
+                return 'Ollama is not configured. Please set your Ollama endpoint and model in the block configuration.';
+            }
+            // Allow configurable (or default) generation limits.
+            $maxpredict = (int)(get_config('block_aipromptgen', 'ollama_num_predict') ?? 512);
+            if ($maxpredict <= 0) {
+                $maxpredict = 512;
+            }
+            $timeout = (int)(get_config('block_aipromptgen', 'ollama_timeout') ?? 90); // Seconds.
+            if ($timeout < 10) {
+                $timeout = 90;
+            }
+            // Optional structured output JSON schema.
+            $schemastr = (string)(get_config('block_aipromptgen', 'ollama_schema') ?? '');
+            $schema = null;
+            if ($schemastr !== '') {
+                $decodedschema = json_decode($schemastr, true);
+                if (is_array($decodedschema)) {
+                    $schema = $decodedschema;
+                }
+            }
+
+            // Extend PHP execution time a bit beyond curl timeout.
+            @set_time_limit($timeout + 20);
+
+            $endpoint = rtrim($base, '/') . '/api/generate';
+            $temperature = $schema ? 0.0 : 0.7; // Deterministic output when schema enforced.
+            $body = [
+                'model'  => $model,
+                'prompt' => $prompt,
+                'stream' => false,
+                'options' => [
+                    'num_predict' => $maxpredict,
+                    'temperature' => $temperature,
+                ],
+            ];
+            if ($schema) {
+                $body['format'] = $schema; // JSON Schema for structured output.
+            }
+            $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
+            $ignore = (preg_match('~^https?://(localhost|127\.0\.0\.1)(:\d+)?(/|$)~i', $endpoint) === 1);
+            $curl = new curl($ignore ? ['ignoresecurity' => true] : []);
+            $options = [
+                'CURLOPT_HTTPHEADER' => [
+                    'Content-Type: application/json',
+                ],
+                'CURLOPT_TIMEOUT' => $timeout,
+                'CURLOPT_CONNECTTIMEOUT' => 5,
+            ];
+            try {
+                $resp = (string)$curl->post($endpoint, $payload, $options);
+            } catch (\Throwable $e) {
+                return 'Error contacting Ollama: ' . $e->getMessage();
+            }
+            // Ollama can return multiple JSON objects (NDJSON) even with stream=false in some versions.
+            $trim = trim($resp);
+            // First attempt: single JSON object.
+            $json = json_decode($trim, true);
+            if (is_array($json) && isset($json['response'])) {
+                $resptext = (string)$json['response'];
+                if ($schema) {
+                    $maybe = json_decode($resptext, true);
+                    if (is_array($maybe)) {
+                        return json_encode($maybe, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                    }
+                }
+                return $resptext;
+            }
+            if (is_array($json) && isset($json['error'])) {
+                return 'Error: ' . (string)$json['error'];
+            }
+            // Fallback: parse line by line and concatenate 'response'.
+            $accum = '';
+            $hadlines = false;
+            foreach (preg_split("/(?:\r\n|\n|\r)/", $resp) as $line) {
+                $line = trim($line);
+                if ($line === '') {
+                    continue;
+                }
+                $hadlines = true;
+                $obj = json_decode($line, true);
+                if (!is_array($obj)) {
+                    continue;
+                }
+                if (isset($obj['error'])) {
+                    return 'Error: ' . (string)$obj['error'];
+                }
+                if (isset($obj['response'])) {
+                    $accum .= (string)$obj['response'];
+                }
+            }
+            if ($accum !== '') {
+                if ($schema) {
+                    $maybe = json_decode($accum, true);
+                    if (is_array($maybe)) {
+                        return json_encode($maybe, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                    }
+                }
+                return $accum;
+            }
+            if ($hadlines) {
+                return 'No aggregated response content from Ollama (parsed streaming lines but empty).';
+            }
+            return 'No response content received from Ollama.';
+        }
+        return '';
+    }
+
+    $provider = resolve_provider();
+    // Fallback: if provider not resolved via request params, try form data then config.
+    if ($provider === '') {
+        if (!empty($data->aiprovider) && in_array($data->aiprovider, ['openai', 'ollama'], true)) {
+            $provider = $data->aiprovider;
+        } else {
+            // Use first configured provider (prefers OpenAI).
+            if ($openaiok) {
+                $provider = 'openai';
+            } else if ($ollamaok) {
+                $provider = 'ollama';
+            }
+        }
+    }
+    if ($provider !== '' && !empty($generated)) {
+        $airesponse = send_to_ai($provider, $generated);
+    }
+
+} // End of form submission processing block.
 
 echo $OUTPUT->header();
 // Determine a default topic based on current section if provided.
@@ -930,6 +1123,8 @@ if (!$form->is_submitted()) {
     if (trim((string)$coursedefaultname) !== '') {
         $defaultdata['subject'] = $coursedefaultname;
     }
+    // Set default provider.
+    $defaultdata['aiprovider'] = $openaiok ? 'openai' : ($ollamaok ? 'ollama' : 'openai');
     $form->set_data($defaultdata);
 } else if ($posteddata) {
     // Refill the form with the user's submitted values (keeps age/grade and others intact).
@@ -937,11 +1132,85 @@ if (!$form->is_submitted()) {
     if (is_string($refillsubject) && trim($refillsubject) !== '') {
         $persist['subject'] = $refillsubject;
     }
+    // Retain selected provider if present in POST data.
+    if (isset($_POST['aiprovider'])) {
+        $persist['aiprovider'] = clean_param($_POST['aiprovider'], PARAM_ALPHA);
+    }
     $form->set_data($persist);
 }
 $form->display();
 
 // Subject default already handled server-side via set_data(); removed legacy client-side fallback JS.
+
+// Generated prompt and AI response section (moved up to appear immediately after form submit).
+if (!empty($generated)) {
+    echo html_writer::start_tag('div', [
+        'class' => 'ai4t-generated-wrapper',
+        'id' => 'ai4t-generated-wrapper',
+        'style' => 'margin-top:24px;',
+    ]);
+    echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));
+    echo html_writer::tag('textarea', s($generated), [
+        'id' => 'ai4t-generated',
+        'name' => 'ai4t_generated', // Associate with form so user edits can be posted.
+        'form' => 'promptform', // Allows submission even though textarea is rendered after the form.
+        'rows' => 12,
+        'class' => 'form-control',
+        'style' => 'width:100%;',
+        'title' => 'You can edit this prompt before sending to AI.',
+    ]);
+    echo html_writer::empty_tag('br');
+    // Actions row (copy + send provider select + send button).
+    echo html_writer::start_tag('div', ['class' => 'ai4t-actions']);
+    echo html_writer::tag('button', get_string('form:copy', 'block_aipromptgen'), [
+        'type' => 'button',
+        'id' => 'ai4t-copy',
+        'class' => 'btn btn-secondary',
+    ]);
+    // Provider select (reuse earlier computed flags; build options locally here to avoid duplication).
+    $providersavailableinline = ($openaiok || $ollamaok);
+    $provopts = [
+        'openai' => 'OpenAI' . ($openaiok ? '' : ' ✕'),
+        'ollama' => 'Ollama' . ($ollamaok ? '' : ' ✕'),
+    ];
+    $defaultproviderinline = $openaiok ? 'openai' : ($ollamaok ? 'ollama' : 'openai');
+    echo html_writer::select($provopts, 'aiprovider', $defaultproviderinline, false, [
+        'id' => 'ai4t-provider',
+        'class' => 'custom-select',
+        'style' => 'width:auto;display:inline-block;margin-left:12px;',
+        'disabled' => !$providersavailableinline ? 'disabled' : null,
+    ]);
+    $sendattrs = [
+        'type' => 'button',
+        'id' => 'ai4t-sendtoai',
+        'class' => 'btn btn-primary',
+        'style' => 'margin-left:8px;',
+    ];
+    if (!$providersavailableinline) {
+        $sendattrs['disabled'] = 'disabled';
+        $sendattrs['title'] = get_string('tooltip:provider_not_configured', 'block_aipromptgen');
+    }
+    echo html_writer::tag('button', get_string('form:sendtoai', 'block_aipromptgen'), $sendattrs);
+    echo html_writer::tag('span', '', ['id' => 'ai4t-copied', 'style' => 'margin-left:8px;display:none;']);
+    echo html_writer::end_tag('div');
+    // AI response area.
+    if (!empty($airesponse)) {
+        echo html_writer::tag('h4', get_string('form:response', 'block_aipromptgen'), [
+            'style' => 'margin-top:16px;',
+            'id' => 'ai4t-response-heading',
+        ]);
+        echo html_writer::tag('pre', s($airesponse), [
+            'class' => 'form-control',
+            'style' => 'white-space:pre-wrap;padding:12px;',
+        ]);
+    } else if ($providersavailableinline) {
+        echo html_writer::div('', 'ai4t-airesponse', [
+            'id' => 'ai4t-airesponse',
+            'style' => 'margin-top:16px;',
+        ]);
+    }
+    echo html_writer::end_tag('div');
+}
 
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.
@@ -1376,62 +1645,21 @@ echo html_writer::tag('button', get_string('cancel'), [
     'class' => 'btn btn-secondary',
     'id' => 'ai4t-classtype-modal-cancel',
 ]);
-echo html_writer::end_tag('footer');
-echo html_writer::end_tag('div');
+// Provider labels (using plain text; adjust if language strings are later added).
+$provideroptions = [
+    'openai' => 'OpenAI' . ($openaiok ? '' : ' ✕'),
+    'ollama' => 'Ollama' . ($ollamaok ? '' : ' ✕'),
+];
 
-// JS handled by AMD module (classtype picker).
+// Provider selection controls: show before prompt generation so user can choose provider early.
+$provideroptions = [
+    'openai' => 'OpenAI' . ($openaiok ? '' : ' ✕'),
+    'ollama' => 'Ollama' . ($ollamaok ? '' : ' ✕'),
+];
+$defaultprovider = $openaiok ? 'openai' : ($ollamaok ? 'ollama' : 'openai');
+$providersavailable = ($openaiok || $ollamaok);
 
-if ($generated) {
-    echo html_writer::tag('h3', get_string('form:result', 'block_aipromptgen'));
-    // Editable textarea for the generated prompt.
-    echo html_writer::start_tag('div', ['class' => 'ai4t-result']);
-    echo html_writer::tag('textarea', s($generated), [
-        'id' => 'ai4t-generated',
-        'rows' => 12,
-        'class' => 'form-control',
-        'style' => 'width:100%;',
-    ]);
-    echo html_writer::empty_tag('br');
-    echo html_writer::start_tag('div', ['class' => 'ai4t-actions']);
-    echo html_writer::tag('button', get_string('form:copy', 'block_aipromptgen'), [
-        'type' => 'button',
-        'id' => 'ai4t-copy',
-        'class' => 'btn btn-secondary',
-    ]);
-    echo html_writer::tag('button', get_string('form:download', 'block_aipromptgen'), [
-        'type' => 'button',
-        'id' => 'ai4t-download',
-        'class' => 'btn btn-secondary',
-        'style' => 'margin-left:8px;',
-    ]);
-    // Send to ChatGPT button if API key configured.
-    if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
-        echo html_writer::tag('button', get_string('form:sendtochatgpt', 'block_aipromptgen'), [
-            'type' => 'button',
-            'id' => 'ai4t-sendtochat',
-            'class' => 'btn btn-primary',
-            'style' => 'margin-left:8px;',
-        ]);
-    }
-    echo html_writer::tag('span', '', [
-        'id' => 'ai4t-copied',
-        'style' => 'margin-left:8px; display:none;',
-    ]);
-    echo html_writer::end_tag('div');
-    // Render AI response when present; otherwise leave a placeholder container.
-    if (!empty($airesponse)) {
-        echo html_writer::tag('h4', get_string('form:response', 'block_aipromptgen'));
-        echo html_writer::tag('pre', s($airesponse), [
-            'class' => 'form-control',
-            'style' => 'white-space:pre-wrap;padding:12px;',
-        ]);
-    } else if (!empty(get_config('block_aipromptgen', 'openai_apikey'))) {
-        echo html_writer::div('', 'ai4t-airesponse', ['id' => 'ai4t-airesponse']);
-    }
-    echo html_writer::end_tag('div');
-
-    // JS handled by AMD module (copy/download/send actions).
-}
+// Old result/provider block removed; now rendered immediately after form.
 
 // Back to course button/link.
 $backurl = new moodle_url('/course/view.php', ['id' => $course->id]);
@@ -1448,4 +1676,137 @@ echo html_writer::div(
 // Initialise AMD orchestrator.
 $PAGE->requires->js_call_amd('block_aipromptgen/ui', 'init');
 
+// Inline JS to handle loading indicator for AI requests.
+echo html_writer::tag('script', "
+    document.addEventListener('DOMContentLoaded', function() {
+        var sendBtn = document.getElementById('ai4t-sendtoai');
+        var loading = document.getElementById('ai4t-loading');
+        var airesponse = document.getElementById('ai4t-airesponse');
+        // Auto-scroll to generated prompt section if present (after postback generating prompt).
+        var genWrapper = document.getElementById('ai4t-generated-wrapper');
+        if (genWrapper) {
+            try { genWrapper.scrollIntoView({behavior:'smooth', block:'start'}); } catch(e) { genWrapper.scrollIntoView(); }
+        }
+        // Ensure hidden sendto field exists inside original form (promptform) so it's submitted.
+        var form = document.getElementById('promptform');
+        if (form) {
+            var hidden = form.querySelector('input[name=sendto]');
+            if (!hidden) {
+                hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'sendto';
+                hidden.id = 'ai4t-sendto';
+                form.appendChild(hidden);
+            }
+        }
+        function setProviderHidden() {
+            if (!form) return;
+            var sel = document.getElementById('ai4t-provider');
+            var hidden = document.getElementById('ai4t-sendto');
+            if (sel && hidden) {
+                hidden.value = sel.value || '';
+            }
+        }
+        if (sendBtn && loading) {
+            sendBtn.addEventListener('click', function() {
+                setProviderHidden();
+                if (loading) loading.style.display = 'block';
+                if (airesponse) airesponse.innerHTML = '';
+                if (form) {
+                    form.submit();
+                }
+                // Attempt to scroll towards AI response area early so user sees destination.
+                var respHeading = document.getElementById('ai4t-response-heading');
+                if (respHeading) {
+                    try {
+                        respHeading.scrollIntoView({behavior:'smooth', block:'start'});
+                    } catch(e) {
+                        respHeading.scrollIntoView();
+                    }
+                }
+            });
+        }
+        // Hide loading when AI response is filled (simple observer).
+        var observer = new MutationObserver(function(mutations) {
+            if (loading && airesponse && airesponse.innerHTML.trim() !== '') {
+                loading.style.display = 'none';
+                var respHeading = document.getElementById('ai4t-response-heading');
+                if (respHeading) {
+                    try {
+                        respHeading.scrollIntoView({behavior:'smooth', block:'start'});
+                    } catch(e) {
+                        respHeading.scrollIntoView();
+                    }
+                }
+            }
+        });
+        if (airesponse) {
+            observer.observe(airesponse, { childList: true, subtree: true });
+        }
+    });
+");
+
+// Prepare streaming JS (progressive update for Ollama when provider 'ollama' selected and user clicks Send to AI).
+$streamurl = (new moodle_url('/blocks/aipromptgen/stream.php'))->out(false);
+$streamurljs = json_encode($streamurl);
+$streamjs = <<<JS
+(function() {
+    const providerSelect = document.getElementById('ai4t-provider');
+    const sendBtn = document.getElementById('ai4t-sendtoai');
+    const form = document.getElementById('promptform');
+    if (!providerSelect || !sendBtn || !form) { return; }
+    sendBtn.addEventListener('click', function(e) {
+        if (providerSelect.value !== 'ollama') { return; }
+        e.preventDefault();
+        const gen = document.getElementById('ai4t-generated');
+        let prompt = '';
+        if (gen) { prompt = gen.value || gen.textContent || ''; }
+        if (!prompt) {
+            const fd = new FormData(form);
+            prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
+                     'Lesson: ' + (fd.get('lesson') || '') + '\n' +
+                     'Outcomes: ' + (fd.get('outcomes') || '');
+        }
+        const courseidInput = form.querySelector('input[name=courseid]');
+        const courseid = courseidInput ? courseidInput.value : '';
+        const outputArea = document.getElementById('ai4t-airesponse');
+        if (outputArea) { outputArea.textContent = ''; }
+        const statusEl = document.getElementById('ai-response-status');
+        if (statusEl) { statusEl.textContent = 'Streaming...'; }
+    const base = " + $streamurljs + " + '?courseid=' + encodeURIComponent(courseid) + '&provider=ollama';
+        const es = new EventSource(base + '&prompt=' + encodeURIComponent(prompt));
+        const scrollToResponse = () => {
+            const heading = document.getElementById('ai4t-response-heading');
+            if (heading) {
+                try { heading.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+                catch (err) { heading.scrollIntoView(); }
+            }
+        };
+        let firstChunk = true;
+        es.addEventListener('start', () => {
+            if (statusEl) { statusEl.textContent = 'Started'; }
+            scrollToResponse();
+        });
+        es.addEventListener('chunk', ev => {
+            if (outputArea) {
+                outputArea.textContent += ev.data;
+                if (firstChunk) {
+                    scrollToResponse();
+                    firstChunk = false;
+                }
+            }
+        });
+        es.addEventListener('error', ev => {
+            if (outputArea) { outputArea.textContent += '\n[Error] ' + ev.data; }
+            scrollToResponse();
+        });
+        es.addEventListener('done', () => {
+            if (statusEl) { statusEl.textContent = 'Done'; }
+            scrollToResponse();
+            es.close();
+        });
+    });
+})();
+JS;
+echo html_writer::script($streamjs);
 echo $OUTPUT->footer();

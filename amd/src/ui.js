@@ -25,7 +25,149 @@ import {initAgeModal} from 'block_aipromptgen/age';
 import {attachPicker, attachOutcomesModal, initLanguageModal} from 'block_aipromptgen/pickers';
 import {attachCopyDownload} from 'block_aipromptgen/actions';
 
+// Unified provider send (OpenAI => submit; Ollama => SSE stream) via hidden field.
+const initProviderSend = () => {
+    const sendBtn = document.getElementById('ai4t-sendtoai');
+    const select = document.getElementById('ai4t-provider');
+    const gen = document.getElementById('ai4t-generated');
+    // Ensure hidden provider field exists (compat with server resolver).
+    let hidden = document.getElementById('ai4t-sendto');
+    if (!hidden) {
+        const form = document.getElementById('promptform');
+        if (form) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'sendto';
+            hidden.id = 'ai4t-sendto';
+            form.appendChild(hidden);
+        }
+    }
+    if (!sendBtn || !select || !gen || !hidden) {
+        return;
+    }
+    const resp = document.getElementById('ai4t-airesponse');
+    const findForm = () => document.getElementById('promptform') || document.getElementById('mform1') || sendBtn.closest('form');
+    const refreshState = () => {
+        const opt = select.options[select.selectedIndex];
+        const unconfigured = opt && /✕\s*$/.test(opt.textContent || '');
+        sendBtn.disabled = (!gen.value.trim() || unconfigured);
+    };
+    const scrollToResponse = () => {
+        const heading = document.getElementById('ai4t-response-heading');
+        if (heading) {
+            try {
+                heading.scrollIntoView({behavior: 'smooth', block: 'start'});
+            } catch (e) {
+                heading.scrollIntoView();
+            }
+        }
+    };
+    const startStream = () => {
+        if (!window.EventSource) { // Fallback: normal submit.
+            const form = findForm();
+            if (form) {
+                form.submit();
+            }
+            return;
+        }
+        const courseInput = document.querySelector('input[name=courseid]');
+        const courseid = courseInput ? courseInput.value : '';
+        hidden.value = 'ollama';
+        if (resp) {
+            resp.textContent = '';
+            resp.setAttribute('aria-busy', 'true');
+        }
+        const statusId = 'ai-response-status';
+        let statusEl = document.getElementById(statusId);
+        if (!statusEl && resp) {
+            statusEl = document.createElement('div');
+            statusEl.id = statusId;
+            statusEl.className = 'small text-muted';
+            resp.parentNode?.insertBefore(statusEl, resp);
+        }
+        if (statusEl) {
+            statusEl.textContent = 'Streaming...';
+        }
+        // Use Moodle root (M.cfg.wwwroot) if available for absolute URL.
+        const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
+        const base = root + '/blocks/aipromptgen/stream.php';
+        let prompt = gen.value || gen.textContent || '';
+        if (!prompt) {
+            // Minimal fallback build.
+            const fd = new FormData(findForm() || undefined);
+            prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
+                     'Lesson: ' + (fd.get('lesson') || '') + '\n' +
+                     'Outcomes: ' + (fd.get('outcomes') || '');
+        }
+        const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
+            '&provider=ollama&prompt=' + encodeURIComponent(prompt));
+        let first = true;
+        es.addEventListener('start', () => {
+            if (statusEl) {
+                statusEl.textContent = 'Started';
+            }
+            scrollToResponse();
+        });
+        es.addEventListener('chunk', ev => {
+            if (resp) {
+                resp.textContent += ev.data;
+                if (first) {
+                    scrollToResponse();
+                    first = false;
+                }
+            }
+        });
+        es.addEventListener('error', ev => {
+            if (resp) {
+                resp.textContent += '\n[Error] ' + (ev.data || '');
+            }
+            if (statusEl) {
+                statusEl.textContent = 'Error';
+            }
+            scrollToResponse();
+        });
+        es.addEventListener('done', () => {
+            if (statusEl) {
+                statusEl.textContent = 'Done';
+            }
+            if (resp) {
+                resp.removeAttribute('aria-busy');
+            }
+            scrollToResponse();
+            es.close();
+        });
+    };
+    select.addEventListener('change', refreshState);
+    gen.addEventListener('input', refreshState);
+    sendBtn.addEventListener('click', e => {
+        if (sendBtn.disabled) {
+            return;
+        }
+        const provider = select.value;
+        if (provider === 'ollama') {
+            e.preventDefault();
+            startStream();
+            return;
+        }
+        hidden.value = provider;
+        const form = findForm();
+        if (form) {
+            form.submit();
+        }
+    });
+    refreshState();
+};
+
 export const init = () => {
+    // Auto-scroll to generated section if present after postback.
+    const genWrapper = document.getElementById('ai4t-generated-wrapper');
+    if (genWrapper) {
+        try {
+            genWrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
+        } catch (e) {
+            genWrapper.scrollIntoView();
+        }
+    }
     initAgeModal();
     attachPicker({
         openId: 'ai4t-lesson-browse',
@@ -70,4 +212,5 @@ export const init = () => {
         targetId: 'id_classtype'
     });
     attachCopyDownload();
+    initProviderSend();
 };

@@ -26,7 +26,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_aipromptgen';
-$plugin->version   = 2025082500; // YYYYMMDDHH - new release with async AI integration.
-$plugin->release   = '0.2.0';
+$plugin->version   = 2025083101; // YYYYMMDDHH - add Ollama structured output settings (schema, num_predict, timeout)
+// and NDJSON parsing.
+$plugin->release   = '0.3.1';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2020061500; // Moodle 3.9+.

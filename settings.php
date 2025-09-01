@@ -24,6 +24,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+require_once($CFG->libdir . '/adminlib.php');
 
 // Only add fields when the full admin tree is being built.
 if ($ADMIN->fulltree) {
@@ -42,5 +43,49 @@ if ($ADMIN->fulltree) {
         get_string('setting:model_desc', 'block_aipromptgen'),
         'gpt-4o-mini',
         PARAM_TEXT
+    ));
+
+    // Ollama endpoint (base URL).
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_endpoint',
+        get_string('setting:ollama_endpoint', 'block_aipromptgen'),
+        get_string('setting:ollama_endpoint_desc', 'block_aipromptgen'),
+        'http://localhost:11434',
+        PARAM_URL
+    ));
+
+    // Ollama model name.
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_model',
+        get_string('setting:ollama_model', 'block_aipromptgen'),
+        get_string('setting:ollama_model_desc', 'block_aipromptgen'),
+        'llama3',
+        PARAM_ALPHANUMEXT
+    ));
+
+    // Ollama structured output schema (JSON Schema) optional.
+    $settings->add(new admin_setting_configtextarea(
+        'block_aipromptgen/ollama_schema',
+        get_string('setting:ollama_schema', 'block_aipromptgen'),
+        get_string('setting:ollama_schema_desc', 'block_aipromptgen'),
+        ''
+    ));
+
+    // Ollama max tokens (num_predict).
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_num_predict',
+        get_string('setting:ollama_num_predict', 'block_aipromptgen'),
+        get_string('setting:ollama_num_predict_desc', 'block_aipromptgen'),
+        512,
+        PARAM_INT
+    ));
+
+    // Ollama request timeout seconds.
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/ollama_timeout',
+        get_string('setting:ollama_timeout', 'block_aipromptgen'),
+        get_string('setting:ollama_timeout_desc', 'block_aipromptgen'),
+        90,
+        PARAM_INT
     ));
 }

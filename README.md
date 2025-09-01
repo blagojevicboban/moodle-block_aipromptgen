@@ -19,7 +19,7 @@ Features
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
 - Generated prompt reflects the selected Prompt language.
-- Optional: "Send to ChatGPT" button that submits the generated prompt to OpenAI and displays the response (when configured with an API key).
+- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response (when configured).
 
 Install
 1. Place this folder under Moodle at `blocks/aipromptgen`.
@@ -28,16 +28,16 @@ Install
    - Competencies: Site administration → Advanced features → “Competencies”.
    - Outcomes: Site administration → Advanced features → “Enable outcomes”.
    Then link competencies to the course (Course → More → Competencies) and/or define local/global outcomes.
-4. (Optional) Configure OpenAI integration (to enable "Send to ChatGPT"):
-  - Site administration → Plugins → Blocks → AI for Teachers
-  - Set the OpenAI API key and (optionally) the model (defaults to `gpt-4o-mini`).
+4. (Optional) Configure AI providers (Site administration → Plugins → Blocks → AI for Teachers):
+  - OpenAI: API key + model (default `gpt-4o-mini`).
+  - Ollama: Local endpoint base URL (e.g. `http://localhost:11434`) + model name (e.g. `llama3`, `mistral`).
 
 Usage
 1. Add the “AI for Teachers” block to a course page.
 2. Click “Open AI Prompt Builder”.
 3. Fill the fields (use Browse buttons for quick selection).
 4. Click “Generate prompt” and copy or download the generated text.
-5. (Optional) Click “Send to ChatGPT” to send the generated prompt and view the response inline (requires API key configuration).
+5. (Optional) Select a provider and click “Send to AI” to send the generated prompt and view the response inline (requires provider configuration).
 
 Permissions
 - Capability: `block/aipromptgen:manage` (required to view the block and use the builder).
@@ -54,8 +54,8 @@ Notes
   - Language string placeholders use single‑quoted strings in lang files to avoid premature interpolation.
 - Age/grade modal:
   - Choose an exact age or a range. The prompt formats this as `15 godina` or `15-16 godina` (localized wording can vary by language pack).
-- OpenAI integration:
-  - When configured, pressing “Send to ChatGPT” sends the generated prompt to OpenAI and displays the AI response on the page. Ensure you have consent and comply with your institution’s data and privacy policies before sending any data to third‑party services.
+- AI provider integration:
+  - When configured, pressing “Send to AI” sends the generated prompt to the selected provider (OpenAI or Ollama) and displays the AI response on the page. Ensure institutional data/privacy compliance before sending data to external services (OpenAI). Local Ollama requests remain on your server.
 
 Troubleshooting
 - “A required parameter (courseid) was missing”:
@@ -68,5 +68,10 @@ Troubleshooting
 
 Roadmap
 - Save user presets per course.
-- Integrations with external LLM providers (preview outputs).
-- Additional localized strings and templates
+- AJAX (non‑blocking) streaming responses.
+- Additional localized strings and templates.
+
+Changelog (summary)
+- 0.3.0 (2025-08-31): Unified "Send to AI" button with provider select; added Ollama endpoint & model settings; added related language strings.
+- 0.2.0 (2025-08-25): Initial OpenAI ChatGPT send support and prompt builder refinements.
+- 0.1.0: First public prototype (prompt builder only).
