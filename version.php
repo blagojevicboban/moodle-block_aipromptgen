@@ -26,8 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_aipromptgen';
-$plugin->version   = 2025083101; // YYYYMMDDHH - add Ollama structured output settings (schema, num_predict, timeout)
-// and NDJSON parsing.
-$plugin->release   = '0.3.1';
+$plugin->version   = 2025090100; // YYYYMMDDHH - broaden Ollama model validation (allow dots/colons) & settings page refactor.
+$plugin->release   = '0.3.2';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2020061500; // Moodle 3.9+.

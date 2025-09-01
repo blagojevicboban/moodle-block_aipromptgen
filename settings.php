@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the AI for Teachers block.
+ * Settings for the AI Prompt Generator block.
  *
  * @package    block_aipromptgen
  * @author     Boban Blagojevic
@@ -23,10 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-require_once($CFG->libdir . '/adminlib.php');
+defined('MOODLE_INTERNAL') || die;
 
-// Only add fields when the full admin tree is being built.
 if ($ADMIN->fulltree) {
     // OpenAI API key (password-unmask field).
     $settings->add(new admin_setting_configpasswordunmask(
@@ -36,7 +34,7 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
-    // Default model to use.
+    // Default OpenAI model.
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/openai_model',
         get_string('setting:model', 'block_aipromptgen'),
@@ -45,7 +43,7 @@ if ($ADMIN->fulltree) {
         PARAM_TEXT
     ));
 
-    // Ollama endpoint (base URL).
+    // Ollama endpoint.
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/ollama_endpoint',
         get_string('setting:ollama_endpoint', 'block_aipromptgen'),
@@ -54,16 +52,16 @@ if ($ADMIN->fulltree) {
         PARAM_URL
     ));
 
-    // Ollama model name.
+    // Ollama model (allow dots/colons via PARAM_TEXT).
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/ollama_model',
         get_string('setting:ollama_model', 'block_aipromptgen'),
         get_string('setting:ollama_model_desc', 'block_aipromptgen'),
         'llama3',
-        PARAM_ALPHANUMEXT
+        PARAM_TEXT // Allow dots/colons.
     ));
 
-    // Ollama structured output schema (JSON Schema) optional.
+    // Optional JSON Schema for structured output.
     $settings->add(new admin_setting_configtextarea(
         'block_aipromptgen/ollama_schema',
         get_string('setting:ollama_schema', 'block_aipromptgen'),
@@ -71,7 +69,7 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
-    // Ollama max tokens (num_predict).
+    // Max tokens (num_predict).
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/ollama_num_predict',
         get_string('setting:ollama_num_predict', 'block_aipromptgen'),
@@ -80,7 +78,7 @@ if ($ADMIN->fulltree) {
         PARAM_INT
     ));
 
-    // Ollama request timeout seconds.
+    // Timeout seconds.
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/ollama_timeout',
         get_string('setting:ollama_timeout', 'block_aipromptgen'),
