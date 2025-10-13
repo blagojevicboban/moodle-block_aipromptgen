@@ -1,4 +1,4 @@
-# Setup Guide - AI Prompt Generator for Moodle
+﻿# Setup Guide - AI Prompt Generator for Moodle
 
 ## System Requirements
 

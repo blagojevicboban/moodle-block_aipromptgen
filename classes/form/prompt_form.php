@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -278,3 +278,4 @@ class prompt_form extends \moodleform {
         // No inline script here; handled on the page to open a modal and populate the textbox.
     }
 }
+

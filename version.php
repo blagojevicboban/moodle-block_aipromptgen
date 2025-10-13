@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -30,3 +30,4 @@ $plugin->version   = 2025090100; // YYYYMMDDHH - broaden Ollama model validation
 $plugin->release   = '0.3.2';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->requires  = 2020061500; // Moodle 3.9+.
+

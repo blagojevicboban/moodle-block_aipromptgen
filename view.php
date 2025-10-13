@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -1810,3 +1810,4 @@ $streamjs = <<<JS
 JS;
 echo html_writer::script($streamjs);
 echo $OUTPUT->footer();
+

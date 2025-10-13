@@ -1,4 +1,4 @@
-# Developer Documentation - AI Prompt Generator
+﻿# Developer Documentation - AI Prompt Generator
 
 ## Architecture Overview
 

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -175,3 +175,4 @@ if ($ok === false) {
 curl_close($ch);
 send_event('[DONE]', 'done');
 exit;
+

@@ -1,4 +1,4 @@
-# User Guide - AI Prompt Generator for Moodle
+﻿# User Guide - AI Prompt Generator for Moodle
 
 ## Introduction
 

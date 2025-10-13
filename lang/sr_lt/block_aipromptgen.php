@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -118,3 +118,4 @@ $string['setting:ollama_schema_desc'] = 'Opcioni JSON Schema za ograničavanje O
 $string['setting:ollama_timeout'] = 'Ollama vremenski limit (sekunde)';
 $string['setting:ollama_timeout_desc'] = 'Maksimalno vreme čekanja na Ollama odgovor. Povećajte za duže izlaze.';
 $string['tooltip:provider_not_configured'] = 'Nijedan AI provajder nije podešen.';
+

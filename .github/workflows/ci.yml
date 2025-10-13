@@ -1,4 +1,4 @@
-name: Moodle Plugin CI
+﻿name: Moodle Plugin CI
 
 on: [push, pull_request]
 
@@ -120,3 +120,4 @@ jobs:
       - name: Mark cancelled jobs as failed.
         if: ${{ cancelled() }}
         run: exit 1
+

@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "blagojevicboban/moodle-block_aipromptgen",
     "description": "AI for Teachers – Moodle block providing an AI prompt generator with language selection, competencies/outcomes integration, and optional OpenAI response fetch.",
     "type": "moodle-block",
@@ -36,3 +36,4 @@
         "installer-name": "aipromptgen"
     }
 }
+

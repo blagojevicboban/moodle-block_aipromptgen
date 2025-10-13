@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -117,3 +117,4 @@ $string['setting:ollama_schema_desc'] = 'JSON Schema opcional para restringir re
 $string['setting:ollama_timeout'] = 'Tempo limite da requisição Ollama (segundos)';
 $string['setting:ollama_timeout_desc'] = 'Tempo máximo de espera pela resposta do Ollama. Aumente para saídas grandes.';
 $string['tooltip:provider_not_configured'] = 'Nenhum provedor de IA está configurado.';
+
