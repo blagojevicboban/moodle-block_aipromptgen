@@ -902,7 +902,7 @@ if ($data = $form->get_data()) {
                 'model' => $model,
                 'messages' => [
                     ['role' => 'system', 'content' => 'You are a helpful teaching assistant.'],
-                    ['role' => 'user',   'content' => $prompt],
+                    ['role' => 'user', 'content' => $prompt],
                 ],
                 'temperature' => 0.7,
             ], JSON_UNESCAPED_UNICODE);
@@ -1048,7 +1048,6 @@ if ($data = $form->get_data()) {
     if ($provider !== '' && !empty($generated)) {
         $airesponse = send_to_ai($provider, $generated);
     }
-
 } // End of form submission processing block.
 
 echo $OUTPUT->header();
@@ -1215,7 +1214,8 @@ if (!empty($generated)) {
 
 // Inject a lightweight modal to browse and pick a lesson/section into the Lesson textbox.
 // Build the modal markup from $lessonoptions prepared above.
-echo html_writer::tag('style',
+echo html_writer::tag(
+    'style',
     '.ai4t-modal-backdrop{position:fixed;inset:0;display:none;background:rgba(0,0,0,.4);z-index:1050;}
      .ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;
      max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
@@ -1227,7 +1227,8 @@ echo html_writer::tag('style',
      .ai4t-item{padding:6px 8px;border-radius:4px;cursor:pointer;}
      .ai4t-item:hover{background:#f2f2f2;}
      .ai4t-modal footer{padding:10px 16px;border-top:1px solid #ddd;display:flex;justify-content:flex-end;gap:8px;}
-    ');
+    '
+);
 
 // Modal backdrop and container.
 echo html_writer::div('', 'ai4t-modal-backdrop', ['id' => 'ai4t-modal-backdrop']);

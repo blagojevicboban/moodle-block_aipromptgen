@@ -132,7 +132,7 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => false, // Stream directly.
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_TIMEOUT => $timeout,
-    CURLOPT_WRITEFUNCTION => function($ch, $chunk) use (&$schema) {
+    CURLOPT_WRITEFUNCTION => function ($ch, $chunk) use (&$schema) {
         static $buffer = '';
         $buffer .= $chunk;
         // Split on newlines for NDJSON.
