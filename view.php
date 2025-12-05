@@ -1183,29 +1183,33 @@ if (!empty($generated)) {
     echo html_writer::tag('span', '', ['id' => 'ai4t-copied', 'style' => 'margin-left:8px;display:none;']);
     echo html_writer::end_tag('div');
     // AI response area.
-        // AI response placeholder (used for streaming fallback). The actual response
-        // will be shown inside a modal dialog so users don't lose the page context.
-        echo html_writer::div('', 'ai4t-airesponse', [
-            'id' => 'ai4t-airesponse',
-            'style' => 'margin-top:16px;',
-        ]);
+    // AI response placeholder (used for streaming fallback). The actual response
+    // will be shown inside a modal dialog so users don't lose the page context.
+    echo html_writer::div('', 'ai4t-airesponse', [
+        'id' => 'ai4t-airesponse',
+        'style' => 'margin-top:16px;',
+    ]);
 
-        // If server returned a synchronous AI response (postback), inject it into
-        // the response modal and show the modal on page load.
-        if (!empty($airesponse)) {
-            $jsstr = json_encode($airesponse);
-            echo html_writer::script("document.addEventListener('DOMContentLoaded', function() {\n"
-                . "  var body = document.getElementById('ai4t-airesponse-body');\n"
-                . "  if (body) { body.textContent = " . $jsstr . "; }\n"
-                . "  var bg = document.getElementById('ai4t-modal-backdrop');\n"
-                . "  var modal = document.getElementById('ai4t-airesponse-modal');\n"
-                . "  if (bg) { bg.style.display = 'block'; }\n"
-                . "  if (modal) { modal.style.display = 'block'; }\n"
-                . "  var heading = document.getElementById('ai4t-response-heading');\n"
+    // If server returned a synchronous AI response (postback), inject it into
+    // the response modal and show the modal on page load.
+    if (!empty($airesponse)) {
+        $jsstr = json_encode($airesponse);
+        echo html_writer::script("document.addEventListener('DOMContentLoaded', function() {\n"
+            . "  var body = document.getElementById('ai4t-airesponse-body');\n"
+            . "  if (body) { body.textContent = " . $jsstr . "; }\n"
+            . "  var bg = document.getElementById('ai4t-modal-backdrop');\n"
+            . "  var modal = document.getElementById('ai4t-airesponse-modal');\n"
+            . "  if (bg) { bg.style.display = 'block'; }\n"
+            . "  if (modal) { modal.style.display = 'block'; }\n"
+            . "  var heading = document.getElementById('ai4t-response-heading');\n"
                 . "  if (!heading) { /* create invisible heading for a11y if missing */\n"
-                . "    var h = document.createElement('h4'); h.id = 'ai4t-response-heading'; h.style.display='none'; document.body.appendChild(h); }\n"
+                . "    var h = document.createElement('h4');\n"
+                . "    h.id = 'ai4t-response-heading';\n"
+                . "    h.style.display = 'none';\n"
+                . "    document.body.appendChild(h);\n"
+                . "  }\n"
                 . "});");
-        }
+    }
     echo html_writer::end_tag('div');
 }
 
@@ -1476,7 +1480,7 @@ echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::tag('pre', '', [
     'id' => 'ai4t-airesponse-body',
     'class' => 'form-control',
-    'style' => 'white-space:pre-wrap;padding:12px;max-height:60vh;overflow:auto;'
+    'style' => 'white-space:pre-wrap;padding:12px;max-height:60vh;overflow:auto;',
 ]);
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');

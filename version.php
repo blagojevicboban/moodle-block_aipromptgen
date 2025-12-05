@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_aipromptgen';
-$plugin->version   = 2025120400; // YYYYMMDDHH - release 1.0
+$plugin->version   = 2025120400;
 $plugin->release   = '1.0';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->requires  = 2020061500; // Moodle 3.9+.
