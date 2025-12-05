@@ -26,30 +26,8 @@ import {attachPicker, attachOutcomesModal, initLanguageModal} from 'block_aiprom
 import {attachCopyDownload} from 'block_aipromptgen/actions';
 
 // Unified provider send (OpenAI => submit; Ollama => SSE stream) via hidden field.
-// Extracted streaming logic to a separate helper to reduce function complexity
-const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
-    if (!window.EventSource) { // Fallback: normal submit.
-        const form = findForm();
-        if (form) {
-            form.submit();
-        }
-        return;
-    }
-    const courseInput = document.querySelector('input[name=courseid]');
-    const courseid = courseInput ? courseInput.value : '';
-    hidden.value = 'ollama';
-    const modal = document.getElementById('ai4t-airesponse-modal');
-    const backdrop = document.getElementById('ai4t-modal-backdrop');
-    if (backdrop) {
-        backdrop.style.display = 'block';
-    }
-    if (modal) {
-        modal.style.display = 'block';
-    }
-    if (resp) {
-        resp.textContent = '';
-        resp.setAttribute('aria-busy', 'true');
-    }
+// Helper: set up UI elements for streaming response
+const setupStreamingUI = (resp) => {
     const statusId = 'ai-response-status';
     let statusEl = document.getElementById(statusId);
     if (!statusEl) {
@@ -63,17 +41,23 @@ const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
     if (statusEl) {
         statusEl.textContent = 'Streaming...';
     }
-    const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
-    const base = root + '/blocks/aipromptgen/stream.php';
-    let prompt = gen.value || gen.textContent || '';
-    if (!prompt) {
-        const fd = new FormData(findForm() || undefined);
-        prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
-                 'Lesson: ' + (fd.get('lesson') || '') + '\n' +
-                 'Outcomes: ' + (fd.get('outcomes') || '');
+    const modal = document.getElementById('ai4t-airesponse-modal');
+    const backdrop = document.getElementById('ai4t-modal-backdrop');
+    if (backdrop) {
+        backdrop.style.display = 'block';
     }
-    const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
-        '&provider=ollama&prompt=' + encodeURIComponent(prompt));
+    if (modal) {
+        modal.style.display = 'block';
+    }
+    if (resp) {
+        resp.textContent = '';
+        resp.setAttribute('aria-busy', 'true');
+    }
+    return statusEl;
+};
+
+// Helper: attach event listeners to EventSource
+const attachStreamListeners = (es, resp, statusEl, scrollToResponse) => {
     let first = true;
     es.addEventListener('start', () => {
         if (statusEl) {
@@ -109,6 +93,33 @@ const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
         scrollToResponse();
         es.close();
     });
+};
+
+// Main streaming implementation
+const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
+    if (!window.EventSource) { // Fallback: normal submit.
+        const form = findForm();
+        if (form) {
+            form.submit();
+        }
+        return;
+    }
+    const courseInput = document.querySelector('input[name=courseid]');
+    const courseid = courseInput ? courseInput.value : '';
+    hidden.value = 'ollama';
+    const statusEl = setupStreamingUI(resp);
+    const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
+    const base = root + '/blocks/aipromptgen/stream.php';
+    let prompt = gen.value || gen.textContent || '';
+    if (!prompt) {
+        const fd = new FormData(findForm() || undefined);
+        prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
+                 'Lesson: ' + (fd.get('lesson') || '') + '\n' +
+                 'Outcomes: ' + (fd.get('outcomes') || '');
+    }
+    const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
+        '&provider=ollama&prompt=' + encodeURIComponent(prompt));
+    attachStreamListeners(es, resp, statusEl, scrollToResponse);
 };
 
 const initProviderSend = () => {
