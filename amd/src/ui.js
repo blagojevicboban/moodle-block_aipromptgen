@@ -1,4 +1,4 @@
-﻿// This file is part of Moodle - http://moodle.org/.
+// This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,8 @@ const initProviderSend = () => {
     if (!sendBtn || !select || !gen || !hidden) {
         return;
     }
-    const resp = document.getElementById('ai4t-airesponse');
+    // Prefer modal body for responses, fall back to inline container.
+    const resp = document.getElementById('ai4t-airesponse-body') || document.getElementById('ai4t-airesponse');
     const findForm = () => document.getElementById('promptform') || document.getElementById('mform1') || sendBtn.closest('form');
     const refreshState = () => {
         const opt = select.options[select.selectedIndex];
@@ -73,17 +74,25 @@ const initProviderSend = () => {
         const courseInput = document.querySelector('input[name=courseid]');
         const courseid = courseInput ? courseInput.value : '';
         hidden.value = 'ollama';
+        // Show response modal/backdrop when streaming starts.
+        const modal = document.getElementById('ai4t-airesponse-modal');
+        const backdrop = document.getElementById('ai4t-modal-backdrop');
+        if (backdrop) { backdrop.style.display = 'block'; }
+        if (modal) { modal.style.display = 'block'; }
         if (resp) {
             resp.textContent = '';
             resp.setAttribute('aria-busy', 'true');
         }
         const statusId = 'ai-response-status';
         let statusEl = document.getElementById(statusId);
-        if (!statusEl && resp) {
+        if (!statusEl) {
             statusEl = document.createElement('div');
             statusEl.id = statusId;
             statusEl.className = 'small text-muted';
-            resp.parentNode?.insertBefore(statusEl, resp);
+            // Insert status element before the response area when possible.
+            if (resp && resp.parentNode) {
+                resp.parentNode.insertBefore(statusEl, resp);
+            }
         }
         if (statusEl) {
             statusEl.textContent = 'Streaming...';

@@ -1,4 +1,6 @@
-﻿# AI for Teachers - prompt generator (Moodle block)
+# AI for Teachers - prompt generator (Moodle block)
+
+Release: 1.0 (2025-12-04)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -72,6 +74,7 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
+- 1.0 (2025-12-04): Stable release — updated plugin metadata and packaging, stability and polishing fixes. Includes prior features such as the unified "Send to AI" workflow, Ollama provider support, prompt builder refinements, and minor bug fixes.
 - 0.3.0 (2025-08-31): Unified "Send to AI" button with provider select; added Ollama endpoint & model settings; added related language strings.
 - 0.2.0 (2025-08-25): Initial OpenAI ChatGPT send support and prompt builder refinements.
 - 0.1.0: First public prototype (prompt builder only).

@@ -1,4 +1,6 @@
-﻿# Developer Documentation - AI Prompt Generator
+# Developer Documentation - AI Prompt Generator
+
+Current release: 1.0 (2025-12-04)
 
 ## Architecture Overview
 

@@ -1,4 +1,6 @@
-﻿# User Guide - AI Prompt Generator for Moodle
+# User Guide - AI Prompt Generator for Moodle
+
+Current release: 1.0 (2025-12-04)
 
 ## Introduction
 
@@ -147,6 +149,12 @@ The AI Prompt Generator is a Moodle block plugin designed to help teachers creat
    - View inline results
 
 ## Best Practices
+
+## What's New in 1.0
+
+- Stable 1.0 release (2025-12-04): packaging and metadata updates, stability and UI polish.
+- Includes unified "Send to AI" workflow with provider selection, and support for local Ollama endpoints (existing features from 0.3.0).
+- Minor bug fixes and improved validation.
 
 ### Creating Effective Prompts
 

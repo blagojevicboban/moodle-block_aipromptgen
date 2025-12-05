@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // This file is part of Moodle - http://moodle.org/.
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -868,12 +868,11 @@ if ($data = $form->get_data()) {
         if ($sendto !== '') {
             return $sendto;
         }
-        if (isset($_POST['aiprovider'])) {
-            $providerfield = clean_param($_POST['aiprovider'], PARAM_ALPHA);
-            if (in_array($providerfield, ['openai', 'ollama'], true)) {
-                return $providerfield;
-            }
-        }
+            // Do NOT automatically treat the presence of the provider select in POST
+            // as an intent to "Send to AI". The provider select is shown on the
+            // form for convenience; actual send action must come from the Send
+            // button which sets the hidden 'sendto' field. This avoids sending
+            // when the user only clicks "Generate prompt".
         if (optional_param('sendtochat', 0, PARAM_BOOL)) { // Legacy hidden field.
             return 'openai';
         }
@@ -1043,19 +1042,9 @@ if ($data = $form->get_data()) {
     }
 
     $provider = resolve_provider();
-    // Fallback: if provider not resolved via request params, try form data then config.
-    if ($provider === '') {
-        if (!empty($data->aiprovider) && in_array($data->aiprovider, ['openai', 'ollama'], true)) {
-            $provider = $data->aiprovider;
-        } else {
-            // Use first configured provider (prefers OpenAI).
-            if ($openaiok) {
-                $provider = 'openai';
-            } else if ($ollamaok) {
-                $provider = 'ollama';
-            }
-        }
-    }
+    // Only send to AI when an explicit send action was requested (via the
+    // hidden `sendto` field or legacy `sendtochat`). Do NOT auto-send when
+    // the user only clicked "Generate prompt".
     if ($provider !== '' && !empty($generated)) {
         $airesponse = send_to_ai($provider, $generated);
     }
@@ -1194,21 +1183,29 @@ if (!empty($generated)) {
     echo html_writer::tag('span', '', ['id' => 'ai4t-copied', 'style' => 'margin-left:8px;display:none;']);
     echo html_writer::end_tag('div');
     // AI response area.
-    if (!empty($airesponse)) {
-        echo html_writer::tag('h4', get_string('form:response', 'block_aipromptgen'), [
-            'style' => 'margin-top:16px;',
-            'id' => 'ai4t-response-heading',
-        ]);
-        echo html_writer::tag('pre', s($airesponse), [
-            'class' => 'form-control',
-            'style' => 'white-space:pre-wrap;padding:12px;',
-        ]);
-    } else if ($providersavailableinline) {
+        // AI response placeholder (used for streaming fallback). The actual response
+        // will be shown inside a modal dialog so users don't lose the page context.
         echo html_writer::div('', 'ai4t-airesponse', [
             'id' => 'ai4t-airesponse',
             'style' => 'margin-top:16px;',
         ]);
-    }
+
+        // If server returned a synchronous AI response (postback), inject it into
+        // the response modal and show the modal on page load.
+        if (!empty($airesponse)) {
+            $jsstr = json_encode($airesponse);
+            echo html_writer::script("document.addEventListener('DOMContentLoaded', function() {\n"
+                . "  var body = document.getElementById('ai4t-airesponse-body');\n"
+                . "  if (body) { body.textContent = " . $jsstr . "; }\n"
+                . "  var bg = document.getElementById('ai4t-modal-backdrop');\n"
+                . "  var modal = document.getElementById('ai4t-airesponse-modal');\n"
+                . "  if (bg) { bg.style.display = 'block'; }\n"
+                . "  if (modal) { modal.style.display = 'block'; }\n"
+                . "  var heading = document.getElementById('ai4t-response-heading');\n"
+                . "  if (!heading) { /* create invisible heading for a11y if missing */\n"
+                . "    var h = document.createElement('h4'); h.id = 'ai4t-response-heading'; h.style.display='none'; document.body.appendChild(h); }\n"
+                . "});");
+        }
     echo html_writer::end_tag('div');
 }
 
@@ -1459,6 +1456,53 @@ echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
 // JS handled by AMD module (outcomes modal).
+
+// AI Response modal: used to display AI replies (both streaming and postback).
+echo html_writer::start_tag('div', [
+    'class' => 'ai4t-modal',
+    'id' => 'ai4t-airesponse-modal',
+    'role' => 'dialog',
+    'aria-modal' => 'true',
+    'aria-labelledby' => 'ai4t-airesponse-modal-title',
+    'style' => 'display:none;',
+]);
+echo html_writer::start_tag('header');
+echo html_writer::tag('h3', get_string('form:response', 'block_aipromptgen'), ['id' => 'ai4t-airesponse-modal-title']);
+echo html_writer::tag('button', '&times;', [
+    'type' => 'button', 'id' => 'ai4t-airesponse-modal-close', 'class' => 'btn btn-link', 'aria-label' => get_string('cancel'),
+]);
+echo html_writer::end_tag('header');
+echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
+echo html_writer::tag('pre', '', [
+    'id' => 'ai4t-airesponse-body',
+    'class' => 'form-control',
+    'style' => 'white-space:pre-wrap;padding:12px;max-height:60vh;overflow:auto;'
+]);
+echo html_writer::end_tag('div');
+echo html_writer::start_tag('footer');
+echo html_writer::tag('button', get_string('cancel'), [
+    'type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-airesponse-modal-close-btn',
+]);
+echo html_writer::end_tag('footer');
+echo html_writer::end_tag('div');
+
+// Small inline script to wire close actions for the AI response modal and backdrop.
+echo html_writer::script("(function(){\n"
+    . "  function closeResponseModal() {\n"
+    . "    var m = document.getElementById('ai4t-airesponse-modal');\n"
+    . "    var bg = document.getElementById('ai4t-modal-backdrop');\n"
+    . "    if (m) { m.style.display = 'none'; }\n"
+    . "    if (bg) { bg.style.display = 'none'; }\n"
+    . "  }\n"
+    . "  document.addEventListener('DOMContentLoaded', function() {\n"
+    . "    var close1 = document.getElementById('ai4t-airesponse-modal-close');\n"
+    . "    var close2 = document.getElementById('ai4t-airesponse-modal-close-btn');\n"
+    . "    var bg = document.getElementById('ai4t-modal-backdrop');\n"
+    . "    if (close1) close1.addEventListener('click', closeResponseModal);\n"
+    . "    if (close2) close2.addEventListener('click', closeResponseModal);\n"
+    . "    if (bg) bg.addEventListener('click', closeResponseModal);\n"
+    . "  });\n"
+    . "})();");
 
 // Language modal: list installed languages and set both text and hidden code.
 $langoptions = $sm->get_list_of_languages();
@@ -1809,5 +1853,42 @@ $streamjs = <<<JS
 })();
 JS;
 echo html_writer::script($streamjs);
+// Fallback override: ensure streaming opens the AI response modal even if built AMD
+// bundle wasn't rebuilt. This attaches a click handler that streams into the
+// modal body when 'Ollama' is selected.
+$overridejs = <<<JS
+document.addEventListener('DOMContentLoaded', function() {
+    const sendBtn = document.getElementById('ai4t-sendtoai');
+    const providerSelect = document.getElementById('ai4t-provider');
+    const form = document.getElementById('promptform');
+    const gen = document.getElementById('ai4t-generated');
+    const respBody = document.getElementById('ai4t-airesponse-body');
+    const modal = document.getElementById('ai4t-airesponse-modal');
+    const backdrop = document.getElementById('ai4t-modal-backdrop');
+    if (!sendBtn || !providerSelect || !form) return;
+    sendBtn.addEventListener('click', function(e) {
+        if (providerSelect.value !== 'ollama') return;
+        e.preventDefault();
+        let prompt = gen ? (gen.value || gen.textContent || '') : '';
+        if (!prompt) {
+            const fd = new FormData(form);
+            prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
+                             'Lesson: ' + (fd.get('lesson') || '') + '\n' +
+                             'Outcomes: ' + (fd.get('outcomes') || '');
+        }
+        if (backdrop) backdrop.style.display = 'block';
+        if (modal) modal.style.display = 'block';
+        if (respBody) respBody.textContent = '';
+        const courseInput = form.querySelector('input[name=courseid]');
+        const courseid = courseInput ? courseInput.value : '';
+        const base = "" . $streamurljs . "" + '?courseid=' + encodeURIComponent(courseid) + '&provider=ollama';
+        const es = new EventSource(base + '&prompt=' + encodeURIComponent(prompt));
+        es.addEventListener('chunk', ev => { if (respBody) respBody.textContent += ev.data; });
+        es.addEventListener('done', () => { es.close(); });
+        es.addEventListener('error', ev => { if (respBody) respBody.textContent += '\n[Error] ' + ev.data; });
+    });
+});
+JS;
+echo html_writer::script($overridejs);
 echo $OUTPUT->footer();
 

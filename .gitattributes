@@ -1,4 +1,4 @@
-﻿# Force LF line endings for all text files
+# Force LF line endings for all text files
 * text=auto eol=lf
 
 # Ensure binary files are not affected by line ending conversions

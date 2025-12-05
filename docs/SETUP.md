@@ -1,4 +1,4 @@
-﻿# Setup Guide - AI Prompt Generator for Moodle
+# Setup Guide - AI Prompt Generator for Moodle
 
 ## System Requirements
 
@@ -328,14 +328,14 @@
 
 ## Version History
 
-### Current Version (0.3.2)
-- Release Date: September 2025
-- Status: Alpha
+### Current Version (1.0)
+- Release Date: December 4, 2025
+- Status: Stable
 - Key Features:
-  - OpenAI integration
-  - Ollama support
-  - Enhanced UI
-  - Multiple language support
+   - OpenAI integration
+   - Ollama support
+   - Enhanced UI
+   - Multiple language support
 
 ### Update Process
 1. Backup current installation
