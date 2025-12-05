@@ -223,4 +223,3 @@ export const initLanguageModal = () => {
     input?.addEventListener('blur', sync);
     input?.addEventListener('change', sync);
 };
-

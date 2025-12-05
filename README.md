@@ -78,4 +78,3 @@ Changelog (summary)
 - 0.3.0 (2025-08-31): Unified "Send to AI" button with provider select; added Ollama endpoint & model settings; added related language strings.
 - 0.2.0 (2025-08-25): Initial OpenAI ChatGPT send support and prompt builder refinements.
 - 0.1.0: First public prototype (prompt builder only).
-

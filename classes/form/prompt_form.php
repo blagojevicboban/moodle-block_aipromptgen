@@ -278,4 +278,3 @@ class prompt_form extends \moodleform {
         // No inline script here; handled on the page to open a modal and populate the textbox.
     }
 }
-

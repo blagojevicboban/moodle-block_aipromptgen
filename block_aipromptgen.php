@@ -305,4 +305,3 @@ class block_aipromptgen extends block_base {
         return true;
     }
 }
-

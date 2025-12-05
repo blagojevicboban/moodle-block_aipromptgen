@@ -87,4 +87,3 @@ if ($ADMIN->fulltree) {
         PARAM_INT
     ));
 }
-

@@ -1895,4 +1895,3 @@ document.addEventListener('DOMContentLoaded', function() {
 JS;
 echo html_writer::script($overridejs);
 echo $OUTPUT->footer();
-

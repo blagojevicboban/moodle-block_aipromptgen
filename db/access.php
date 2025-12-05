@@ -56,4 +56,3 @@ $capabilities = [
         'clonepermissionsfrom' => 'moodle/my:manageblocks',
     ],
 ];
-
