@@ -40,8 +40,10 @@ $context = context_course::instance($course->id);
 require_capability('block/aipromptgen:manage', $context);
 
 // Disable buffering for streaming.
+// Use ob_end_clean() to discard any previous output (warnings, notices, whitespace)
+// that might have forced text/html headers.
 while (ob_get_level()) {
-    ob_end_flush();
+    @ob_end_clean();
 }
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
@@ -161,8 +163,8 @@ curl_setopt_array($ch, [
     },
 ]);
 
-// Bypass Moodle curl security for local endpoints.
-if (preg_match('~^https?://(localhost|127\.0\.0\.1)~i', $url)) {
+// Bypass Moodle curl security for local/private endpoints.
+if (preg_match('~^https?://(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)~i', $url)) {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 }
