@@ -26,6 +26,91 @@ import {attachPicker, attachOutcomesModal, initLanguageModal} from 'block_aiprom
 import {attachCopyDownload} from 'block_aipromptgen/actions';
 
 // Unified provider send (OpenAI => submit; Ollama => SSE stream) via hidden field.
+// Extracted streaming logic to a separate helper to reduce function complexity
+const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
+    if (!window.EventSource) { // Fallback: normal submit.
+        const form = findForm();
+        if (form) {
+            form.submit();
+        }
+        return;
+    }
+    const courseInput = document.querySelector('input[name=courseid]');
+    const courseid = courseInput ? courseInput.value : '';
+    hidden.value = 'ollama';
+    const modal = document.getElementById('ai4t-airesponse-modal');
+    const backdrop = document.getElementById('ai4t-modal-backdrop');
+    if (backdrop) {
+        backdrop.style.display = 'block';
+    }
+    if (modal) {
+        modal.style.display = 'block';
+    }
+    if (resp) {
+        resp.textContent = '';
+        resp.setAttribute('aria-busy', 'true');
+    }
+    const statusId = 'ai-response-status';
+    let statusEl = document.getElementById(statusId);
+    if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.id = statusId;
+        statusEl.className = 'small text-muted';
+        if (resp && resp.parentNode) {
+            resp.parentNode.insertBefore(statusEl, resp);
+        }
+    }
+    if (statusEl) {
+        statusEl.textContent = 'Streaming...';
+    }
+    const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
+    const base = root + '/blocks/aipromptgen/stream.php';
+    let prompt = gen.value || gen.textContent || '';
+    if (!prompt) {
+        const fd = new FormData(findForm() || undefined);
+        prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
+                 'Lesson: ' + (fd.get('lesson') || '') + '\n' +
+                 'Outcomes: ' + (fd.get('outcomes') || '');
+    }
+    const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
+        '&provider=ollama&prompt=' + encodeURIComponent(prompt));
+    let first = true;
+    es.addEventListener('start', () => {
+        if (statusEl) {
+            statusEl.textContent = 'Started';
+        }
+        scrollToResponse();
+    });
+    es.addEventListener('chunk', (ev) => {
+        if (resp) {
+            resp.textContent += ev.data;
+            if (first) {
+                scrollToResponse();
+                first = false;
+            }
+        }
+    });
+    es.addEventListener('error', (ev) => {
+        if (resp) {
+            resp.textContent += '\n[Error] ' + (ev.data || '');
+        }
+        if (statusEl) {
+            statusEl.textContent = 'Error';
+        }
+        scrollToResponse();
+    });
+    es.addEventListener('done', () => {
+        if (statusEl) {
+            statusEl.textContent = 'Done';
+        }
+        if (resp) {
+            resp.removeAttribute('aria-busy');
+        }
+        scrollToResponse();
+        es.close();
+    });
+};
+
 const initProviderSend = () => {
     const sendBtn = document.getElementById('ai4t-sendtoai');
     const select = document.getElementById('ai4t-provider');
@@ -63,89 +148,7 @@ const initProviderSend = () => {
             }
         }
     };
-    const startStream = () => {
-        if (!window.EventSource) { // Fallback: normal submit.
-            const form = findForm();
-            if (form) {
-                form.submit();
-            }
-            return;
-        }
-        const courseInput = document.querySelector('input[name=courseid]');
-        const courseid = courseInput ? courseInput.value : '';
-        hidden.value = 'ollama';
-        // Show response modal/backdrop when streaming starts.
-        const modal = document.getElementById('ai4t-airesponse-modal');
-        const backdrop = document.getElementById('ai4t-modal-backdrop');
-        if (backdrop) { backdrop.style.display = 'block'; }
-        if (modal) { modal.style.display = 'block'; }
-        if (resp) {
-            resp.textContent = '';
-            resp.setAttribute('aria-busy', 'true');
-        }
-        const statusId = 'ai-response-status';
-        let statusEl = document.getElementById(statusId);
-        if (!statusEl) {
-            statusEl = document.createElement('div');
-            statusEl.id = statusId;
-            statusEl.className = 'small text-muted';
-            // Insert status element before the response area when possible.
-            if (resp && resp.parentNode) {
-                resp.parentNode.insertBefore(statusEl, resp);
-            }
-        }
-        if (statusEl) {
-            statusEl.textContent = 'Streaming...';
-        }
-        // Use Moodle root (M.cfg.wwwroot) if available for absolute URL.
-        const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
-        const base = root + '/blocks/aipromptgen/stream.php';
-        let prompt = gen.value || gen.textContent || '';
-        if (!prompt) {
-            // Minimal fallback build.
-            const fd = new FormData(findForm() || undefined);
-            prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
-                     'Lesson: ' + (fd.get('lesson') || '') + '\n' +
-                     'Outcomes: ' + (fd.get('outcomes') || '');
-        }
-        const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
-            '&provider=ollama&prompt=' + encodeURIComponent(prompt));
-        let first = true;
-        es.addEventListener('start', () => {
-            if (statusEl) {
-                statusEl.textContent = 'Started';
-            }
-            scrollToResponse();
-        });
-        es.addEventListener('chunk', ev => {
-            if (resp) {
-                resp.textContent += ev.data;
-                if (first) {
-                    scrollToResponse();
-                    first = false;
-                }
-            }
-        });
-        es.addEventListener('error', ev => {
-            if (resp) {
-                resp.textContent += '\n[Error] ' + (ev.data || '');
-            }
-            if (statusEl) {
-                statusEl.textContent = 'Error';
-            }
-            scrollToResponse();
-        });
-        es.addEventListener('done', () => {
-            if (statusEl) {
-                statusEl.textContent = 'Done';
-            }
-            if (resp) {
-                resp.removeAttribute('aria-busy');
-            }
-            scrollToResponse();
-            es.close();
-        });
-    };
+    const startStream = () => startStreamImpl(findForm, gen, hidden, resp, scrollToResponse);
     select.addEventListener('change', refreshState);
     gen.addEventListener('input', refreshState);
     sendBtn.addEventListener('click', e => {
