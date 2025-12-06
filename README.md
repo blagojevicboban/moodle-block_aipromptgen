@@ -1,6 +1,6 @@
 # AI for Teachers - prompt generator (Moodle block)
 
-Release: 1.0 (2025-12-04)
+Release: 1.2 (2025-12-06)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -21,7 +21,13 @@ Features
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
 - Generated prompt reflects the selected Prompt language.
-- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response (when configured).
+- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response.
+  - **New in 1.2:** Response modal features 3 view modes:
+    - **RAW**: Original Markdown from AI.
+    - **TEXT**: Clean plain text (lists normalized, markdown stripped).
+    - **HTML**: Professionally formatted view (lists, headers, paragraphs).
+  - **New in 1.2:** Smart "Copy to Clipboard" copies the text from the currently selected view.
+  - **New in 1.2:** Robust auto-formatting to handle clumped AI text.
 
 Install
 1. Place this folder under Moodle at `blocks/aipromptgen`.
@@ -33,6 +39,7 @@ Install
 4. (Optional) Configure AI providers (Site administration → Plugins → Blocks → AI for Teachers):
   - OpenAI: API key + model (default `gpt-4o-mini`).
   - Ollama: Local endpoint base URL (e.g. `http://localhost:11434`) + model name (e.g. `llama3`, `mistral`).
+    - *Note:* Connection to local private subnets (e.g. `192.168.x.x`) is supported (requires HTTPS or configured proxy bypass).
 
 Usage
 1. Add the “AI for Teachers” block to a course page.
@@ -66,7 +73,9 @@ Troubleshooting
   - Ensure Competencies and/or Outcomes are enabled.
   - Link competencies to the course or activities; define outcomes if needed.
   - Check role permissions to view competencies.
-
+- Ollama connection failed:
+  - Ensure the Moodle server can reach the Ollama endpoint.
+  - For local subnets (`192.168.x.x`), SSL verification is automatically bypassed in v1.2+, but check firewall rules.
 
 Roadmap
 - Save user presets per course.
@@ -74,6 +83,11 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
+- 1.2 (2025-12-06): Major UI enhancements and connectivity fixes.
+  - Added RAW / TEXT / HTML view modes for AI response.
+  - Added smart "Copy" button.
+  - Implemented client-side Markdown rendering and auto-fixing for clumped text.
+  - Fixed Ollama connection issues for local/private IP addresses (SSL bypass logic).
 - 1.0 (2025-12-04): Stable release — updated plugin metadata and packaging, stability and polishing fixes. Includes prior features such as the unified "Send to AI" workflow, Ollama provider support, prompt builder refinements, and minor bug fixes.
 - 0.3.0 (2025-08-31): Unified "Send to AI" button with provider select; added Ollama endpoint & model settings; added related language strings.
 - 0.2.0 (2025-08-25): Initial OpenAI ChatGPT send support and prompt builder refinements.

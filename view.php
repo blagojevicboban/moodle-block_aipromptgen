@@ -1481,10 +1481,34 @@ echo html_writer::start_tag('div', ['class' => 'ai4t-body']);
 echo html_writer::tag('pre', '', [
     'id' => 'ai4t-airesponse-body',
     'class' => 'form-control',
-    'style' => 'white-space:pre-wrap;padding:12px;max-height:60vh;overflow:auto;',
+    'style' => 'white-space:pre-wrap;padding:12px;max-height:45vh;overflow:auto;',
+]);
+echo html_writer::div('', 'form-control', [
+    'id' => 'ai4t-airesponse-text',
+    'style' => 'display:none;padding:12px;max-height:45vh;overflow:auto;' .
+               'background:#fff;font-family:monospace;white-space:pre-wrap;',
+]);
+echo html_writer::div('', 'form-control', [
+    'id' => 'ai4t-airesponse-html',
+    'style' => 'display:none;padding:12px;max-height:45vh;overflow:auto;background:#f9f9f9;',
 ]);
 echo html_writer::end_tag('div');
 echo html_writer::start_tag('footer');
+// View mode buttons.
+echo html_writer::tag('button', 'RAW', [
+    'type' => 'button', 'class' => 'btn btn-secondary ai4t-view-btn', 'id' => 'ai4t-btn-raw', 'style' => 'margin-right:4px;',
+]);
+echo html_writer::tag('button', 'TEXT', [
+    'type' => 'button', 'class' => 'btn btn-outline-secondary ai4t-view-btn', 'id' => 'ai4t-btn-text',
+    'style' => 'margin-right:4px;',
+]);
+echo html_writer::tag('button', 'HTML', [
+    'type' => 'button', 'class' => 'btn btn-outline-secondary ai4t-view-btn', 'id' => 'ai4t-btn-html',
+    'style' => 'margin-right:12px;',
+]);
+echo html_writer::tag('button', get_string('form:copy', 'block_aipromptgen'), [
+    'type' => 'button', 'class' => 'btn btn-primary', 'id' => 'ai4t-airesponse-modal-copy-btn', 'style' => 'margin-right:8px;',
+]);
 echo html_writer::tag('button', get_string('cancel'), [
     'type' => 'button', 'class' => 'btn btn-secondary', 'id' => 'ai4t-airesponse-modal-close-btn',
 ]);
@@ -1492,22 +1516,237 @@ echo html_writer::end_tag('footer');
 echo html_writer::end_tag('div');
 
 // Small inline script to wire close actions for the AI response modal and backdrop.
-echo html_writer::script("(function(){\n"
-    . "  function closeResponseModal() {\n"
-    . "    var m = document.getElementById('ai4t-airesponse-modal');\n"
-    . "    var bg = document.getElementById('ai4t-modal-backdrop');\n"
-    . "    if (m) { m.style.display = 'none'; }\n"
-    . "    if (bg) { bg.style.display = 'none'; }\n"
-    . "  }\n"
-    . "  document.addEventListener('DOMContentLoaded', function() {\n"
-    . "    var close1 = document.getElementById('ai4t-airesponse-modal-close');\n"
-    . "    var close2 = document.getElementById('ai4t-airesponse-modal-close-btn');\n"
-    . "    var bg = document.getElementById('ai4t-modal-backdrop');\n"
-    . "    if (close1) close1.addEventListener('click', closeResponseModal);\n"
-    . "    if (close2) close2.addEventListener('click', closeResponseModal);\n"
-    . "    if (bg) bg.addEventListener('click', closeResponseModal);\n"
-    . "  });\n"
-    . "})();");
+$script = <<<'JS'
+(function(){
+  // Global helper to inject newlines before markdown blocks
+  // Global helper to inject newlines before markdown blocks
+  window.ai4t_autofix_markdown = function(text) {
+      if (!text) return text;
+      var res = text;
+      
+      // 0. Pre-clean: if "Lesson Plan:" or "Introduction" etc are stuck to previous word
+      // Detect "text**Bold**" - match any non-whitespace char before **
+      res = res.replace(/(\S)(\*\*|__)/g, '$1\n$2');
+      
+      // 1b. Force newlines within quadruple stars ****
+      // If we see "Word****Next", it usually means "EndBold****StartBold".
+      // We want "Word**\n\n**Next".
+      res = res.replace(/(\*\*\*\*)(?=\S)/g, '**\n\n**');
+      
+      // 1. Force newlines before strong markers (Bold) if followed by content (opening tag)
+      // Match CHAR followed by ** followed by NON-SPACE
+      res = res.replace(/([^\n])(\*\*|__)(?=\S)/g, '$1\n$2');
+
+      // 2. Force newlines before list items (*, -, +) ONLY if followed by space
+      res = res.replace(/([^\n])(^|\s)([\*\-\+] )/g, '$1\n$3');
+      
+      // 3. Force newlines before Headers (#)
+      res = res.replace(/([^\n])(#{1,6} )/g, '$1\n$2');
+      
+      // 4. Force newlines before Roman Numeral lists (I. II. III. or i. ii. iii.) if seemingly a list
+      res = res.replace(/([^\n])(\s)([IVX]+|[ivx]+)(\.)/g, '$1\n$3$4');
+      
+      // 6. Cleanup triple/double newlines to single newline
+      res = res.replace(/\n{2,}/g, '\n');
+      return res;
+  };
+
+  // Robust Markdown to HTML renderer
+  window.ai4t_render_markdown = function(md) {
+      if (!md) return '';
+      
+      // Force autofix first to ensure lines are split
+      md = window.ai4t_autofix_markdown(md);
+      
+      md = md.replace(/</g, '&lt;').replace(/>/g, '&gt;'); // Basic safety
+      var lines = md.split(/\r?\n/);
+      var html = '';
+      var inList = false;
+      var listType = null; // 'ul' or 'ol'
+      
+      lines.forEach(function(line) {
+          var trimmed = line.trim();
+          
+          // Headings
+          if (trimmed.startsWith('### ')) {
+              if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+              html += '<h3>' + processInline(trimmed.substring(4)) + '</h3>';
+          } else if (trimmed.startsWith('## ')) {
+             if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+             html += '<h2>' + processInline(trimmed.substring(3)) + '</h2>';
+          } else if (trimmed.startsWith('# ')) {
+             if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+             html += '<h1>' + processInline(trimmed.substring(2)) + '</h1>';
+          
+          // Lists
+          // Only treat as list if followed by space e.g. "* Item" or "- Item"
+          } else if (trimmed.match(/^[\*\-\+]\s+(.*)/)) {
+              var content = trimmed.match(/^[\*\-\+]\s+(.*)/)[1];
+              if (!inList || listType !== 'ul') {
+                  if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); }
+                  html += '<ul>';
+                  inList = true;
+                  listType = 'ul';
+              }
+              html += '<li>' + processInline(content) + '</li>';
+          } else if (trimmed.match(/^\d+\.\s+(.*)/)) {
+              // ... existing ordered list logic ...
+              var content = trimmed.match(/^\d+\.\s+(.*)/)[1];
+              if (!inList || listType !== 'ol') {
+                   if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); }
+                   html += '<ol>';
+                   inList = true;
+                   listType = 'ol';
+              }
+              html += '<li>' + processInline(content) + '</li>';
+              
+          // Blockquotes
+          } else if (trimmed.startsWith('> ')) {
+             if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+             html += '<blockquote style="border-left:4px solid #ccc;padding-left:10px;color:#666;">' +
+                     processInline(trimmed.substring(2)) + '</blockquote>';
+             
+          // Empty line (reset list)
+          } else if (trimmed === '') {
+              // ... existing ...
+              if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+              html += '<br>';
+              
+          // Paragraph / Plain text
+          } else {
+               if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); inList = false; }
+               // If line starts with *, remove it (artifact) if it's not a list item
+               // BUT NOT if it marks Bold (**). So only remove * if not followed by another *
+               var cleanTrimmed = trimmed.replace(/^\*(?!\*)\s*/, '');
+               html += '<p>' + processInline(cleanTrimmed) + '</p>';
+          }
+      });
+      if (inList) { html += (listType==='ul'?'</ul>':'</ol>'); }
+      return html;
+  };
+  
+  function processInline(text) {
+      return text
+          // Support ****Text**** as Header 3
+          .replace(/\*\*\*\*(.*?)\*\*\*\*/g, '<h3>$1</h3>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code style="background:#eee;padding:2px 4px;border-radius:3px;">$1</code>');
+  }
+
+  // Plain Text Converter
+  window.ai4t_render_text = function(md) {
+      if (!md) return '';
+      // Ensure we start with the autofixed structure
+      var txt = window.ai4t_autofix_markdown(md);
+      
+      // Remove Bold/Italic markers
+      txt = txt.replace(/(\*\*|__)(.*?)\1/g, '$2').replace(/(\*|_)(.*?)\1/g, '$2');
+      
+      // Headers -> Separate visually
+      txt = txt.replace(/^#+\s+(.*)$/gm, '\n$1\n' + '-'.repeat(20));
+      
+      // Standardize list items (+ or * or -) to "- "
+      txt = txt.replace(/^[\*\-\+]\s+/gm, '- ');
+      
+      // Numbered lists kept as is
+      
+      // Remove code block fences
+      txt = txt.replace(/```/g, '');
+      
+      // Fix artifacts: "- *" or "- *" appearing from unconverted markup
+      txt = txt.replace(/^-\s*\*+/gm, '');
+      
+      // Squash multiple newlines to single
+      txt = txt.replace(/\n{2,}/g, '\n');
+      
+      return txt.trim();
+  };
+
+  function closeResponseModal() {
+    var m = document.getElementById('ai4t-airesponse-modal');
+    var bg = document.getElementById('ai4t-modal-backdrop');
+    if (m) { m.style.display = 'none'; }
+    if (bg) { bg.style.display = 'none'; }
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var close1 = document.getElementById('ai4t-airesponse-modal-close');
+    var close2 = document.getElementById('ai4t-airesponse-modal-close-btn');
+    var copyBtn = document.getElementById('ai4t-airesponse-modal-copy-btn');
+    
+    var btnRaw = document.getElementById('ai4t-btn-raw');
+    var btnText = document.getElementById('ai4t-btn-text');
+    var btnHtml = document.getElementById('ai4t-btn-html');
+    
+    var boxRaw = document.getElementById('ai4t-airesponse-body');
+    var boxText = document.getElementById('ai4t-airesponse-text');
+    var boxHtml = document.getElementById('ai4t-airesponse-html');
+    
+    var activeMode = 'raw'; // raw, text, html
+
+    var bg = document.getElementById('ai4t-modal-backdrop');
+    if (close1) close1.addEventListener('click', closeResponseModal);
+    if (close2) close2.addEventListener('click', closeResponseModal);
+    if (bg) bg.addEventListener('click', closeResponseModal);
+    
+    function setMode(mode) {
+        if (!boxRaw) return;
+        var rawContent = boxRaw.textContent;
+        // Reset buttons
+        if(btnRaw) { btnRaw.className = 'btn btn-outline-secondary ai4t-view-btn'; }
+        if(btnText) { btnText.className = 'btn btn-outline-secondary ai4t-view-btn'; }
+        if(btnHtml) { btnHtml.className = 'btn btn-outline-secondary ai4t-view-btn'; }
+        // Reset boxes
+        if(boxRaw) boxRaw.style.display = 'none';
+        if(boxText) boxText.style.display = 'none';
+        if(boxHtml) boxHtml.style.display = 'none';
+        
+        activeMode = mode;
+        
+        if (mode === 'raw') {
+            if(btnRaw) btnRaw.className = 'btn btn-secondary ai4t-view-btn';
+            if(boxRaw) boxRaw.style.display = 'block';
+        } else if (mode === 'text') {
+            if(btnText) btnText.className = 'btn btn-secondary ai4t-view-btn';
+            if(boxText) {
+                boxText.textContent = window.ai4t_render_text(rawContent);
+                boxText.style.display = 'block';
+            }
+        } else if (mode === 'html') {
+            if(btnHtml) btnHtml.className = 'btn btn-secondary ai4t-view-btn';
+            if(boxHtml) {
+                boxHtml.innerHTML = window.ai4t_render_markdown(rawContent);
+                boxHtml.style.display = 'block';
+            }
+        }
+    }
+
+    if (btnRaw) btnRaw.addEventListener('click', function() { setMode('raw'); });
+    if (btnText) btnText.addEventListener('click', function() { setMode('text'); });
+    if (btnHtml) btnHtml.addEventListener('click', function() { setMode('html'); });
+
+    if (copyBtn) {
+       copyBtn.addEventListener('click', function() {
+         var text = '';
+         if (activeMode === 'raw' && boxRaw) { text = boxRaw.textContent; }
+         else if (activeMode === 'text' && boxText) { text = boxText.textContent; }
+         else if (activeMode === 'html' && boxHtml) { text = boxHtml.innerText; }
+         
+         if (text) {
+             navigator.clipboard.writeText(text).then(function() {
+                 var originalText = copyBtn.textContent;
+                 copyBtn.textContent = 'Copied!';
+                 setTimeout(function() { copyBtn.textContent = originalText; }, 2000);
+             }).catch(function(err) {
+                 console.error('Failed to copy: ', err);
+             });
+         }
+       });
+    }
+  });
+})();
+JS;
+echo html_writer::script($script);
 
 // Language modal: list installed languages and set both text and hidden code.
 $langoptions = $sm->get_list_of_languages();
@@ -1838,7 +2077,11 @@ $streamjs = <<<JS
         });
         es.addEventListener('chunk', ev => {
             if (outputArea) {
-                outputArea.textContent += ev.data;
+                let full = outputArea.textContent + ev.data;
+                if (window.ai4t_autofix_markdown) {
+                    full = window.ai4t_autofix_markdown(full);
+                }
+                outputArea.textContent = full;
                 if (firstChunk) {
                     scrollToResponse();
                     firstChunk = false;
@@ -1888,7 +2131,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const courseid = courseInput ? courseInput.value : '';
         const base = "" . $streamurljs . "" + '?courseid=' + encodeURIComponent(courseid) + '&provider=ollama';
         const es = new EventSource(base + '&prompt=' + encodeURIComponent(prompt));
-        es.addEventListener('chunk', ev => { if (respBody) respBody.textContent += ev.data; });
+        es.addEventListener('chunk', ev => {
+            if (respBody) {
+                let full = respBody.textContent + ev.data;
+                if (window.ai4t_autofix_markdown) {
+                    full = window.ai4t_autofix_markdown(full);
+                }
+                respBody.textContent = full;
+            }
+        });
         es.addEventListener('done', () => { es.close(); });
         es.addEventListener('error', ev => { if (respBody) respBody.textContent += '\n[Error] ' + ev.data; });
     });
