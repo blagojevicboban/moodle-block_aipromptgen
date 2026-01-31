@@ -77,7 +77,8 @@ define(['block_aipromptgen/markdown'], function(Markdown) {
             return;
         }
 
-        const courseid = (document.querySelector('input[name=courseid]') && document.querySelector('input[name=courseid]').value) || '';
+        const cidEl = document.querySelector('input[name=courseid]');
+        const courseid = (cidEl && cidEl.value) || '';
         hidden.value = 'ollama';
 
         const statusEl = setupStreamingUI(resp);
