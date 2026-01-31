@@ -10,14 +10,14 @@ define([], function() {
             return text;
         }
         let res = text;
-        
+
         // 1. Fix clumped numbers like "cars.2. Machine" -> "cars.\n2. Machine"
         res = res.replace(/([.!?])(\s*)(\d+\.\s+)/g, '$1\n$3');
 
         // 2. Fix bold markers that wrap newlines or have spaces inside like "** Title **" or "**Title\n**"
         res = res.replace(/(\*\*)(?:\s*\n+\s*|\s+)/g, '$1'); // Remove space/newline after opening **
         res = res.replace(/(?:\s*\n+\s*|\s+)(\*\*)/g, '$1'); // Remove space/newline before closing **
-        
+
         // 3. Fix broken bold markers from AI like "* *" -> "**"
         res = res.replace(/\*\s+\*/g, '**');
 
@@ -39,7 +39,7 @@ define([], function() {
         res = res.replace(/([^\n])(#{1,6} )/g, '$1\n$2');
         res = res.replace(/([^\n])(^|\s)(\*\*\*|---|___)(\s|$)/gm, '$1\n$3');
         res = res.replace(/([^\n])(\s)([IVX]+|[ivx]+)(\.)/g, '$1\n$3$4');
-        
+
         // Clean up excessive newlines
         res = res.replace(/\n{3,}/g, '\n\n');
         return res;

@@ -40,7 +40,7 @@ define([], function() {
 
                     select.addEventListener('change', refreshState);
                     gen.addEventListener('input', refreshState);
-                    
+
                     sendBtn.addEventListener('click', function(e) {
                         if (sendBtn.disabled) {
                             return;
@@ -59,7 +59,7 @@ define([], function() {
                             });
                             return;
                         }
-                        
+
                         hidden.value = provider;
                         if (form) {
                             form.submit();
@@ -73,7 +73,7 @@ define([], function() {
                     if (!modal) {
                         return;
                     }
-                    
+
                     var bodyRaw = document.getElementById('ai4t-airesponse-body');
                     var bodyText = document.getElementById('ai4t-airesponse-text');
                     var bodyHtml = document.getElementById('ai4t-airesponse-html');
@@ -147,20 +147,28 @@ define([], function() {
                     var btn = e.target.closest('button');
                     var t = e.target;
                     if (btn) {
-                        if (btn.id === 'ai4t-btn-raw') { refs.setView('raw'); }
-                        else if (btn.id === 'ai4t-btn-text') { refs.setView('text'); }
-                        else if (btn.id === 'ai4t-btn-html') { refs.setView('html'); }
-                        else if (btn.id === 'ai4t-btn-rich') { refs.setView('rich'); }
-                        else if (btn.id === 'ai4t-airesponse-modal-close-btn') {
+                        if (btn.id === 'ai4t-btn-raw') {
+                            refs.setView('raw');
+                        } else if (btn.id === 'ai4t-btn-text') {
+                            refs.setView('text');
+                        } else if (btn.id === 'ai4t-btn-html') {
+                            refs.setView('html');
+                        } else if (btn.id === 'ai4t-btn-rich') {
+                            refs.setView('rich');
+                        } else if (btn.id === 'ai4t-airesponse-modal-close-btn') {
                             modal.style.display = 'none';
-                            if (backdrop) { backdrop.style.display = 'none'; }
+                            if (backdrop) {
+                                backdrop.style.display = 'none';
+                            }
                         } else if (btn.id === 'ai4t-airesponse-modal-copy-btn') {
                             handleCopy(refs);
                         }
                     }
                     if (t && t.id === 'ai4t-airesponse-modal-close') {
                         modal.style.display = 'none';
-                        if (backdrop) { backdrop.style.display = 'none'; }
+                        if (backdrop) {
+                            backdrop.style.display = 'none';
+                        }
                     }
                 };
 
@@ -180,10 +188,10 @@ define([], function() {
                         } else if (refs.bodyCode && refs.bodyCode.style.display !== 'none') {
                             text = refs.bodyCode.textContent;
                         }
-                        
+
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(text).then(function() { 
-                                refs.showStatus('Copied to clipboard!'); 
+                            navigator.clipboard.writeText(text).then(function() {
+                                refs.showStatus('Copied to clipboard!');
                                 return;
                             }).catch(function() {
                                 // Silent fail.
@@ -231,7 +239,9 @@ define([], function() {
 
                 // Initialize all modules
                 var inits = [
-                    function() { Age.initAgeModal(); },
+                    function() {
+                        Age.initAgeModal();
+                    },
                     function() {
                         Pickers.attachPicker({
                             openId: 'ai4t-lesson-browse', modalId: 'ai4t-modal',
@@ -253,13 +263,23 @@ define([], function() {
                             });
                         });
                     },
-                    function() { Actions.attachCopyDownload(); },
-                    function() { initProviderSend(); },
-                    function() { initResponseModal(); }
+                    function() {
+                        Actions.attachCopyDownload();
+                    },
+                    function() {
+                        initProviderSend();
+                    },
+                    function() {
+                        initResponseModal();
+                    }
                 ];
 
                 inits.forEach(function(fn) {
-                    try { fn(); } catch (e) { /* Silent fail */ }
+                    try {
+                        fn();
+                    } catch (e) {
+                        /* Silent fail */
+                    }
                 });
             });
         }
