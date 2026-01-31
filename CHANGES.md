@@ -1,6 +1,15 @@
 Changes
 =======
 
+1.3 (2026-01-31)
+----------------
+* Feature: Refined AI Response Modal with 4 view modes: RAW, TEXT, HTML (Rich preview), and HTML CODE (source).
+* Feature: Smart "Copy to Clipboard" with support for copying rich text.
+* Feature: Improved UI feedback with copy status indicators.
+* Feature: Enhanced Markdown rendering compatibility.
+* Fix: Improved auto-formatting for streamed AI responses.
+* Fix: UI layout refinements for better modal visibility.
+
 1.2 (2025-12-06)
 ----------------
 * Feature: Added RAW, TEXT, and HTML view modes for AI response improved accessibility and usage.

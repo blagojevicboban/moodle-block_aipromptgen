@@ -1,6 +1,6 @@
 # AI for Teachers - prompt generator (Moodle block)
 
-Release: 1.2 (2025-12-06)
+Release: 1.3 (2026-01-31)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -22,12 +22,13 @@ Features
   - Audience: text input + Browse (teacher‑facing or student‑facing)
 - Generated prompt reflects the selected Prompt language.
 - Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response.
-  - **New in 1.2:** Response modal features 3 view modes:
+  - **New in 1.3:** Response modal features 4 view modes:
     - **RAW**: Original Markdown from AI.
     - **TEXT**: Clean plain text (lists normalized, markdown stripped).
-    - **HTML**: Professionally formatted view (lists, headers, paragraphs).
-  - **New in 1.2:** Smart "Copy to Clipboard" copies the text from the currently selected view.
-  - **New in 1.2:** Robust auto-formatting to handle clumped AI text.
+    - **HTML / RICH**: Professionally formatted and rendered view (lists, headers, paragraphs).
+    - **HTML CODE**: The underlying HTML source of the rendered view.
+  - **New in 1.3:** Smart "Copy to Clipboard" with Rich Text support (formatted content is preserved when pasting into editors like Microsoft Word or TinyMCE).
+  - **New in 1.3:** Improved UI with copy status feedback and better streaming response handling.
 
 Install
 1. Place this folder under Moodle at `blocks/aipromptgen`.
@@ -83,6 +84,10 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
+- 1.3 (2026-01-31): Refined AI Response Modal and copy functionality.
+  - Added RAW / TEXT / HTML (Rich) / HTML CODE view modes.
+  - Added smart "Copy" with Rich Text support.
+  - Improved UI feedback and streaming stability.
 - 1.2 (2025-12-06): Major UI enhancements and connectivity fixes.
   - Added RAW / TEXT / HTML view modes for AI response.
   - Added smart "Copy" button.

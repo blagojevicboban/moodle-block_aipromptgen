@@ -61,7 +61,9 @@
 ```
 - Endpoint URL: http://localhost:11434 (default)
 - Model Name: llama3 (example)
-- Additional Parameters: [as needed]
+- Max Tokens (num_predict): 2048 (default)
+- Request Timeout: 60s (default)
+- Structured Output Schema: [optional JSON]
 ```
 
 ### Feature Enablement
@@ -328,14 +330,16 @@
 
 ## Version History
 
-### Current Version (1.0)
-- Release Date: December 4, 2025
+### Current Version (1.3)
+- Release Date: January 31, 2026
 - Status: Stable
 - Key Features:
-   - OpenAI integration
-   - Ollama support
-   - Enhanced UI
-   - Multiple language support
+   - OpenAI and Ollama integration
+   - Real-time streaming for Ollama
+   - Refined Response Modal (RAW, TEXT, HTML, HTML CODE)
+   - Rich Text Copy support
+   - Multi-language support (EN, SR, PT, SK)
+   - Competencies & Outcomes integration
 
 ### Update Process
 1. Backup current installation

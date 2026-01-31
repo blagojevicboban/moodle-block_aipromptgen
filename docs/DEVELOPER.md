@@ -1,6 +1,6 @@
 # Developer Documentation - AI Prompt Generator
 
-Current release: 1.0 (2025-12-04)
+Current release: 1.3 (2026-01-31)
 
 ## Architecture Overview
 
@@ -19,10 +19,12 @@ Current release: 1.0 (2025-12-04)
    - Processes form submissions
 
 3. **JavaScript Modules (`amd/src/`):**
-   - `actions.js`: Handles form actions and submissions
-   - `age.js`: Age/grade range picker functionality
-   - `pickers.js`: Modal pickers for various form fields
-   - `ui.js`: UI interactions and enhancements
+   - `actions.js`: Handles prompt copy and file download functionality.
+   - `age.js`: Age/grade range picker functionality.
+   - `pickers.js`: Modal pickers for berbagai (various) form fields.
+   - `stream.js`: Implements AJAX/SSE streaming for real-time AI responses.
+   - `markdown.js`: Client-side Markdown rendering and text normalization.
+   - `ui.js`: Main UI orchestrator, handles modal states and view switching.
 
 ### Integration Points
 
@@ -107,9 +109,13 @@ public function validation($data, $files)
 initializePicker(selector, options)
 updatePickerValue(value)
 
-// Actions API
-handleSubmission(formData)
-processResponse(response)
+// Response Modal API (in ui.js)
+    setView(viewName) // raw, text, html, rich
+    copyRichText(element) // copies element contents as rich text
+    showStatus(message) // displays temporary toast-like notification
+
+// Stream API (in stream.js)
+    startStream(formCallback, promptEl, sendtoEl, responseEl, callback)
 ```
 
 ## Testing Guidelines

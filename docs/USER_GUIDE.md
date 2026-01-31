@@ -1,6 +1,6 @@
 # User Guide - AI Prompt Generator for Moodle
 
-Current release: 1.0 (2025-12-04)
+Current release: 1.3 (2026-01-31)
 
 ## Introduction
 
@@ -145,16 +145,39 @@ The AI Prompt Generator is a Moodle block plugin designed to help teachers creat
 
 2. **Sending Prompts**
    - Click "Send to AI"
-   - Wait for response
-   - View inline results
+    - Wait for response (real-time streaming supported for Ollama)
+    - View results in the Response Modal
+
+3. **Response View Modes**
+    - **RAW**: Displays the exact markdown returned by the AI.
+    - **TEXT**: A cleaned-up version with markdown formatting removed, ideal for simple copy-pasting.
+    - **HTML**: Shows a rendered preview of the content with proper headings, lists, and formatting.
+    - **HTML CODE**: Provides the underlying HTML source code for use in other web editors.
+
+4. **Copying Results**
+    - Click "Copy to clipboard" to copy the content of the currently active view.
+    - When in **HTML** (Rich) view, the content is copied as **Rich Text**, preserving formatting when pasted into applications like Word, Google Docs, or Moodle's text editor.
+    - A status indicator will confirm when the content has been successfully copied.
 
 ## Best Practices
 
-## What's New in 1.0
+## What's New in 1.3
+
+- **Refined Response Modal**: New view modes (RAW, TEXT, HTML, HTML CODE).
+- **Rich Text Copy**: Preserve formatting when copying from the HTML preview.
+- **Real-time Streaming**: Faster feedback when using local providers like Ollama.
+- **UI Enhancements**: Added copy status notifications and improved layout stability.
+
+## What's New in 1.2
+
+- RAW / TEXT / HTML view modes for AI response.
+- Client-side Markdown rendering.
+- Fixed Ollama connectivity for local networks.
+
+## What's New in 1.0 (Initial Release)
 
 - Stable 1.0 release (2025-12-04): packaging and metadata updates, stability and UI polish.
-- Includes unified "Send to AI" workflow with provider selection, and support for local Ollama endpoints (existing features from 0.3.0).
-- Minor bug fixes and improved validation.
+- Includes unified "Send to AI" workflow with provider selection, and support for local Ollama endpoints.
 
 ### Creating Effective Prompts
 
