@@ -45,20 +45,35 @@ define([], function() {
             close();
         };
 
-        if (openBtn) openBtn.addEventListener('click', function(e) {
-            e.preventDefault(); e.stopPropagation(); open();
-        });
-        if (closeBtn) closeBtn.addEventListener('click', close);
-        if (cancelBtn) cancelBtn.addEventListener('click', close);
-        if (backdrop) backdrop.addEventListener('click', close);
+        if (openBtn) {
+            openBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                open();
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', close);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', close);
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', close);
+        }
         document.addEventListener('keydown', function(ev) {
-            if (ev.key === 'Escape') close();
+            if (ev.key === 'Escape') {
+                close();
+            }
         });
         $$(itemSelector).forEach(function(li) {
-            li.addEventListener('click', function() { pick(li); });
+            li.addEventListener('click', function() {
+                pick(li);
+            });
             li.addEventListener('keydown', function(ev) {
                 if (ev.key === 'Enter' || ev.key === ' ') {
-                    ev.preventDefault(); pick(li);
+                    ev.preventDefault();
+                    pick(li);
                 }
             });
         });
@@ -87,21 +102,43 @@ define([], function() {
             }
         };
 
-        if (openBtn) openBtn.addEventListener('click', function(e) {
-            e.preventDefault(); e.stopPropagation(); open();
-        });
-        if (closeBtn) closeBtn.addEventListener('click', close);
-        if (cancelBtn) cancelBtn.addEventListener('click', close);
-        if (insertBtn) insertBtn.addEventListener('click', function() {
-            if (!ta) { close(); return; }
-            const vals = $$('.ai4t-outcome-checkbox:checked').map(function(cb) { return cb.value; }).filter(Boolean);
-            if (!vals.length) { close(); return; }
-            let cur = ta.value || '';
-            if (cur && !/\n$/.test(cur)) cur += '\n';
-            ta.value = cur + vals.join('\n');
-            close();
-        });
-        if (backdrop) backdrop.addEventListener('click', close);
+        if (openBtn) {
+            openBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                open();
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', close);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', close);
+        }
+        if (insertBtn) {
+            insertBtn.addEventListener('click', function() {
+                if (!ta) {
+                    close();
+                    return;
+                }
+                const vals = $$('.ai4t-outcome-checkbox:checked').map(function(cb) {
+                    return cb.value;
+                }).filter(Boolean);
+                if (!vals.length) {
+                    close();
+                    return;
+                }
+                let cur = ta.value || '';
+                if (cur && !/\n$/.test(cur)) {
+                    cur += '\n';
+                }
+                ta.value = cur + vals.join('\n');
+                close();
+            });
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', close);
+        }
     };
 
     const initLanguageModal = function() {
@@ -127,9 +164,13 @@ define([], function() {
             }
         };
         const sync = function() {
-            if (!input || !codeEl) return;
+            if (!input || !codeEl) {
+                return;
+            }
             const t = (input.value || '').trim();
-            if (!t) return;
+            if (!t) {
+                return;
+            }
             const m = t.match(/\(([a-z]{2,3}(?:[_-][a-z]{2,3})?)\)/i);
             if (m) {
                 codeEl.value = m[1].replace('-', '_').toLowerCase();
@@ -145,16 +186,30 @@ define([], function() {
             });
         };
 
-        if (openBtn) openBtn.addEventListener('click', function(e) {
-            e.preventDefault(); e.stopPropagation(); open();
-        });
-        if (closeBtn) closeBtn.addEventListener('click', close);
-        if (cancelBtn) cancelBtn.addEventListener('click', close);
-        if (backdrop) backdrop.addEventListener('click', close);
+        if (openBtn) {
+            openBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                open();
+            });
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', close);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', close);
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', close);
+        }
         $$('.ai4t-language-item').forEach(function(li) {
             li.addEventListener('click', function() {
-                if (input) input.value = li.getAttribute('data-name') || '';
-                if (codeEl) codeEl.value = li.getAttribute('data-code') || '';
+                if (input) {
+                    input.value = li.getAttribute('data-name') || '';
+                }
+                if (codeEl) {
+                    codeEl.value = li.getAttribute('data-code') || '';
+                }
                 close();
             });
         });
