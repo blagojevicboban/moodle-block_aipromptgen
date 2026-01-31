@@ -2,7 +2,7 @@
     position: fixed;
     inset: 0;
     display: none;
-    background: rgba(0,0,0,.4);
+    background: rgba(0, 0, 0, .4);
     z-index: 1050;
 }
 .ai4t-modal {
@@ -17,7 +17,7 @@
     z-index: 1060;
     background: #fff;
     border-radius: 6px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
 }
 .ai4t-modal header {
     display: flex;
