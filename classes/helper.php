@@ -116,8 +116,9 @@ class helper
 
         // Unique and sort.
         if (!empty($competencies)) {
-            $competencies = array_values(array_unique($competencies));
+            $competencies = array_unique($competencies);
             \core_collator::asort($competencies);
+            $competencies = array_values($competencies);
         }
 
         return $competencies;

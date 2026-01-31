@@ -1,6 +1,13 @@
 Changes
 =======
 
+1.4 (2026-01-31)
+----------------
+* Fix: Resolved PHP TypeError (htmlspecialchars) when rendering course competencies in Mustache templates.
+* Fix: Achieved full ESLint compliance for all Javascript modules (actions, ui, markdown, stream, etc.).
+* Refactor: Split complex logic in `markdown.js` and `ui.js` into smaller, maintainable helper functions.
+* Clean: Removed trailing whitespace and addressed all pending linting warnings.
+
 1.3 (2026-01-31)
 ----------------
 * Feature: Refined AI Response Modal with 4 view modes: RAW, TEXT, HTML (Rich preview), and HTML CODE (source).
