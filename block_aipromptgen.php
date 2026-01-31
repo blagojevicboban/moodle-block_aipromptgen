@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/.
+// This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,12 +23,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_aipromptgen\helper;
+
 /**
  * Block class for AI Prompt Generator.
  *
  * @package    block_aipromptgen
+ * @copyright  2025 AI4Teachers
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_aipromptgen extends block_base {
+class block_aipromptgen extends block_base
+{
     /**
      * Initialise the block title.
      *
@@ -64,7 +69,7 @@ class block_aipromptgen extends block_base {
         global $CFG;
 
         // Capability check: only users with manage capability see content.
-        $courseid = (int)$this->page->course->id;
+        $courseid = (int) $this->page->course->id;
         $context = $this->page->context;
         if (!has_capability('block/aipromptgen:manage', $context)) {
             $this->content->text = get_string('notallowed', 'block_aipromptgen');
@@ -78,155 +83,26 @@ class block_aipromptgen extends block_base {
         // Prepare a label at the top listing course competencies and grade outcomes (comma-separated).
         $complabelhtml = '';
         try {
-            $compnames = [];
-            $outnames = [];
+            $allnames = helper::get_course_competencies_and_outcomes($courseid);
 
-            if (class_exists('\\core_competency\\api') && \core_competency\api::is_enabled()) {
-                // Course-level competencies.
-                $coursecompetencies = \core_competency\api::list_course_competencies($courseid);
-                foreach ($coursecompetencies as $cc) {
-                    $competencyid = null;
-                    if (is_object($cc)) {
-                        if (method_exists($cc, 'get')) {
-                            $competencyid = $cc->get('competencyid');
-                        } else if (property_exists($cc, 'competencyid')) {
-                            $competencyid = $cc->competencyid;
-                        }
-                    }
-                    if (empty($competencyid)) {
-                        continue;
-                    }
-                    $comp = \core_competency\api::read_competency($competencyid);
-                    if (!$comp) {
-                        continue;
-                    }
-                    $shortname = '';
-                    if (method_exists($comp, 'get')) {
-                        $shortname = (string)$comp->get('shortname');
-                    }
-                    $idnumber = '';
-                    if (method_exists($comp, 'get')) {
-                        $idnumber = (string)$comp->get('idnumber');
-                    }
-                    $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
-                    if ($name === '') {
-                        $idtxt = '';
-                        if (method_exists($comp, 'get')) {
-                            $idtxt = (string)$comp->get('id');
-                        }
-                        $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
-                    }
-                    $compnames[] = $name;
-                }
-
-                // Fallback: competencies linked to visible modules if none at course level.
-                if (empty($compnames)) {
-                    $seen = [];
-                    $modinfo = get_fast_modinfo($courseid);
-                    foreach ($modinfo->get_cms() as $cm) {
-                        if (!$cm->uservisible) {
-                            continue;
-                        }
-                        $links = [];
-                        try {
-                            $links = \core_competency\api::list_course_module_competencies($cm->id);
-                        } catch (\Throwable $ignore) {
-                            $links = [];
-                        }
-                        foreach ($links as $link) {
-                            $competencyid = null;
-                            if (is_object($link)) {
-                                if (method_exists($link, 'get')) {
-                                    $competencyid = $link->get('competencyid');
-                                } else if (property_exists($link, 'competencyid')) {
-                                    $competencyid = $link->competencyid;
-                                }
-                            }
-                            if (empty($competencyid)) {
-                                continue;
-                            }
-                            $cid = (int)$competencyid;
-                            if (isset($seen[$cid])) {
-                                continue;
-                            }
-                            $comp = \core_competency\api::read_competency($cid);
-                            if (!$comp) {
-                                continue;
-                            }
-                            $shortname = '';
-                            if (method_exists($comp, 'get')) {
-                                $shortname = (string)$comp->get('shortname');
-                            }
-                            $idnumber = '';
-                            if (method_exists($comp, 'get')) {
-                                $idnumber = (string)$comp->get('idnumber');
-                            }
-                            $name = trim(format_string($shortname !== '' ? $shortname : $idnumber));
-                            if ($name === '') {
-                                $idtxt = '';
-                                if (method_exists($comp, 'get')) {
-                                    $idtxt = (string)$comp->get('id');
-                                }
-                                $name = $idtxt !== '' ? $idtxt : get_string('competency', 'core_competency');
-                            }
-                            $compnames[] = $name;
-                            $seen[$cid] = true;
-                        }
-                    }
+            // Clean up strings for display (remove descriptions if necessary, helper returns "Name — Description").
+            // For the block label, we might only want the names to save space, or keep as is.
+            // Current helper returns "Name — Description". Let's strip description for the small block view.
+            $shortnames = [];
+            foreach ($allnames as $full) {
+                $parts = explode(' — ', $full);
+                if (!empty($parts[0])) {
+                    $shortnames[] = $parts[0];
                 }
             }
+            $shortnames = array_unique($shortnames);
 
-            // Gradebook outcomes: include both local (course) and global if feature enabled.
-            if (!empty($CFG->enableoutcomes)) {
-                @require_once($CFG->libdir . '/gradelib.php');
-                @require_once($CFG->libdir . '/grade/grade_outcome.php');
-                if (class_exists('grade_outcome')) {
-                    if (method_exists('grade_outcome', 'fetch_all_local')) {
-                        $locals = grade_outcome::fetch_all_local($courseid);
-                        if (!empty($locals) && is_array($locals)) {
-                            foreach ($locals as $o) {
-                                $name = '';
-                                if (!empty($o->shortname)) {
-                                    $name = format_string($o->shortname);
-                                } else if (!empty($o->fullname)) {
-                                    $name = format_string($o->fullname);
-                                }
-                                $name = trim((string)$name);
-                                if ($name !== '') {
-                                    $outnames[] = $name;
-                                }
-                            }
-                        }
-                    }
-                    if (method_exists('grade_outcome', 'fetch_all_global')) {
-                        $globals = grade_outcome::fetch_all_global();
-                        if (!empty($globals) && is_array($globals)) {
-                            foreach ($globals as $o) {
-                                $name = '';
-                                if (!empty($o->shortname)) {
-                                    $name = format_string($o->shortname);
-                                } else if (!empty($o->fullname)) {
-                                    $name = format_string($o->fullname);
-                                }
-                                $name = trim((string)$name);
-                                if ($name !== '') {
-                                    $outnames[] = $name;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            $allnames = array_merge($compnames, $outnames);
-            if (!empty($allnames)) {
-                $allnames = array_values(array_unique($allnames));
-                // Sort naturally for readability.
-                sort($allnames, SORT_NATURAL | SORT_FLAG_CASE);
+            if (!empty($shortnames)) {
                 $labelprefix = get_string('competencies', 'core_competency') . ' / ' .
                     get_string('outcomes', 'grades');
-                $label = $labelprefix . ': ' . implode(', ', $allnames);
-                $complabelhtml = '<div class="ai4t-competencies">' . s($label) . '</div>';
+                $label = $labelprefix . ': ' . implode(', ', $shortnames);
+                $complabelhtml = '<div class="ai4t-competencies" style="' .
+                    'font-size:0.9em;color:#666;margin-bottom:8px;">' . s($label) . '</div>';
             }
         } catch (\Throwable $e) {
             // Ignore if competencies are not available; label will be omitted.
@@ -235,21 +111,23 @@ class block_aipromptgen extends block_base {
 
         // Include cmid/section params when available.
         if (!empty($this->page->cm) && !empty($this->page->cm->id)) {
-            $params['cmid'] = (int)$this->page->cm->id;
+            $params['cmid'] = (int) $this->page->cm->id;
         }
         if (!empty($sectionid)) {
             $params['section'] = $sectionid;
         }
 
-        $href = $CFG->wwwroot . '/blocks/aipromptgen/view.php?' . http_build_query($params);
+        $href = new moodle_url('/blocks/aipromptgen/view.php', $params);
         $linktext = get_string('openpromptbuilder', 'block_aipromptgen');
-        $link = '<a class="btn btn-primary" id="ai4t-open" href="' . s($href) . '">' . s($linktext) . '</a>';
+        // Use a class that matches standard Moodle buttons.
+        $link = '<a class="btn btn-primary btn-block" id="ai4t-open" href="' . $href->out(true) . '">' . s($linktext) . '</a>';
 
         // Prepend competencies label (if available).
         $this->content->text = $complabelhtml . '<div>' . $link . '</div>';
         $this->content->footer = '';
 
         // Ensure the link carries the current section when present (all-formats friendly).
+        // Inline JS is acceptable here for specific block-instance behavior not worth a full module.
         $js = "(function(){\n" .
             "var a=document.getElementById('ai4t-open'); if(!a){return;}\n" .
             "try{\n" .

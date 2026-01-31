@@ -117,3 +117,4 @@ $string['setting:ollama_schema_desc'] = 'Voliteľná JSON schéma na obmedzenie 
 $string['setting:ollama_timeout'] = 'Ollama časový limit (sekundy)';
 $string['setting:ollama_timeout_desc'] = 'Maximálny čas čakania na odpoveď Ollama. Zvýšte pre veľký výstup.';
 $string['tooltip:provider_not_configured'] = 'Nie je nastavený žiadny AI poskytovateľ.';
+$string['tooltip:editprompt'] = 'Upravte vygenerovaný prompt pred odoslaním';

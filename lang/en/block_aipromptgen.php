@@ -117,3 +117,4 @@ $string['setting:ollama_schema_desc'] = 'Optional JSON Schema to constrain Ollam
 $string['setting:ollama_timeout'] = 'Ollama request timeout (seconds)';
 $string['setting:ollama_timeout_desc'] = 'Maximum time to wait for Ollama response. Increase for large outputs.';
 $string['tooltip:provider_not_configured'] = 'No AI provider is configured.';
+$string['tooltip:editprompt'] = 'Edit the generated prompt before sending';

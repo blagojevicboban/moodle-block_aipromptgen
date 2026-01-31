@@ -58,11 +58,11 @@ header('X-Accel-Buffering: no');
  * @return void
  */
 function send_event(string $data, string $event = 'message'): void {
-    // Each line should stay reasonably small; split on newlines.
+    echo "event: {$event}\n";
     foreach (preg_split('/\r?\n/', $data) as $line) {
-        echo "event: {$event}\n";
-        echo 'data: ' . $line . "\n\n";
+        echo 'data: ' . $line . "\n";
     }
+    echo "\n";
     @flush();
 }
 

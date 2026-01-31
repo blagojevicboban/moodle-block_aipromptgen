@@ -1,239 +1,245 @@
-// This file is part of Moodle - http://moodle.org/.
-//
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * ES6 orchestrator module: aggregates individual feature modules for the AI Prompt Generator block.
- * Split into smaller modules for clarity, testability, and alignment with Moodle JS module guidelines.
- *
- * @module     block_aipromptgen/ui
- * @copyright  2025 AI4Teachers
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+define([], function() {
+    return {
+        init: function() {
+            require([
+                'block_aipromptgen/age',
+                'block_aipromptgen/pickers',
+                'block_aipromptgen/actions',
+                'block_aipromptgen/stream',
+                'block_aipromptgen/markdown'
+            ], function(Age, Pickers, Actions, Stream, Markdown) {
 
-import {initAgeModal} from 'block_aipromptgen/age';
-import {attachPicker, attachOutcomesModal, initLanguageModal} from 'block_aipromptgen/pickers';
-import {attachCopyDownload} from 'block_aipromptgen/actions';
+                var initProviderSend = function() {
+                    var sendBtn = document.getElementById('ai4t-sendtoai');
+                    var select = document.getElementById('ai4t-provider');
+                    var gen = document.getElementById('ai4t-generated');
+                    var hidden = document.getElementById('ai4t-sendto');
 
-// Unified provider send (OpenAI => submit; Ollama => SSE stream) via hidden field.
-// Helper: set up UI elements for streaming response
-const setupStreamingUI = (resp) => {
-    const statusId = 'ai-response-status';
-    let statusEl = document.getElementById(statusId);
-    if (!statusEl) {
-        statusEl = document.createElement('div');
-        statusEl.id = statusId;
-        statusEl.className = 'small text-muted';
-        if (resp && resp.parentNode) {
-            resp.parentNode.insertBefore(statusEl, resp);
-        }
-    }
-    if (statusEl) {
-        statusEl.textContent = 'Streaming...';
-    }
-    const modal = document.getElementById('ai4t-airesponse-modal');
-    const backdrop = document.getElementById('ai4t-modal-backdrop');
-    if (backdrop) {
-        backdrop.style.display = 'block';
-    }
-    if (modal) {
-        modal.style.display = 'block';
-    }
-    if (resp) {
-        resp.textContent = '';
-        resp.setAttribute('aria-busy', 'true');
-    }
-    return statusEl;
-};
+                    if (!hidden && sendBtn) {
+                        var form = document.getElementById('mform1') || document.getElementById('promptform') || sendBtn.closest('form');
+                        if (form) {
+                            hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = 'sendto';
+                            hidden.id = 'ai4t-sendto';
+                            form.appendChild(hidden);
+                        }
+                    }
 
-// Helper: attach event listeners to EventSource
-const attachStreamListeners = (es, resp, statusEl, scrollToResponse) => {
-    let first = true;
-    es.addEventListener('start', () => {
-        if (statusEl) {
-            statusEl.textContent = 'Started';
-        }
-        scrollToResponse();
-    });
-    es.addEventListener('chunk', (ev) => {
-        if (resp) {
-            resp.textContent += ev.data;
-            if (first) {
-                scrollToResponse();
-                first = false;
-            }
-        }
-    });
-    es.addEventListener('error', (ev) => {
-        if (resp) {
-            resp.textContent += '\n[Error] ' + (ev.data || '');
-        }
-        if (statusEl) {
-            statusEl.textContent = 'Error';
-        }
-        scrollToResponse();
-    });
-    es.addEventListener('done', () => {
-        if (statusEl) {
-            statusEl.textContent = 'Done';
-        }
-        if (resp) {
-            resp.removeAttribute('aria-busy');
-        }
-        scrollToResponse();
-        es.close();
-    });
-};
+                    if (!sendBtn || !select || !gen) return;
 
-// Main streaming implementation
-const startStreamImpl = (findForm, gen, hidden, resp, scrollToResponse) => {
-    if (!window.EventSource) { // Fallback: normal submit.
-        const form = findForm();
-        if (form) {
-            form.submit();
-        }
-        return;
-    }
-    const courseInput = document.querySelector('input[name=courseid]');
-    const courseid = courseInput ? courseInput.value : '';
-    hidden.value = 'ollama';
-    const statusEl = setupStreamingUI(resp);
-    const root = (window.M && window.M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : '';
-    const base = root + '/blocks/aipromptgen/stream.php';
-    let prompt = gen.value || gen.textContent || '';
-    if (!prompt) {
-        const fd = new FormData(findForm() || undefined);
-        prompt = 'Topic: ' + (fd.get('topic') || '') + '\n' +
-                 'Lesson: ' + (fd.get('lesson') || '') + '\n' +
-                 'Outcomes: ' + (fd.get('outcomes') || '');
-    }
-    const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
-        '&provider=ollama&prompt=' + encodeURIComponent(prompt));
-    attachStreamListeners(es, resp, statusEl, scrollToResponse);
-};
+                    var refreshState = function() {
+                        var opt = select.options[select.selectedIndex];
+                        var unconfigured = opt && /✕\s*$/.test(opt.textContent || '');
+                        sendBtn.disabled = (!gen.value.trim() || unconfigured);
+                    };
 
-const initProviderSend = () => {
-    const sendBtn = document.getElementById('ai4t-sendtoai');
-    const select = document.getElementById('ai4t-provider');
-    const gen = document.getElementById('ai4t-generated');
-    // Ensure hidden provider field exists (compat with server resolver).
-    let hidden = document.getElementById('ai4t-sendto');
-    if (!hidden) {
-        const form = document.getElementById('promptform');
-        if (form) {
-            hidden = document.createElement('input');
-            hidden.type = 'hidden';
-            hidden.name = 'sendto';
-            hidden.id = 'ai4t-sendto';
-            form.appendChild(hidden);
+                    select.addEventListener('change', refreshState);
+                    gen.addEventListener('input', refreshState);
+                    
+                    sendBtn.addEventListener('click', function(e) {
+                        if (sendBtn.disabled) return;
+                        var provider = select.value;
+                        var form = document.getElementById('ai4t-send-form');
+
+                        if (provider === 'ollama') {
+                            e.preventDefault();
+                            var resp = document.getElementById('ai4t-airesponse-body') || document.getElementById('ai4t-airesponse');
+                            Stream.startStream(function() { return form; }, gen, hidden, resp, function() {});
+                            return;
+                        }
+                        
+                        hidden.value = provider;
+                        if (form) form.submit();
+                    });
+                    refreshState();
+                };
+
+                var initResponseModal = function() {
+                    var modal = document.getElementById('ai4t-airesponse-modal');
+                    if (!modal) return;
+                    
+                    var bodyRaw = document.getElementById('ai4t-airesponse-body');
+                    var bodyText = document.getElementById('ai4t-airesponse-text');
+                    var bodyHtml = document.getElementById('ai4t-airesponse-html');
+                    var bodyCode = document.getElementById('ai4t-airesponse-code');
+                    var backdrop = document.getElementById('ai4t-modal-backdrop');
+
+                    var setView = function(view) {
+                        var btnRaw = document.getElementById('ai4t-btn-raw');
+                        var btnText = document.getElementById('ai4t-btn-text');
+                        var btnHtml = document.getElementById('ai4t-btn-html');
+                        var btnRich = document.getElementById('ai4t-btn-rich');
+
+                        if (btnRaw) { btnRaw.classList.remove('btn-secondary'); btnRaw.classList.add('btn-outline-secondary'); }
+                        if (btnText) { btnText.classList.remove('btn-secondary'); btnText.classList.add('btn-outline-secondary'); }
+                        if (btnHtml) { btnHtml.classList.remove('btn-secondary'); btnHtml.classList.add('btn-outline-secondary'); }
+                        if (btnRich) { btnRich.classList.remove('btn-secondary'); btnRich.classList.add('btn-outline-secondary'); }
+
+                        if (bodyRaw) bodyRaw.style.display = 'none';
+                        if (bodyText) bodyText.style.display = 'none';
+                        if (bodyHtml) bodyHtml.style.display = 'none';
+                        if (bodyCode) bodyCode.style.display = 'none';
+
+                        if (view === 'raw') {
+                            if (btnRaw) { btnRaw.classList.remove('btn-outline-secondary'); btnRaw.classList.add('btn-secondary'); }
+                            if (bodyRaw) bodyRaw.style.display = 'block';
+                        } else if (view === 'text') {
+                            if (btnText) { btnText.classList.remove('btn-outline-secondary'); btnText.classList.add('btn-secondary'); }
+                            if (bodyText) {
+                                bodyText.style.display = 'block';
+                                bodyText.textContent = Markdown.renderText(bodyRaw.textContent);
+                            }
+                        } else if (view === 'html') {
+                            if (btnHtml) { btnHtml.classList.remove('btn-outline-secondary'); btnHtml.classList.add('btn-secondary'); }
+                            if (bodyCode) {
+                                bodyCode.style.display = 'block';
+                                bodyCode.textContent = Markdown.renderMarkdown(bodyRaw.textContent);
+                            }
+                        } else if (view === 'rich') {
+                            if (btnRich) { btnRich.classList.remove('btn-outline-secondary'); btnRich.classList.add('btn-secondary'); }
+                            if (bodyHtml) {
+                                bodyHtml.style.display = 'block';
+                                try {
+                                    bodyHtml.innerHTML = Markdown.renderMarkdown(bodyRaw.textContent);
+                                } catch (e) {
+                                    bodyHtml.innerHTML = '<p>Error rendering Markdown.</p>';
+                                }
+                            }
+                        }
+                    };
+
+                    var showStatus = function(msg) {
+                        var status = document.getElementById('ai4t-modal-copy-status');
+                        if (status) {
+                            status.textContent = msg;
+                            status.style.display = 'inline';
+                            setTimeout(function() { status.style.display = 'none'; }, 2000);
+                        } else {
+                            // Fallback if status element doesn't exist yet
+                            console.log(msg);
+                        }
+                    };
+
+                    var copyRichText = function(el) {
+                        try {
+                            var range = document.createRange();
+                            range.selectNode(el);
+                            var selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            var successful = document.execCommand('copy');
+                            selection.removeAllRanges();
+                            return successful;
+                        } catch (e) {
+                            return false;
+                        }
+                    };
+
+                    document.addEventListener('click', function(e) {
+                        var btn = e.target.closest('button');
+                        var t = e.target;
+                        if (btn) {
+                            if (btn.id === 'ai4t-btn-raw') setView('raw');
+                            else if (btn.id === 'ai4t-btn-text') setView('text');
+                            else if (btn.id === 'ai4t-btn-html') setView('html');
+                            else if (btn.id === 'ai4t-btn-rich') setView('rich');
+                            else if (btn.id === 'ai4t-airesponse-modal-close-btn') {
+                                modal.style.display = 'none';
+                                if (backdrop) backdrop.style.display = 'none';
+                            } else if (btn.id === 'ai4t-airesponse-modal-copy-btn') {
+                                if (bodyHtml && bodyHtml.style.display !== 'none') {
+                                    if (copyRichText(bodyHtml)) {
+                                        showStatus('Copied as Rich Text!');
+                                    } else {
+                                        showStatus('Copy failed');
+                                    }
+                                } else {
+                                    var text = '';
+                                    if (bodyRaw && bodyRaw.style.display !== 'none') text = bodyRaw.textContent;
+                                    else if (bodyText && bodyText.style.display !== 'none') text = bodyText.textContent;
+                                    else if (bodyCode && bodyCode.style.display !== 'none') text = bodyCode.textContent;
+                                    
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                        navigator.clipboard.writeText(text).then(function() { 
+                                            showStatus('Copied to clipboard!'); 
+                                        });
+                                    } else {
+                                        // Fallback
+                                        var ta = document.createElement('textarea');
+                                        ta.value = text;
+                                        document.body.appendChild(ta);
+                                        ta.select();
+                                        document.execCommand('copy');
+                                        document.body.removeChild(ta);
+                                        showStatus('Copied!');
+                                    }
+                                }
+                            }
+                        }
+                        if (t && t.id === 'ai4t-airesponse-modal-close') {
+                            modal.style.display = 'none';
+                            if (backdrop) backdrop.style.display = 'none';
+                        }
+                    });
+
+                    if (bodyRaw && bodyRaw.textContent.trim().length > 0) {
+                        modal.style.display = 'block';
+                        if (backdrop) backdrop.style.display = 'block';
+                        setView('rich');
+                    }
+                };
+
+                // Initialize all modules
+                try { Age.initAgeModal(); } catch (e) {}
+                try {
+                    Pickers.attachPicker({
+                        openId: 'ai4t-lesson-browse',
+                        modalId: 'ai4t-modal',
+                        closeId: 'ai4t-modal-close',
+                        cancelId: 'ai4t-modal-cancel',
+                        itemSelector: '.ai4t-lesson-item',
+                        targetId: 'id_lesson'
+                    });
+                    Pickers.attachPicker({
+                        openId: 'ai4t-topic-browse',
+                        modalId: 'ai4t-topic-modal',
+                        closeId: 'ai4t-topic-modal-close',
+                        cancelId: 'ai4t-topic-modal-cancel',
+                        itemSelector: '.ai4t-topic-item',
+                        targetId: 'id_topic'
+                    });
+                    Pickers.attachOutcomesModal();
+                    Pickers.initLanguageModal();
+                    Pickers.attachPicker({
+                        openId: 'ai4t-purpose-browse',
+                        modalId: 'ai4t-purpose-modal',
+                        closeId: 'ai4t-purpose-modal-close',
+                        cancelId: 'ai4t-purpose-modal-cancel',
+                        itemSelector: '.ai4t-purpose-item',
+                        targetId: 'id_purpose'
+                    });
+                    Pickers.attachPicker({
+                        openId: 'ai4t-audience-browse',
+                        modalId: 'ai4t-audience-modal',
+                        closeId: 'ai4t-audience-modal-close',
+                        cancelId: 'ai4t-audience-modal-cancel',
+                        itemSelector: '.ai4t-audience-item',
+                        targetId: 'id_audience'
+                    });
+                    Pickers.attachPicker({
+                        openId: 'ai4t-classtype-browse',
+                        modalId: 'ai4t-classtype-modal',
+                        closeId: 'ai4t-classtype-modal-close',
+                        cancelId: 'ai4t-classtype-modal-cancel',
+                        itemSelector: '.ai4t-classtype-item',
+                        targetId: 'id_classtype'
+                    });
+                } catch (e) {}
+                try { Actions.attachCopyDownload(); } catch (e) {}
+                try { initProviderSend(); } catch (e) {}
+                try { initResponseModal(); } catch (e) {}
+            });
         }
-    }
-    if (!sendBtn || !select || !gen || !hidden) {
-        return;
-    }
-    // Prefer modal body for responses, fall back to inline container.
-    const resp = document.getElementById('ai4t-airesponse-body') || document.getElementById('ai4t-airesponse');
-    const findForm = () => document.getElementById('promptform') || document.getElementById('mform1') || sendBtn.closest('form');
-    const refreshState = () => {
-        const opt = select.options[select.selectedIndex];
-        const unconfigured = opt && /✕\s*$/.test(opt.textContent || '');
-        sendBtn.disabled = (!gen.value.trim() || unconfigured);
     };
-    const scrollToResponse = () => {
-        const heading = document.getElementById('ai4t-response-heading');
-        if (heading) {
-            try {
-                heading.scrollIntoView({behavior: 'smooth', block: 'start'});
-            } catch (e) {
-                heading.scrollIntoView();
-            }
-        }
-    };
-    const startStream = () => startStreamImpl(findForm, gen, hidden, resp, scrollToResponse);
-    select.addEventListener('change', refreshState);
-    gen.addEventListener('input', refreshState);
-    sendBtn.addEventListener('click', e => {
-        if (sendBtn.disabled) {
-            return;
-        }
-        const provider = select.value;
-        if (provider === 'ollama') {
-            e.preventDefault();
-            startStream();
-            return;
-        }
-        hidden.value = provider;
-        const form = findForm();
-        if (form) {
-            form.submit();
-        }
-    });
-    refreshState();
-};
-
-export const init = () => {
-    // Auto-scroll to generated section if present after postback.
-    const genWrapper = document.getElementById('ai4t-generated-wrapper');
-    if (genWrapper) {
-        try {
-            genWrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
-        } catch (e) {
-            genWrapper.scrollIntoView();
-        }
-    }
-    initAgeModal();
-    attachPicker({
-        openId: 'ai4t-lesson-browse',
-        modalId: 'ai4t-modal',
-        closeId: 'ai4t-modal-close',
-        cancelId: 'ai4t-modal-cancel',
-        itemSelector: '.ai4t-lesson-item',
-        targetId: 'id_lesson'
-    });
-    attachPicker({
-        openId: 'ai4t-topic-browse',
-        modalId: 'ai4t-topic-modal',
-        closeId: 'ai4t-topic-modal-close',
-        cancelId: 'ai4t-topic-modal-cancel',
-        itemSelector: '.ai4t-topic-item',
-        targetId: 'id_topic'
-    });
-    attachOutcomesModal();
-    initLanguageModal();
-    attachPicker({
-        openId: 'ai4t-purpose-browse',
-        modalId: 'ai4t-purpose-modal',
-        closeId: 'ai4t-purpose-modal-close',
-        cancelId: 'ai4t-purpose-modal-cancel',
-        itemSelector: '.ai4t-purpose-item',
-        targetId: 'id_purpose'
-    });
-    attachPicker({
-        openId: 'ai4t-audience-browse',
-        modalId: 'ai4t-audience-modal',
-        closeId: 'ai4t-audience-modal-close',
-        cancelId: 'ai4t-audience-modal-cancel',
-        itemSelector: '.ai4t-audience-item',
-        targetId: 'id_audience'
-    });
-    attachPicker({
-        openId: 'ai4t-classtype-browse',
-        modalId: 'ai4t-classtype-modal',
-        closeId: 'ai4t-classtype-modal-close',
-        cancelId: 'ai4t-classtype-modal-cancel',
-        itemSelector: '.ai4t-classtype-item',
-        targetId: 'id_classtype'
-    });
-    attachCopyDownload();
-    initProviderSend();
-};
+});
