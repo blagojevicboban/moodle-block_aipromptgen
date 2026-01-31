@@ -68,6 +68,9 @@ class ai_client
 
     /**
      * Send request to OpenAI.
+     *
+     * @param string $prompt The prompt to send.
+     * @return string The API response.
      */
     private function send_to_openai(string $prompt): string {
         if (empty($this->openaikey)) {
@@ -94,6 +97,9 @@ class ai_client
 
     /**
      * Send request to Ollama (Synchronous Fallback).
+     *
+     * @param string $prompt The prompt to send.
+     * @return string The API response.
      */
     private function send_to_ollama(string $prompt): string {
         if (empty($this->ollamaendpoint)) {

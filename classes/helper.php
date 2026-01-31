@@ -193,6 +193,9 @@ class helper
 
     /**
      * Resolve legacy grade_outcome object to string.
+     *
+     * @param object $o The grade outcome object.
+     * @return string The formatted outcome string.
      */
     private static function format_outcome($o): string {
         $name = '';
@@ -214,6 +217,9 @@ class helper
 
     /**
      * Resolve competency linkage object to actual competency.
+     *
+     * @param mixed $cc The competency linkage object or array.
+     * @return \core_competency\competency|object|null The competency object or null.
      */
     private static function resolve_competency_object($cc) {
         $competencyid = null;
@@ -247,6 +253,9 @@ class helper
 
     /**
      * Format a competency object to string.
+     *
+     * @param object $comp The competency object.
+     * @return string The formatted competency string.
      */
     private static function format_competency($comp): string {
         $shortname = method_exists($comp, 'get') ? (string) $comp->get('shortname')
@@ -275,6 +284,9 @@ class helper
 
     /**
      * Fallback to module-level competencies.
+     *
+     * @param int $courseid The course ID.
+     * @return array List of formatted competencies.
      */
     private static function get_module_competencies_fallback(int $courseid): array {
         $competencies = [];
@@ -316,6 +328,9 @@ class helper
 
     /**
      * Fallback to direct DB queries for competencies.
+     *
+     * @param int $courseid The course ID.
+     * @return array List of formatted competencies.
      */
     private static function get_competencies_from_db(int $courseid): array {
         global $DB;

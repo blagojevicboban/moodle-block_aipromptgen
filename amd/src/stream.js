@@ -102,8 +102,12 @@ define(['block_aipromptgen/markdown'], function(Markdown) {
         const timeoutMs = 30000; // 30s timeout
         const checkTimeout = setInterval(function() {
             if (Date.now() - lastActivity > timeoutMs) {
-                if (statusEl) statusEl.textContent = 'Timeout (incomplete)';
-                if (resp) resp.removeAttribute('aria-busy');
+                if (statusEl) {
+                    statusEl.textContent = 'Timeout (incomplete)';
+                }
+                if (resp) {
+                    resp.removeAttribute('aria-busy');
+                }
                 es.close();
                 clearInterval(checkTimeout);
                 scrollToResponse();
@@ -111,7 +115,6 @@ define(['block_aipromptgen/markdown'], function(Markdown) {
         }, 2000);
 
         // Hook into listeners to update lastActivity
-        const originalListeners = attachStreamListeners;
         // We modify attachStreamListeners slightly or just wrap the es.addEventListener
         // Since attachStreamListeners is internal, we can just pass the activity callback?
         // Or simpler: listen to 'chunk' here as well.
