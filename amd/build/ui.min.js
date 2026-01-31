@@ -9,6 +9,89 @@ define([], function() {
                 'block_aipromptgen/markdown'
             ], function(Age, Pickers, Actions, Stream, Markdown) {
 
+                var updatePrompt = function() {
+                    var getValue = function(id) {
+                        var el = document.getElementById(id);
+                        return el ? el.value : '';
+                    };
+
+                    var subject = getValue('id_subject');
+                    if (!subject) {
+                        var subjectEl = document.getElementById('id_subject');
+                        if (subjectEl && subjectEl.placeholder) {
+                            subject = subjectEl.placeholder;
+                        }
+                    }
+
+                    var age = getValue('id_agerange');
+                    var topic = getValue('id_topic');
+                    var lesson = getValue('id_lesson');
+                    var count = getValue('id_lessoncount') || '1';
+                    var duration = getValue('id_lessonduration') || '45';
+                    var classtype = getValue('id_classtype');
+                    var purpose = getValue('id_purpose');
+                    var audience = getValue('id_audience');
+                    var outcomes = getValue('id_outcomes');
+                    var language = getValue('id_language') || 'English';
+
+                    var p = "You are an expert teacher. Create a detailed lesson plan.\n";
+                    p += "Subject: " + subject + "\n";
+                    if (age) {
+                        p += "Student Age: " + age + " years old\n";
+                    }
+                    if (topic) {
+                        p += "Topic: " + topic + "\n";
+                    }
+                    if (lesson) {
+                        p += "Lesson Title: " + lesson + "\n";
+                    }
+                    p += "Number of lessons: " + count + "\n";
+                    p += "Duration per lesson: " + duration + " minutes\n";
+                    if (classtype) {
+                        p += "Class Type: " + classtype + "\n";
+                    }
+                    if (purpose) {
+                        p += "Purpose: " + purpose + "\n";
+                    }
+                    if (audience) {
+                        p += "Target Audience: " + audience + "\n";
+                    }
+                    if (outcomes) {
+                        p += "Learning Outcomes/Competencies:\n" + outcomes + "\n";
+                    }
+                    p += "Language: " + language + "\n";
+                    p += "\nPlease provide a structured lesson plan with objectives, activities, and timeline.";
+
+                    var gen = document.getElementById('ai4t-generated');
+                    if (gen) {
+                        gen.value = p;
+                        // Trigger input event to update valid state of buttons
+                        gen.dispatchEvent(new Event('input', {bubbles: true}));
+                    }
+                };
+
+                var initAutoUpdate = function() {
+                    var ids = [
+                        'id_subject', 'id_agerange', 'id_topic', 'id_lesson',
+                        'id_lessoncount', 'id_lessonduration', 'id_classtype',
+                        'id_purpose', 'id_audience', 'id_outcomes', 'id_language'
+                    ];
+
+                    ids.forEach(function(id) {
+                        var el = document.getElementById(id);
+                        if (el) {
+                            el.addEventListener('input', updatePrompt);
+                            el.addEventListener('change', updatePrompt);
+                        }
+                    });
+                    
+                    // Initial update
+                    // We stick it in a timeout to ensure everything is rendered
+                    setTimeout(updatePrompt, 500);
+                };
+
+                // Editor detection logic removed.
+
                 var initProviderSend = function() {
                     var sendBtn = document.getElementById('ai4t-sendtoai');
                     var select = document.getElementById('ai4t-provider');
@@ -52,6 +135,7 @@ define([], function() {
                             e.preventDefault();
                             var resp = document.getElementById('ai4t-airesponse-body') ||
                                        document.getElementById('ai4t-airesponse');
+                            
                             Stream.startStream(function() {
                                 return form;
                             }, gen, hidden, resp, function() {
@@ -101,6 +185,67 @@ define([], function() {
                         applyView(view, btns, bodies, bodyRaw, bodyText, bodyCode, bodyHtml, Markdown);
                     };
 
+                    var toggleModal = function(show) {
+                        if (show === undefined) {
+                            show = (modal.style.display !== 'block');
+                        }
+                        if (show) {
+                            modal.style.display = 'block';
+                            if (backdrop) {
+                                backdrop.style.display = 'block';
+                            }
+                            // Reset view checks if needed or load defaults
+                        } else {
+                            modal.style.display = 'none';
+                            if (backdrop) {
+                                backdrop.style.display = 'none';
+                            }
+                        }
+                    };
+
+                    document.addEventListener('aipromptgen:open', function() {
+                        // We might need to handle the case where the modal content is not yet generated.
+                        // Actually, the user wants to GENERATE a prompt, so we should probably open the main prompt builder interface, NOT the result modal.
+                        // Wait, looking at the block structure, the prompt builder is inline in the block content.
+                        // If we are in the editor, we probably want a modal that CONTAINS the prompt builder form.
+                        // For now, let's assume we are just opening the current interface if it was a modal, but the prompt builder is not a modal.
+                        
+                        // If the user wants to open the prompt generation FORM in a modal, we need to wrap the form in a modal or similar.
+                        // Currently the form is in the block content.
+                        
+                        // Let's check if we have a "Prompt Builder Modal". We don't. We have an "AI Response Modal".
+                        // To support editor integration properly, we need to move the form INTO a modal or popup.
+                        // BUT, for a quick win, if the block is on the page, we can scroll to it?
+                        // Or better, let's open the AI Response Modal if there is content?
+                        // No, the user wants to CREATE content.
+                        
+                        // Let's simulate clicking the "Open AI Prompt Builder" link if it exists (but that link usually leads to view.php).
+                        // If we are on view.php, we are fine.
+                        // If we are on a course page, the block is there. 
+                        
+                        // Creating a full modal for the form is a bigger refactor.
+                        // Let's throw an alert/notice for now or try to focus the block.
+                         
+                         var block = document.querySelector('.block_aipromptgen');
+                         if (block) {
+                             block.scrollIntoView({behavior: 'smooth'});
+                             block.style.border = '2px solid #007bff';
+                             setTimeout(function(){ block.style.border = ''; }, 2000);
+                         } else {
+                             // Fallback: If we are not on a page with the block, we can't easily generate.
+                             // We should probably open a popup window to view.php?courseid=...
+                             var courseid = document.querySelector('input[name="courseid"]'); // Try find it
+                             if (window.M && window.M.cfg && window.M.cfg.wwwroot) {
+                                 // We need a course ID.
+                                 var cid = '1'; // Default or try to find
+                                 if (window.M.cfg.courseId) cid = window.M.cfg.courseId;
+                                 
+                                 var url = window.M.cfg.wwwroot + '/blocks/aipromptgen/view.php?courseid=' + cid;
+                                 window.open(url, 'aipromptgen', 'width=800,height=800,scrollbars=yes,resizable=yes');
+                             }
+                         }
+                    });
+
                     document.addEventListener('click', function(e) {
                         handleModalClick(e, modal, backdrop, {
                             bodyRaw: bodyRaw, bodyText: bodyText, bodyHtml: bodyHtml, bodyCode: bodyCode,
@@ -108,12 +253,15 @@ define([], function() {
                         });
                     });
 
+
                     if (bodyRaw && bodyRaw.textContent.trim().length > 0) {
                         modal.style.display = 'block';
                         if (backdrop) {
                             backdrop.style.display = 'block';
                         }
                         setView('rich');
+                        
+
                     }
                 };
 
@@ -162,6 +310,8 @@ define([], function() {
                             }
                         } else if (btn.id === 'ai4t-airesponse-modal-copy-btn') {
                             handleCopy(refs);
+                        } else if (btn.id === 'ai4t-airesponse-modal-insert-btn') {
+                            handleInsert(refs, modal, backdrop);
                         }
                     }
                     if (t && t.id === 'ai4t-airesponse-modal-close') {
@@ -222,6 +372,12 @@ define([], function() {
                     }
                 };
 
+
+                var handleInsert = function() {
+                    // Deprecated: Editor insertion logic removed.
+                };
+
+
                 var copyRichText = function(el) {
                     try {
                         var range = document.createRange();
@@ -268,6 +424,9 @@ define([], function() {
                     },
                     function() {
                         initProviderSend();
+                    },
+                    function() {
+                        initAutoUpdate();
                     },
                     function() {
                         initResponseModal();

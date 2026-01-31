@@ -1,6 +1,6 @@
 # User Guide - AI Prompt Generator for Moodle
 
-Current release: 1.3 (2026-01-31)
+Current release: 1.5.0 (2026-01-31)
 
 ## Introduction
 
@@ -126,10 +126,10 @@ The AI Prompt Generator is a Moodle block plugin designed to help teachers creat
 
 ### Prompt Generation
 
-1. **Form Submission**
+1. **Real-time Generation**
    - Fill required fields
-   - Review all inputs
-   - Click "Generate prompt"
+   - The prompt updates automatically as you type
+   - No need to click a "Generate" button
 
 2. **Output Options**
    - Copy generated text
@@ -160,6 +160,12 @@ The AI Prompt Generator is a Moodle block plugin designed to help teachers creat
     - A status indicator will confirm when the content has been successfully copied.
 
 ## Best Practices
+
+## What's New in 1.5.0
+
+- **Dynamic Prompt Generation**: The prompt now updates instantly as you interact with the form, providing a smoother experience.
+- **Improved Ollama Support**: Better streaming stability, timeout handling, and immediate access to response actions.
+- **Simplified Workflow**: Removed the "Insert into Editor" button to focus on prompt generation and copying.
 
 ## What's New in 1.3
 

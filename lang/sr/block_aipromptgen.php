@@ -44,6 +44,7 @@ $string['form:copied'] = 'Kopirano!';
 $string['form:copy'] = 'Kopiraj u klipbord';
 $string['form:course'] = 'Kurs';
 $string['form:download'] = 'Preuzmi .txt';
+$string['form:includeimages'] = 'Uključi slike generisane pomoću DALL-E';
 $string['form:language'] = 'Jezik prompta';
 $string['form:languagebrowse'] = 'Pregled jezika';
 $string['form:lessonbrowse'] = 'Pregled…';

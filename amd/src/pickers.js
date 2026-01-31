@@ -41,6 +41,7 @@ define([], function() {
             const v = el.getAttribute('data-value');
             if (target && v !== null) {
                 target.value = v;
+                target.dispatchEvent(new Event('input', {bubbles: true}));
             }
             close();
         };
@@ -133,6 +134,7 @@ define([], function() {
                     cur += '\n';
                 }
                 ta.value = cur + vals.join('\n');
+                ta.dispatchEvent(new Event('input', {bubbles: true}));
                 close();
             });
         }
@@ -206,6 +208,7 @@ define([], function() {
             li.addEventListener('click', function() {
                 if (input) {
                     input.value = li.getAttribute('data-name') || '';
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
                 }
                 if (codeEl) {
                     codeEl.value = li.getAttribute('data-code') || '';

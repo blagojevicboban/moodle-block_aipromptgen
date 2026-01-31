@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use block_aipromptgen\helper;
+
 
 /**
  * Block class for AI Prompt Generator.
@@ -80,35 +80,6 @@ class block_aipromptgen extends block_base
         $sectionid = optional_param('section', 0, PARAM_INT);
         $params = ['courseid' => $courseid];
 
-        // Prepare a label at the top listing course competencies and grade outcomes (comma-separated).
-        $complabelhtml = '';
-        try {
-            $allnames = helper::get_course_competencies_and_outcomes($courseid);
-
-            // Clean up strings for display (remove descriptions if necessary, helper returns "Name — Description").
-            // For the block label, we might only want the names to save space, or keep as is.
-            // Current helper returns "Name — Description". Let's strip description for the small block view.
-            $shortnames = [];
-            foreach ($allnames as $full) {
-                $parts = explode(' — ', $full);
-                if (!empty($parts[0])) {
-                    $shortnames[] = $parts[0];
-                }
-            }
-            $shortnames = array_unique($shortnames);
-
-            if (!empty($shortnames)) {
-                $labelprefix = get_string('competencies', 'core_competency') . ' / ' .
-                    get_string('outcomes', 'grades');
-                $label = $labelprefix . ': ' . implode(', ', $shortnames);
-                $complabelhtml = '<div class="ai4t-competencies" style="' .
-                    'font-size:0.9em;color:#666;margin-bottom:8px;">' . s($label) . '</div>';
-            }
-        } catch (\Throwable $e) {
-            // Ignore if competencies are not available; label will be omitted.
-            debugging($e->getMessage(), DEBUG_DEVELOPER);
-        }
-
         // Include cmid/section params when available.
         if (!empty($this->page->cm) && !empty($this->page->cm->id)) {
             $params['cmid'] = (int) $this->page->cm->id;
@@ -122,8 +93,7 @@ class block_aipromptgen extends block_base
         // Use a class that matches standard Moodle buttons.
         $link = '<a class="btn btn-primary btn-block" id="ai4t-open" href="' . $href->out(true) . '">' . s($linktext) . '</a>';
 
-        // Prepend competencies label (if available).
-        $this->content->text = $complabelhtml . '<div>' . $link . '</div>';
+        $this->content->text = '<div>' . $link . '</div>';
         $this->content->footer = '';
 
         // Ensure the link carries the current section when present (all-formats friendly).

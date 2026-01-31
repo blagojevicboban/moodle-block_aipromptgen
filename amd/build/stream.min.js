@@ -97,6 +97,34 @@ define(['block_aipromptgen/markdown'], function(Markdown) {
         const es = new EventSource(base + '?courseid=' + encodeURIComponent(courseid) +
             '&provider=ollama&prompt=' + encodeURIComponent(prompt));
 
+        // Timeout logic
+        let lastActivity = Date.now();
+        const timeoutMs = 30000; // 30s timeout
+        const checkTimeout = setInterval(function() {
+            if (Date.now() - lastActivity > timeoutMs) {
+                if (statusEl) statusEl.textContent = 'Timeout (incomplete)';
+                if (resp) resp.removeAttribute('aria-busy');
+                es.close();
+                clearInterval(checkTimeout);
+                scrollToResponse();
+            }
+        }, 2000);
+
+        // Hook into listeners to update lastActivity
+        const originalListeners = attachStreamListeners;
+        // We modify attachStreamListeners slightly or just wrap the es.addEventListener
+        // Since attachStreamListeners is internal, we can just pass the activity callback?
+        // Or simpler: listen to 'chunk' here as well.
+        es.addEventListener('chunk', function() {
+            lastActivity = Date.now();
+        });
+        es.addEventListener('done', function() {
+            clearInterval(checkTimeout);
+        });
+        es.addEventListener('error', function() {
+            clearInterval(checkTimeout);
+        });
+
         attachStreamListeners(es, resp, statusEl, scrollToResponse);
     };
 

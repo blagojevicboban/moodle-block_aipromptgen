@@ -1,6 +1,6 @@
 # AI for Teachers - prompt generator (Moodle block)
 
-Release: 1.3 (2026-01-31)
+Release: 1.5.0 (2026-01-31)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -20,7 +20,7 @@ Features
   - Prompt language: text input + Browse
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
-- Generated prompt reflects the selected Prompt language.
+- Generated prompt updates in real-time as you modify fields.
 - Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response.
   - **New in 1.3:** Response modal features 4 view modes:
     - **RAW**: Original Markdown from AI.
@@ -46,7 +46,7 @@ Usage
 1. Add the “AI for Teachers” block to a course page.
 2. Click “Open AI Prompt Builder”.
 3. Fill the fields (use Browse buttons for quick selection).
-4. Click “Generate prompt” and copy or download the generated text.
+4. The prompt is generated automatically as you type or select options.
 5. (Optional) Select a provider and click “Send to AI” to send the generated prompt and view the response inline (requires provider configuration).
 
 Permissions
@@ -84,6 +84,7 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
+- 1.5.0 (2026-01-31): Dynamic prompt generation (real-time), removed "Insert into Editor", stabilized Ollama streaming.
 - 1.3 (2026-01-31): Refined AI Response Modal and copy functionality.
   - Added RAW / TEXT / HTML (Rich) / HTML CODE view modes.
   - Added smart "Copy" with Rich Text support.

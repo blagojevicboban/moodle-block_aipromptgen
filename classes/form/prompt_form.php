@@ -273,7 +273,8 @@ class prompt_form extends \moodleform {
             'name' => 'courseid',
         ]);
 
-        $this->add_action_buttons(true, get_string('form:submit', 'block_aipromptgen'));
+        // Standard action buttons are removed as prompt generation is now dynamic client-side.
+        // Users can use the 'Back to course' button in the template if they wish to leave.
 
         // No inline script here; handled on the page to open a modal and populate the textbox.
     }

@@ -1,6 +1,13 @@
 Changes
 =======
 
+1.5.0 (2026-01-31)
+----------------__
+* Feature: Dynamic Prompt Generation - prompt updates in real-time as you type, removing the need for a "Generate" button.
+* Refactor: Removed "Insert into Editor" functionality to simplify the block and decouple it from specific editors.
+* Fix: Improved Ollama streaming stability with timeout handling and immediate availability of response actions.
+* Fix: Removed manual "Generate prompt" button for a smoother workflow.
+
 1.4 (2026-01-31)
 ----------------
 * Fix: Resolved PHP TypeError (htmlspecialchars) when rendering course competencies in Mustache templates.

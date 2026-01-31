@@ -62,7 +62,7 @@ $mform->set_data(['courseid' => $courseid]);
 
 // Handle Form Submission.
 $generatedprompt = '';
-$hasgenerated = false;
+$hasgenerated = true; // Always show the result section for live updates.
 $airesponse = '';
 
 // Check if this is a "Send to AI" request (manual form submission).
@@ -71,67 +71,16 @@ $provider = optional_param('sendto', '', PARAM_TEXT);
 
 if (!empty($provider) && !empty($rawprompt) && confirm_sesskey()) {
     $generatedprompt = $rawprompt;
-    $hasgenerated = true;
-
     if ($provider === 'openai' || $provider === 'ollama') {
         $client = new ai_client();
         $airesponse = $client->send_request($provider, $generatedprompt);
     }
 } else if ($mform->is_cancelled()) {
     redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
-} else if ($data = $mform->get_data()) {
-    // Generate Prompt String.
-    $subject = !empty($data->subject) ? $data->subject : $course->fullname;
-    $age = $data->agerange ?? '';
-    $topic = $data->topic ?? '';
-    $lesson = $data->lesson ?? '';
-
-    // Process lesson count and duration.
-    $count = isset($data->lessoncount) ? (int) $data->lessoncount : 1;
-    $duration = isset($data->lessonduration) ? (int) $data->lessonduration : 45;
-
-    $outcomes = $data->outcomes ?? '';
-    $langname = $data->language ?? 'English'; // Default.
-    $purpose = $data->purpose ?? '';
-    $audience = $data->audience ?? '';
-    $classtype = $data->classtype ?? '';
-
-    // Construct the prompts.
-
-    $p = "You are an expert teacher. Create a detailed lesson plan.\n";
-    $p .= "Subject: " . $subject . "\n";
-    if ($age !== '') {
-        $p .= "Student Age: " . $age . " years old\n";
-    }
-    if ($topic !== '') {
-        $p .= "Topic: " . $topic . "\n";
-    }
-    if ($lesson !== '') {
-        $p .= "Lesson Title: " . $lesson . "\n";
-    }
-    $p .= "Number of lessons: " . $count . "\n";
-    $p .= "Duration per lesson: " . $duration . " minutes\n";
-    if ($classtype !== '') {
-        $p .= "Class Type: " . $classtype . "\n";
-    }
-    if ($purpose !== '') {
-        $p .= "Purpose: " . $purpose . "\n";
-    }
-    if ($audience !== '') {
-        $p .= "Target Audience: " . $audience . "\n";
-    }
-    if ($outcomes !== '') {
-        $p .= "Learning Outcomes/Competencies:\n" . $outcomes . "\n";
-    }
-    $p .= "Language: " . $langname . "\n";
-
-    $p .= "\nPlease provide a structured lesson plan with objectives, activities, and timeline.";
-
-    $generatedprompt = $p;
-    $hasgenerated = true;
-
-    // No auto-send here; user must click "Send to AI".
 }
+
+// Server-side prompt generation is replaced by client-side JS (ui.js).
+
 
 // Render Page.
 echo $OUTPUT->header();
