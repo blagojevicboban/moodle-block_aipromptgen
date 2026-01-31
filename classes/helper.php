@@ -366,6 +366,9 @@ class helper
 
     /**
      * Get emoji icon for module type.
+     *
+     * @param string $modname The module name.
+     * @return string The emoji icon.
      */
     private static function get_module_icon(string $modname): string {
         switch ($modname) {

@@ -15,8 +15,41 @@
     Context variables required for this template:
     * hasgenerated - bool, true if prompt was generated
     * generatedprompt - string, the generated text
-    * providerrows - array of {value, name, selected}
-    * backul - string, URL to course
+    * provideroptions - array of {value, label, selected}
+    * backurl - string, URL to course
+    * providersavailable - bool
+    * sesskey - string
+    * courseid - int
+    * lessonoptions - array
+    * topics - array
+    * competencies - array
+    * languages - array
+    * purposes - array
+    * audiences - array
+    * classtypes - array
+    * airesponse_initial - string
+
+    @example
+    {
+        "hasgenerated": true,
+        "courseid": 2,
+        "sesskey": "sesskey",
+        "generatedprompt": "Test prompt",
+        "provideroptions": [
+            {"value": "openai", "label": "OpenAI", "selected": true},
+            {"value": "ollama", "label": "Ollama (Local)"}
+        ],
+        "providersavailable": true,
+        "backurl": "#",
+        "lessonoptions": [],
+        "topics": [],
+        "competencies": ["Competency 1"],
+        "languages": [{"code": "en", "name": "English", "label": "English"}],
+        "purposes": ["Teaching"],
+        "audiences": ["Students"],
+        "classtypes": ["Online"],
+        "airesponse_initial": ""
+    }
 }}
 
 <!-- Generated Prompt Section -->
@@ -65,21 +98,21 @@
         <button type="button" id="ai4t-age-modal-close" class="btn btn-link" aria-label="{{#str}}cancel{{/str}}">&times;</button>
     </header>
     <div class="ai4t-body">
-        <div>
-            <label style="display:flex;align-items:center;gap:8px;">
+        <div class="mb-2">
+            <div style="display:flex;align-items:center;gap:8px;">
                 <input type="radio" name="ai4t-age-mode" id="ai4t-age-mode-exact" value="exact" checked>
-                <span>Exact age</span>
-                <input type="number" id="ai4t-age-exact" min="1" max="120" step="1" style="width:100px;">
-            </label>
+                <label for="ai4t-age-mode-exact" class="mb-0">Exact age</label>
+                <input type="number" id="ai4t-age-exact" min="1" max="120" step="1" style="width:100px;" class="form-control d-inline" aria-label="Exact age value">
+            </div>
         </div>
-        <div style="margin-top:8px;">
-            <label style="display:flex;align-items:center;gap:8px;">
+        <div>
+            <div style="display:flex;align-items:center;gap:8px;">
                 <input type="radio" name="ai4t-age-mode" id="ai4t-age-mode-range" value="range">
-                <span>Age range</span>
-                <input type="number" id="ai4t-age-from" min="1" max="120" step="1" style="width:100px;" disabled>
+                <label for="ai4t-age-mode-range" class="mb-0">Age range</label>
+                <input type="number" id="ai4t-age-from" min="1" max="120" step="1" style="width:100px;" class="form-control d-inline" disabled aria-label="Age range from">
                 <span>–</span>
-                <input type="number" id="ai4t-age-to" min="1" max="120" step="1" style="width:100px;" disabled>
-            </label>
+                <input type="number" id="ai4t-age-to" min="1" max="120" step="1" style="width:100px;" class="form-control d-inline" disabled aria-label="Age range to">
+            </div>
         </div>
     </div>
     <footer>
@@ -137,7 +170,7 @@
         <ul class="ai4t-list">
             {{#competencies}}
                 <li class="ai4t-item">
-                    <label>
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:0;cursor:pointer;">
                         <input type="checkbox" class="ai4t-outcome-checkbox" value="{{.}}">
                         <span>{{.}}</span>
                     </label>
@@ -256,17 +289,3 @@
 <div class="mt-3">
     <a href="{{backurl}}" class="btn btn-secondary">{{#str}}form:backtocourse, block_aipromptgen{{/str}}</a>
 </div>
-
-<style>
-.ai4t-modal-backdrop{position:fixed;inset:0;display:none;background:rgba(0,0,0,.4);z-index:1050;}
-.ai4t-modal{position:fixed;top:10%;left:50%;transform:translateX(-50%);width:90%;max-width:720px;
-max-height:70vh;display:none;z-index:1060;background:#fff;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
-.ai4t-modal header{display:flex;justify-content:space-between;align-items:center;
-padding:12px 16px;border-bottom:1px solid #ddd;}
-.ai4t-modal .ai4t-body{padding:8px 16px;overflow:auto;max-height:58vh;}
-.ai4t-list{list-style:none;margin:0;padding:0;}
-.ai4t-section{font-weight:600;margin:8px 0 4px;}
-.ai4t-item{padding:6px 8px;border-radius:4px;cursor:pointer;}
-.ai4t-item:hover{background:#f2f2f2;}
-.ai4t-modal footer{padding:10px 16px;border-top:1px solid #ddd;display:flex;justify-content:flex-end;gap:8px;}
-</style>
