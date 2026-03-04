@@ -43,6 +43,40 @@ if ($ADMIN->fulltree) {
         PARAM_TEXT
     ));
 
+    // Gemini API key (password-unmask field).
+    $settings->add(new admin_setting_configpasswordunmask(
+        'block_aipromptgen/gemini_apikey',
+        get_string('setting:gemini_apikey', 'block_aipromptgen'),
+        get_string('setting:gemini_apikey_desc', 'block_aipromptgen'),
+        ''
+    ));
+
+    // Default Gemini model.
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/gemini_model',
+        get_string('setting:gemini_model', 'block_aipromptgen'),
+        get_string('setting:gemini_model_desc', 'block_aipromptgen'),
+        'gemini-1.5-flash',
+        PARAM_TEXT
+    ));
+
+    // Claude API key (password-unmask field).
+    $settings->add(new admin_setting_configpasswordunmask(
+        'block_aipromptgen/claude_apikey',
+        get_string('setting:claude_apikey', 'block_aipromptgen'),
+        get_string('setting:claude_apikey_desc', 'block_aipromptgen'),
+        ''
+    ));
+
+    // Default Claude model.
+    $settings->add(new admin_setting_configtext(
+        'block_aipromptgen/claude_model',
+        get_string('setting:claude_model', 'block_aipromptgen'),
+        get_string('setting:claude_model_desc', 'block_aipromptgen'),
+        'claude-3-5-sonnet-latest',
+        PARAM_TEXT
+    ));
+
     // Ollama endpoint.
     $settings->add(new admin_setting_configtext(
         'block_aipromptgen/ollama_endpoint',

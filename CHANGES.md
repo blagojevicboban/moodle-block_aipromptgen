@@ -1,6 +1,11 @@
 Changes
 =======
 
+1.6.0 (2026-03-04)
+------------------
+* Feature: Added support for Gemini API (Google).
+* Feature: Added support for Claude API (Anthropic).
+
 1.5.0 (2026-01-31)
 ----------------__
 * Feature: Dynamic Prompt Generation - prompt updates in real-time as you type, removing the need for a "Generate" button.

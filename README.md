@@ -1,6 +1,6 @@
 # AI for Teachers - prompt generator (Moodle block)
 
-Release: 1.5.0 (2026-01-31)
+Release: 1.6.0 (2026-03-04)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -21,7 +21,7 @@ Features
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
 - Generated prompt updates in real-time as you modify fields.
-- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI or local Ollama) to fetch an inline response.
+- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI, Gemini, Claude or local Ollama) to fetch an inline response.
   - **New in 1.3:** Response modal features 4 view modes:
     - **RAW**: Original Markdown from AI.
     - **TEXT**: Clean plain text (lists normalized, markdown stripped).
@@ -39,6 +39,8 @@ Install
    Then link competencies to the course (Course → More → Competencies) and/or define local/global outcomes.
 4. (Optional) Configure AI providers (Site administration → Plugins → Blocks → AI for Teachers):
   - OpenAI: API key + model (default `gpt-4o-mini`).
+  - Gemini: API key + model (default `gemini-1.5-flash`).
+  - Claude: API key + model (default `claude-3-5-sonnet-latest`).
   - Ollama: Local endpoint base URL (e.g. `http://localhost:11434`) + model name (e.g. `llama3`, `mistral`).
     - *Note:* Connection to local private subnets (e.g. `192.168.x.x`) is supported (requires HTTPS or configured proxy bypass).
 
@@ -65,7 +67,7 @@ Notes
 - Age/grade modal:
   - Choose an exact age or a range. The prompt formats this as `15 godina` or `15-16 godina` (localized wording can vary by language pack).
 - AI provider integration:
-  - When configured, pressing “Send to AI” sends the generated prompt to the selected provider (OpenAI or Ollama) and displays the AI response on the page. Ensure institutional data/privacy compliance before sending data to external services (OpenAI). Local Ollama requests remain on your server.
+  - When configured, pressing “Send to AI” sends the generated prompt to the selected provider (OpenAI, Gemini, Claude or Ollama) and displays the AI response on the page. Ensure institutional data/privacy compliance before sending data to external services (OpenAI, Gemini, Claude). Local Ollama requests remain on your server.
 
 Troubleshooting
 - “A required parameter (courseid) was missing”:
@@ -84,6 +86,7 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
+- 1.6.0 (2026-03-04): Added Gemini and Claude API support.
 - 1.5.0 (2026-01-31): Dynamic prompt generation (real-time), removed "Insert into Editor", stabilized Ollama streaming.
 - 1.3 (2026-01-31): Refined AI Response Modal and copy functionality.
   - Added RAW / TEXT / HTML (Rich) / HTML CODE view modes.
