@@ -19,29 +19,25 @@
  *
  * Provides an SSE (text/event-stream) interface that proxies incremental NDJSON
  * output from a local Ollama server to the browser as start/chunk/error/done events.
- * Only the block capability 'block/aipromptgen:manage' is required (same gate as view.php).
  *
  * @package    block_aipromptgen
- * @category   output
- * @author     Boban Blagojevic
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(__DIR__ . '/../../config.php');
-require_login();
 
-$courseid = required_param('courseid', PARAM_INT);
+
+
+
+
+
+require_once(__DIR__ . '/../../config.php');
+
+$courseid = optional_param('courseid', 0, PARAM_INT);
+require_login($courseid);
 $provider = optional_param('provider', 'ollama', PARAM_ALPHA);
 
-$course = get_course($courseid);
-$context = context_course::instance($course->id);
-// Match main view capability (teachers/managers allowed via block capability).
-require_capability('block/aipromptgen:manage', $context);
-
 // Disable buffering for streaming.
-// Use ob_end_clean() to discard any previous output (warnings, notices, whitespace)
-// that might have forced text/html headers.
 while (ob_get_level()) {
     @ob_end_clean();
 }
@@ -57,7 +53,7 @@ header('X-Accel-Buffering: no');
  * @param string $event The SSE event name (e.g. start, chunk, error, done).
  * @return void
  */
-function send_event(string $data, string $event = 'message'): void {
+function block_aipromptgen_send_event(string $data, string $event = 'message'): void {
     echo "event: {$event}\n";
     foreach (preg_split('/\r?\n/', $data) as $line) {
         echo 'data: ' . $line . "\n";
@@ -66,7 +62,21 @@ function send_event(string $data, string $event = 'message'): void {
     @flush();
 }
 
-// Very light prompt assembly: accept raw prompt if supplied; else build from form fields similar to view.
+if (empty($courseid)) {
+    block_aipromptgen_send_event('Required parameter "courseid" is missing or invalid.', 'error');
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+try {
+    $course = get_course($courseid);
+    $context = context_course::instance($course->id);
+    require_capability('block/aipromptgen:manage', $context);
+} catch (Exception $e) {
+    block_aipromptgen_send_event('Access error: ' . $e->getMessage(), 'error');
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
 $rawprompt = optional_param('prompt', '', PARAM_RAW_TRIMMED);
 if ($rawprompt === '') {
     // Fallback: concatenate basic fields (topic, lesson, outcomes). This is simplified vs full view builder.
@@ -76,18 +86,296 @@ if ($rawprompt === '') {
     $rawprompt = "Topic: {$topic}\nLesson: {$lesson}\nOutcomes: {$outcomes}";
 }
 
-// Only Ollama streaming implemented here.
-if ($provider !== 'ollama') {
-    send_event('Unsupported provider for streaming: ' . $provider, 'error');
-    send_event('[DONE]', 'done');
+// Rate limiting.
+if (!\block_aipromptgen\helper::check_rate_limit()) {
+    block_aipromptgen_send_event(get_string('error_ratelimit', 'block_aipromptgen'), 'error');
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+// Ollama, Gemini, Claude, DeepSeek and Custom API streaming implemented here.
+if (!in_array($provider, ['ollama', 'gemini', 'claude', 'deepseek', 'custom'])) {
+    block_aipromptgen_send_event('Unsupported provider for streaming: ' . $provider, 'error');
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+// Resolve the system prompt (admin-configured or built-in default).
+$configuredsystemprompt = (string)(get_config('block_aipromptgen', 'system_prompt') ?? '');
+$systemprompt = $configuredsystemprompt !== '' ? $configuredsystemprompt : 'You are a helpful assistant.';
+
+// Resolve temperature and max tokens.
+$rawtemp = get_config('block_aipromptgen', 'temperature');
+$streamtemperature = ($rawtemp !== false && $rawtemp !== '') ? (float)$rawtemp : 0.7;
+$rawmax = get_config('block_aipromptgen', 'max_tokens');
+$streammaxtokens = ($rawmax !== false && $rawmax !== '') ? (int)$rawmax : 1024;
+
+if ($provider === 'gemini') {
+    $apikey = (string)(get_config('block_aipromptgen', 'gemini_apikey') ?? '');
+    $model = (string)(get_config('block_aipromptgen', 'gemini_model') ?? 'gemini-1.5-flash');
+    if ($apikey === '') {
+        block_aipromptgen_send_event('Gemini API key not configured', 'error');
+        block_aipromptgen_send_event('[DONE]', 'done');
+        exit;
+    }
+
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:streamGenerateContent?key={$apikey}";
+    $payload = json_encode([
+        'contents' => [['parts' => [['text' => $rawprompt]]]],
+        'system_instruction' => ['parts' => [['text' => $systemprompt]]],
+        'generationConfig' => [
+            'temperature' => $streamtemperature,
+            'maxOutputTokens' => $streammaxtokens,
+        ],
+    ]);
+
+    require_once($CFG->libdir . '/filelib.php');
+    $curl = new curl(['ignoresecurity' => true]);
+    $options = [
+        'CURLOPT_HTTPHEADER' => ['Content-Type: application/json'],
+        'CURLOPT_RETURNTRANSFER' => false,
+        'CURLOPT_WRITEFUNCTION' => function ($ch, $chunk) {
+            static $buffer = '';
+            $buffer .= $chunk;
+            // Gemini sends a JSON array of candidates.
+            while (($start = strpos($buffer, '{')) !== false) {
+                $depth = 0;
+                $end = -1;
+                for ($i = $start; $i < strlen($buffer); $i++) {
+                    if ($buffer[$i] === '{') {
+                        $depth++;
+                    } else if ($buffer[$i] === '}') {
+                        $depth--;
+                    }
+                    if ($depth === 0) {
+                        $end = $i;
+                        break;
+                    }
+                }
+                if ($end === -1) {
+                    break;
+                }
+
+                $json = substr($buffer, $start, $end - $start + 1);
+                $buffer = substr($buffer, $end + 1);
+                $obj = json_decode($json, true);
+                if (isset($obj['candidates'][0]['content']['parts'][0]['text'])) {
+                    block_aipromptgen_send_event($obj['candidates'][0]['content']['parts'][0]['text'], 'chunk');
+                }
+            }
+            return strlen($chunk);
+        },
+    ];
+
+    block_aipromptgen_send_event('Gemini streaming start', 'start');
+    $res = $curl->post($url, $payload, $options);
+    if ($res !== true && is_string($res) && $res !== '') {
+        block_aipromptgen_send_event('cURL error: ' . $res, 'error');
+    } else if (!empty($curl->error)) {
+        block_aipromptgen_send_event('cURL error: ' . $curl->error, 'error');
+    }
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+if ($provider === 'deepseek') {
+    $apikey = (string)(get_config('block_aipromptgen', 'deepseek_apikey') ?? '');
+    $model = (string)(get_config('block_aipromptgen', 'deepseek_model') ?? 'deepseek-chat');
+    if ($apikey === '') {
+        block_aipromptgen_send_event('DeepSeek API key not configured', 'error');
+        block_aipromptgen_send_event('[DONE]', 'done');
+        exit;
+    }
+
+    $url = 'https://api.deepseek.com/v1/chat/completions';
+    $payload = json_encode([
+        'model' => $model,
+        'messages' => [
+            ['role' => 'system', 'content' => $systemprompt],
+            ['role' => 'user', 'content' => $rawprompt],
+        ],
+        'stream' => true,
+        'temperature' => $streamtemperature,
+        'max_tokens' => $streammaxtokens,
+    ]);
+
+    require_once($CFG->libdir . '/filelib.php');
+    $curl = new curl(['ignoresecurity' => true]);
+    $options = [
+        'CURLOPT_HTTPHEADER' => [
+            'Authorization: Bearer ' . $apikey,
+            'Content-Type: application/json',
+        ],
+        'CURLOPT_RETURNTRANSFER' => false,
+        'CURLOPT_WRITEFUNCTION' => function ($ch, $chunk) {
+            static $buffer = '';
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = trim(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+                if (strpos($line, 'data: ') === 0) {
+                    $json = substr($line, 6);
+                    if ($json === '[DONE]') {
+                        break;
+                    }
+                    $obj = json_decode($json, true);
+                    if (isset($obj['choices'][0]['delta']['content'])) {
+                        block_aipromptgen_send_event($obj['choices'][0]['delta']['content'], 'chunk');
+                    }
+                }
+            }
+            return strlen($chunk);
+        },
+    ];
+
+    block_aipromptgen_send_event('DeepSeek streaming start', 'start');
+    $res = $curl->post($url, $payload, $options);
+    if ($res !== true && is_string($res) && $res !== '') {
+        block_aipromptgen_send_event('cURL error: ' . $res, 'error');
+    } else if (!empty($curl->error)) {
+        block_aipromptgen_send_event('cURL error: ' . $curl->error, 'error');
+    }
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+if ($provider === 'claude') {
+    $apikey = (string)(get_config('block_aipromptgen', 'claude_apikey') ?? '');
+    $model = (string)(get_config('block_aipromptgen', 'claude_model') ?? 'claude-3-5-sonnet-20240620');
+    if ($apikey === '') {
+        block_aipromptgen_send_event('Claude API key not configured', 'error');
+        block_aipromptgen_send_event('[DONE]', 'done');
+        exit;
+    }
+
+    $url = 'https://api.anthropic.com/v1/messages';
+    $payload = json_encode([
+        'model' => $model,
+        'max_tokens' => $streammaxtokens,
+        'system' => $systemprompt,
+        'messages' => [['role' => 'user', 'content' => $rawprompt]],
+        'stream' => true,
+        'temperature' => $streamtemperature,
+    ]);
+
+    require_once($CFG->libdir . '/filelib.php');
+    $curl = new curl(['ignoresecurity' => true]);
+    $options = [
+        'CURLOPT_HTTPHEADER' => [
+            'x-api-key: ' . $apikey,
+            'anthropic-version: 2023-06-01',
+            'content-type: application/json',
+        ],
+        'CURLOPT_RETURNTRANSFER' => false,
+        'CURLOPT_WRITEFUNCTION' => function ($ch, $chunk) {
+            static $buffer = '';
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = trim(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+                if (strpos($line, 'data: ') === 0) {
+                    $json = substr($line, 6);
+                    $obj = json_decode($json, true);
+                    if ($obj && $obj['type'] === 'content_block_delta') {
+                        block_aipromptgen_send_event($obj['delta']['text'], 'chunk');
+                    }
+                }
+            }
+            return strlen($chunk);
+        },
+    ];
+
+    block_aipromptgen_send_event('Claude streaming start', 'start');
+    $res = $curl->post($url, $payload, $options);
+    if ($res !== true && is_string($res) && $res !== '') {
+        block_aipromptgen_send_event('cURL error: ' . $res, 'error');
+    } else if (!empty($curl->error)) {
+        block_aipromptgen_send_event('cURL error: ' . $curl->error, 'error');
+    }
+    block_aipromptgen_send_event('[DONE]', 'done');
+    exit;
+}
+
+if ($provider === 'custom') {
+    $endpoint = (string)(get_config('block_aipromptgen', 'custom_endpoint') ?? '');
+    if ($endpoint === '') {
+        block_aipromptgen_send_event('Custom API endpoint not configured', 'error');
+        block_aipromptgen_send_event('[DONE]', 'done');
+        exit;
+    }
+
+    $apikey = (string)(get_config('block_aipromptgen', 'custom_apikey') ?? '');
+    $model = (string)(get_config('block_aipromptgen', 'custom_model') ?? '');
+
+    $payload = json_encode([
+        'model' => $model,
+        'messages' => [
+            ['role' => 'system', 'content' => $systemprompt],
+            ['role' => 'user', 'content' => $rawprompt],
+        ],
+        'stream' => true,
+        'temperature' => $streamtemperature,
+        'max_tokens' => $streammaxtokens,
+    ]);
+
+    $hdrs = ['Content-Type: application/json'];
+    if ($apikey !== '') {
+        $hdrs[] = 'Authorization: Bearer ' . $apikey;
+    }
+
+    require_once($CFG->libdir . '/filelib.php');
+    $curl = new curl(['ignoresecurity' => true]);
+    $options = [
+        'CURLOPT_HTTPHEADER' => $hdrs,
+        'CURLOPT_RETURNTRANSFER' => false,
+        'CURLOPT_WRITEFUNCTION' => function ($ch, $chunk) {
+            static $buffer = '';
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = trim(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+                if (strpos($line, 'data: ') === 0) {
+                    $json = substr($line, 6);
+                    if ($json === '[DONE]') {
+                        break;
+                    }
+                    $obj = json_decode($json, true);
+                    if (isset($obj['choices'][0]['delta']['content'])) {
+                        block_aipromptgen_send_event($obj['choices'][0]['delta']['content'], 'chunk');
+                    }
+                }
+            }
+            return strlen($chunk);
+        },
+    ];
+
+    // Bypass SSL checks for local endpoints.
+    if (
+        preg_match(
+            '~^https?://(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)~i',
+            $endpoint
+        )
+    ) {
+        $options['CURLOPT_SSL_VERIFYPEER'] = false;
+        $options['CURLOPT_SSL_VERIFYHOST'] = 0;
+    }
+
+    block_aipromptgen_send_event('Custom API streaming start', 'start');
+    $res = $curl->post($endpoint, $payload, $options);
+    if ($res !== true && is_string($res) && $res !== '') {
+        block_aipromptgen_send_event('cURL error: ' . $res, 'error');
+    } else if (!empty($curl->error)) {
+        block_aipromptgen_send_event('cURL error: ' . $curl->error, 'error');
+    }
+    block_aipromptgen_send_event('[DONE]', 'done');
     exit;
 }
 
 $endpoint = (string)(get_config('block_aipromptgen', 'ollama_endpoint') ?? '');
 $model = (string)(get_config('block_aipromptgen', 'ollama_model') ?? '');
 if ($endpoint === '' || $model === '') {
-    send_event('Ollama not configured', 'error');
-    send_event('[DONE]', 'done');
+    block_aipromptgen_send_event('Ollama not configured', 'error');
+    block_aipromptgen_send_event('[DONE]', 'done');
     exit;
 }
 
@@ -125,16 +413,15 @@ if ($schema) {
     $body['format'] = $schema;
 }
 $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
+require_once($CFG->libdir . '/filelib.php');
+$curl = new curl(['ignoresecurity' => true]);
 
-$ch = curl_init($url);
-curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_POSTFIELDS => $payload,
-    CURLOPT_RETURNTRANSFER => false, // Stream directly.
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_TIMEOUT => $timeout,
-    CURLOPT_WRITEFUNCTION => function ($ch, $chunk) use (&$schema) {
+$options = [
+    'CURLOPT_HTTPHEADER' => ['Content-Type: application/json'],
+    'CURLOPT_RETURNTRANSFER' => false, // Stream directly via callback.
+    'CURLOPT_FOLLOWLOCATION' => true,
+    'CURLOPT_TIMEOUT' => $timeout,
+    'CURLOPT_WRITEFUNCTION' => function ($ch, $chunk) use (&$schema) {
         static $buffer = '';
         $buffer .= $chunk;
         // Split on newlines for NDJSON.
@@ -149,31 +436,32 @@ curl_setopt_array($ch, [
                 continue;
             }
             if (isset($obj['error'])) {
-                send_event('Error: ' . $obj['error'], 'error');
+                block_aipromptgen_send_event('Error: ' . $obj['error'], 'error');
                 continue;
             }
             if (isset($obj['response'])) {
-                send_event($obj['response'], 'chunk');
+                block_aipromptgen_send_event($obj['response'], 'chunk');
             }
             if (!empty($obj['done'])) {
-                send_event('[DONE]', 'done');
+                block_aipromptgen_send_event('[DONE]', 'done');
             }
         }
         return strlen($chunk);
     },
-]);
+];
 
 // Bypass Moodle curl security for local/private endpoints.
 if (preg_match('~^https?://(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)~i', $url)) {
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    $options['CURLOPT_SSL_VERIFYPEER'] = false;
+    $options['CURLOPT_SSL_VERIFYHOST'] = 0;
 }
 
-send_event('Streaming start', 'start');
-$ok = curl_exec($ch);
-if ($ok === false) {
-    send_event('cURL error: ' . curl_error($ch), 'error');
+block_aipromptgen_send_event('Streaming start', 'start');
+$res = $curl->post($url, $payload, $options);
+if ($res !== true && is_string($res) && $res !== '') {
+    block_aipromptgen_send_event('cURL error: ' . $res, 'error');
+} else if (!empty($curl->error)) {
+    block_aipromptgen_send_event('cURL error: ' . $curl->error, 'error');
 }
-curl_close($ch);
-send_event('[DONE]', 'done');
+block_aipromptgen_send_event('[DONE]', 'done');
 exit;

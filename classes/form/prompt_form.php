@@ -46,6 +46,39 @@ class prompt_form extends \moodleform {
         $mform->addElement('header', 'aipromptgen_title', \get_string('pluginname', 'block_aipromptgen'));
         $mform->setExpanded('aipromptgen_title');
 
+        $templates = $this->_customdata['templates'] ?? [];
+        if (!empty($templates)) {
+            $templateoptions = ['' => \get_string('form:custom_prompt', 'block_aipromptgen')];
+            $promptsdata = [];
+            foreach ($templates as $idx => $t) {
+                // Use string index for options to avoid breaking HTML with long text and quotes.
+                $templateoptions[(string)$idx] = $t->title;
+                $promptsdata[(string)$idx] = $t->prompt;
+            }
+            $templateelems = [];
+            $templateelems[] = $mform->createElement(
+                'select',
+                'template_select',
+                '',
+                $templateoptions,
+                [
+                    'id' => 'ai4t-template-select',
+                    'data-prompts' => json_encode($promptsdata, JSON_HEX_TAG | JSON_HEX_APOS),
+                ]
+            );
+            $hint = '<span class="text-muted small ml-2">'
+                . \get_string('form:templates_hint', 'block_aipromptgen') . '</span>';
+            $templateelems[] = $mform->createElement('static', 'template_hint', '', $hint);
+            $mform->addGroup(
+                $templateelems,
+                'templategroup',
+                \get_string('form:templates_label', 'block_aipromptgen'),
+                ' ',
+                false
+            );
+            $mform->setType('templategroup[template_select]', PARAM_INT);
+        }
+
         $mform->addElement('text', 'subject', \get_string('form:subjectlabel', 'block_aipromptgen'));
         $mform->setType('subject', PARAM_TEXT);
         // Set a default only if provided and not empty.

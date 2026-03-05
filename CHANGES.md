@@ -1,6 +1,14 @@
 Changes
 =======
 
+1.7.0 (2026-03-05)
+------------------
+* Feature: Streaming Endpoint Refactor - Switched to POST-based fetch with ReadableStream for better reliability and to avoid URL length limits.
+* Feature: Real-time Streaming Status - Added status indicators (Connecting, Receiving, Done) in the AI response modal.
+* Feature: Added support for Gemini, Claude, DeepSeek, and Custom OpenAI-compatible endpoints.
+* Fix: Permission issues resolved for all plugin files.
+* Fix: ESLint and AMD build compliance.
+
 1.6.0 (2026-03-04)
 ------------------
 * Feature: Added support for Gemini API (Google).

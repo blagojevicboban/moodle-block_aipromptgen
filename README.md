@@ -1,6 +1,6 @@
 # AI for Teachers - prompt generator (Moodle block)
 
-Release: 1.6.0 (2026-03-04)
+Release: 1.7.0 (2026-03-05)
 
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 
@@ -21,7 +21,11 @@ Features
   - Prompt purpose: text input + Browse (e.g., lesson plan, quiz, rubric)
   - Audience: text input + Browse (teacher‑facing or student‑facing)
 - Generated prompt updates in real-time as you modify fields.
-- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI, Gemini, Claude or local Ollama) to fetch an inline response.
+- Optional: AI send (unified): Generate prompt then use a single "Send to AI" button with provider select (OpenAI, Gemini, Claude, DeepSeek, Custom API or local Ollama) to fetch an inline response.
+  - **New in 1.7:** Streaming refactor using POST-based fetch with ReadableStream for better reliability with long prompts.
+  - **New in 1.7:** Real-time status indicators (Connecting, Receiving, Done) in the AI response modal.
+  - **New in 1.7:** Added support for DeepSeek and Custom OpenAI-compatible endpoints.
+  - **New in 1.7:** Quick Templates (JSON-defined presets with placeholders like {topic}, {audience}).
   - **New in 1.3:** Response modal features 4 view modes:
     - **RAW**: Original Markdown from AI.
     - **TEXT**: Clean plain text (lists normalized, markdown stripped).
@@ -41,6 +45,8 @@ Install
   - OpenAI: API key + model (default `gpt-4o-mini`).
   - Gemini: API key + model (default `gemini-1.5-flash`).
   - Claude: API key + model (default `claude-3-5-sonnet-latest`).
+  - DeepSeek: API key + model (default `deepseek-chat`).
+  - Custom API: Endpoint URL + API key + model name.
   - Ollama: Local endpoint base URL (e.g. `http://localhost:11434`) + model name (e.g. `llama3`, `mistral`).
     - *Note:* Connection to local private subnets (e.g. `192.168.x.x`) is supported (requires HTTPS or configured proxy bypass).
 
@@ -86,7 +92,8 @@ Roadmap
 - Additional localized strings and templates.
 
 Changelog (summary)
-- 1.6.0 (2026-03-04): Added Gemini and Claude API support.
+- 1.7.0 (2026-03-05): Streaming Refactor (POST-based fetch), Real-time Status Indicators, and support for Gemini, Claude, DeepSeek, and Custom APIs.
+- 1.6.0 (2026-03-04): Initial Gemini and Claude API support.
 - 1.5.0 (2026-01-31): Dynamic prompt generation (real-time), removed "Insert into Editor", stabilized Ollama streaming.
 - 1.3 (2026-01-31): Refined AI Response Modal and copy functionality.
   - Added RAW / TEXT / HTML (Rich) / HTML CODE view modes.

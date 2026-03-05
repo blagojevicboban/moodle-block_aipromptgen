@@ -55,7 +55,7 @@ $competencies = helper::get_course_competencies_and_outcomes($courseid);
 $customdata = [
     'topics' => $topics,
     'coursename' => $course->fullname,
-    // Add other defaults as needed by the form class.
+    'templates' => helper::get_templates(),
 ];
 $mform = new \block_aipromptgen\form\prompt_form(null, $customdata);
 $mform->set_data(['courseid' => $courseid]);
@@ -100,6 +100,7 @@ $tmpldata = [
     'topics' => $topics,
     'lessonoptions' => $lessonoptions,
     'competencies' => $competencies,
+    'templates' => helper::get_templates(),
 
     // Static lists for modals.
     'languages' => [
@@ -165,14 +166,26 @@ $tmpldata = [
             'selected' => false,
         ],
         [
+            'value' => 'deepseek',
+            'label' => 'DeepSeek' . (get_config('block_aipromptgen', 'deepseek_apikey') ? '' : ' (✕ Not configured)'),
+            'selected' => false,
+        ],
+        [
             'value' => 'ollama',
             'label' => 'Ollama' . (get_config('block_aipromptgen', 'ollama_endpoint') ? '' : ' (✕ Not configured)'),
+            'selected' => false,
+        ],
+        [
+            'value' => 'custom',
+            'label' => 'Custom API' . (get_config('block_aipromptgen', 'custom_endpoint') ? '' : ' (✕ Not configured)'),
             'selected' => false,
         ],
     ],
     'providersavailable' => (get_config('block_aipromptgen', 'openai_apikey') ||
         get_config('block_aipromptgen', 'gemini_apikey') ||
         get_config('block_aipromptgen', 'claude_apikey') ||
+        get_config('block_aipromptgen', 'deepseek_apikey') ||
+        get_config('block_aipromptgen', 'custom_endpoint') ||
         get_config('block_aipromptgen', 'ollama_endpoint')),
 
     'airesponse_initial' => $airesponse,

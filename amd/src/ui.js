@@ -9,12 +9,14 @@ define([], function() {
                 'block_aipromptgen/markdown'
             ], function(Age, Pickers, Actions, Stream, Markdown) {
 
-                var updatePrompt = function() {
+                // Tracks the currently selected quick template string (null = use default).
+                var activeTemplate = null;
+
+                var getFieldValues = function() {
                     var getValue = function(id) {
                         var el = document.getElementById(id);
                         return el ? el.value : '';
                     };
-
                     var subject = getValue('id_subject');
                     if (!subject) {
                         var subjectEl = document.getElementById('id_subject');
@@ -22,52 +24,91 @@ define([], function() {
                             subject = subjectEl.placeholder;
                         }
                     }
+                    return {
+                        subject: subject,
+                        topic: getValue('id_topic'),
+                        lesson: getValue('id_lesson'),
+                        audience: getValue('id_audience') || getValue('id_agerange'),
+                        outcomes: getValue('id_outcomes'),
+                        style: getValue('id_classtype'),
+                        purpose: getValue('id_purpose'),
+                        language: getValue('id_language') || 'English',
+                        age: getValue('id_agerange'),
+                        count: getValue('id_lessoncount') || '1',
+                        duration: getValue('id_lessonduration') || '45'
+                    };
+                };
 
-                    var age = getValue('id_agerange');
-                    var topic = getValue('id_topic');
-                    var lesson = getValue('id_lesson');
-                    var count = getValue('id_lessoncount') || '1';
-                    var duration = getValue('id_lessonduration') || '45';
-                    var classtype = getValue('id_classtype');
-                    var purpose = getValue('id_purpose');
-                    var audience = getValue('id_audience');
-                    var outcomes = getValue('id_outcomes');
-                    var language = getValue('id_language') || 'English';
+                var applyFieldReplacements = function(template, fields) {
+                    var result = template;
+                    var replacements = {
+                        'subject': fields.subject,
+                        'topic': fields.topic,
+                        'lesson': fields.lesson,
+                        'audience': fields.audience,
+                        'outcomes': fields.outcomes,
+                        'style': fields.style,
+                        'purpose': fields.purpose,
+                        'language': fields.language
+                    };
+                    for (var key in replacements) {
+                        var val = replacements[key] || '[' + key + ']';
+                        var regex = new RegExp('\\{' + key + '\\}', 'gi');
+                        result = result.replace(regex, val);
+                    }
+                    result = result.replace(/\\n/g, '\n');
+                    return result;
+                };
 
-                    var p = "You are an expert teacher. Create a detailed lesson plan.\n";
-                    p += "Subject: " + subject + "\n";
-                    if (age) {
-                        p += "Student Age: " + age + " years old\n";
-                    }
-                    if (topic) {
-                        p += "Topic: " + topic + "\n";
-                    }
-                    if (lesson) {
-                        p += "Lesson Title: " + lesson + "\n";
-                    }
-                    p += "Number of lessons: " + count + "\n";
-                    p += "Duration per lesson: " + duration + " minutes\n";
-                    if (classtype) {
-                        p += "Class Type: " + classtype + "\n";
-                    }
-                    if (purpose) {
-                        p += "Purpose: " + purpose + "\n";
-                    }
-                    if (audience) {
-                        p += "Target Audience: " + audience + "\n";
-                    }
-                    if (outcomes) {
-                        p += "Learning Outcomes/Competencies:\n" + outcomes + "\n";
-                    }
-                    p += "Language: " + language + "\n";
-                    p += "\nPlease provide a structured lesson plan with objectives, activities, and timeline.";
-
+                var updatePrompt = function() {
                     var gen = document.getElementById('ai4t-generated');
-                    if (gen) {
-                        gen.value = p;
-                        // Trigger input event to update valid state of buttons
-                        gen.dispatchEvent(new Event('input', {bubbles: true}));
+                    if (!gen) {
+                        return;
                     }
+                    var fields = getFieldValues();
+                    var p;
+                    if (activeTemplate) {
+                        // Re-apply the selected quick template with updated field values.
+                        p = applyFieldReplacements(activeTemplate, fields);
+
+                        // If the template itself doesn't explicitly mention the language placeholder,
+                        // append the language instruction to the end.
+                        if (activeTemplate.indexOf('{language}') === -1 && fields.language) {
+                            p += "\n\nLanguage: " + fields.language;
+                        }
+                    } else {
+                        p = "You are an expert teacher. Create a detailed lesson plan.\n";
+                        p += "Subject: " + fields.subject + "\n";
+                        if (fields.age) {
+                            p += "Student Age: " + fields.age + " years old\n";
+                        }
+                        if (fields.topic) {
+                            p += "Topic: " + fields.topic + "\n";
+                        }
+                        if (fields.lesson) {
+                            p += "Lesson Title: " + fields.lesson + "\n";
+                        }
+                        p += "Number of lessons: " + fields.count + "\n";
+                        p += "Duration per lesson: " + fields.duration + " minutes\n";
+                        if (fields.style) {
+                            p += "Class Type: " + fields.style + "\n";
+                        }
+                        if (fields.purpose) {
+                            p += "Purpose: " + fields.purpose + "\n";
+                        }
+                        if (fields.audience) {
+                            p += "Target Audience: " + fields.audience + "\n";
+                        }
+                        if (fields.outcomes) {
+                            p += "Learning Outcomes/Competencies:\n" + fields.outcomes + "\n";
+                        }
+                        p += "Language: " + fields.language + "\n";
+                        p += "\nPlease provide a structured lesson plan with objectives, activities, and timeline.";
+                    }
+
+                    gen.value = p;
+                    // Trigger input event to update valid state of buttons.
+                    gen.dispatchEvent(new Event('input', {bubbles: true}));
                 };
 
                 var initAutoUpdate = function() {
@@ -85,10 +126,10 @@ define([], function() {
                         }
                     });
 
-                    // Initial update
-                    // We stick it in a timeout to ensure everything is rendered
+                    // Initial update — wait for DOM to be fully rendered.
                     setTimeout(updatePrompt, 500);
                 };
+
 
                 // Editor detection logic removed.
 
@@ -131,7 +172,7 @@ define([], function() {
                         var provider = select.value;
                         var form = document.getElementById('ai4t-send-form');
 
-                        if (provider === 'ollama') {
+                        if (['ollama', 'gemini', 'claude', 'deepseek', 'custom'].indexOf(provider) !== -1) {
                             e.preventDefault();
                             var resp = document.getElementById('ai4t-airesponse-body') ||
                                        document.getElementById('ai4t-airesponse');
@@ -357,6 +398,46 @@ define([], function() {
                     // Deprecated: Editor insertion logic removed.
                 };
 
+                var initTemplates = function() {
+                    var templateSelect = document.getElementById('ai4t-template-select');
+                    if (!templateSelect) {
+                        return;
+                    }
+
+                    templateSelect.addEventListener('change', function() {
+                        var templateIdx = templateSelect.value;
+
+                        // If user picks "Choose", clear template and regenerate default.
+                        if (!templateIdx) {
+                            activeTemplate = null;
+                            updatePrompt();
+                            return;
+                        }
+
+                        var promptsDataStr = templateSelect.getAttribute('data-prompts');
+                        if (!promptsDataStr) {
+                            return;
+                        }
+
+                        var promptsData;
+                        try {
+                            promptsData = JSON.parse(promptsDataStr);
+                        } catch (e) {
+                            return;
+                        }
+
+                        var template = promptsData[templateIdx];
+                        if (!template) {
+                            return;
+                        }
+
+                        // Set active template and trigger updatePrompt to apply it.
+                        activeTemplate = template;
+                        updatePrompt();
+                    });
+                };
+
+
                 var copyRichText = function(el) {
                     try {
                         var range = document.createRange();
@@ -409,6 +490,9 @@ define([], function() {
                     },
                     function() {
                         initResponseModal();
+                    },
+                    function() {
+                        initTemplates();
                     }
                 ];
 
