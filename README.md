@@ -1,4 +1,5 @@
 # AI for Teachers - prompt generator (Moodle block)
+### The plugin is a product of Erasmus project: KA220-VET - Cooperation partnerships in vocational education and training. Project Title: AI tools for VET schools
 
 Release: 1.7.0 (2026-03-05)
 
