@@ -2,8 +2,8 @@
 ### The plugin is a product of Erasmus project: KA220-VET - Cooperation partnerships in vocational education and training. Project Title: AI tools for VET schools
 
 Release: 1.7.0 (2026-03-05)
-
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
+https://moodle.org/plugins/block_aipromptgen
 
 Compatibility
 - Moodle 4.3+ and 5.x (tested with Moodle 5).
