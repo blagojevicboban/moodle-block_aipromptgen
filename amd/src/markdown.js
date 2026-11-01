@@ -1,3 +1,28 @@
+/**
+ * This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Markdown parsing and rendering for the AI Prompt Generator.
+ *
+ * @module     block_aipromptgen/markdown
+ * @copyright  2025 AI4Teachers
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 define([], function() {
     /**
      * Helper to inject newlines before markdown blocks and fix common AI output issues.
@@ -46,6 +71,29 @@ define([], function() {
     };
 
     /**
+     * Escape HTML special characters, including quotes used in attributes.
+     *
+     * @param {string} text
+     * @returns {string}
+     */
+    const escapeHtml = function(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+
+    /**
+     * Check that a link or image URL uses a safe scheme (blocks javascript:, data:, vbscript: and similar).
+     *
+     * @param {string} url Already HTML-escaped URL
+     * @param {boolean} allowmailto Whether mailto: links are allowed
+     * @returns {boolean}
+     */
+    const isSafeUrl = function(url, allowmailto) {
+        const pattern = allowmailto ? /^(https?:\/\/|mailto:)/i : /^https?:\/\//i;
+        return pattern.test(url.trim());
+    };
+
+    /**
      * Process inline elements like images, links, bold, italic.
      *
      * @param {string} text
@@ -56,8 +104,18 @@ define([], function() {
             return '';
         }
         return text
-            .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto;">')
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+            .replace(/!\[(.*?)\]\((.*?)\)/g, function(match, alt, src) {
+                if (!isSafeUrl(src, false)) {
+                    return alt;
+                }
+                return '<img src="' + src.trim() + '" alt="' + alt + '" style="max-width:100%;height:auto;">';
+            })
+            .replace(/\[(.*?)\]\((.*?)\)/g, function(match, label, href) {
+                if (!isSafeUrl(href, true)) {
+                    return label;
+                }
+                return '<a href="' + href.trim() + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+            })
             .replace(/\*\*\*\*(.*?)\*\*\*\*/g, '<h3>$1</h3>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -214,7 +272,7 @@ define([], function() {
         if (!md) {
             return '';
         }
-        const text = autofixMarkdown(md).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const text = escapeHtml(autofixMarkdown(md));
         const lines = text.split(/\r?\n/);
         const state = {
             html: '',

@@ -1,12 +1,12 @@
 # AI for Teachers - prompt generator (Moodle block)
 ### The plugin is a product of Erasmus project: KA220-VET - Cooperation partnerships in vocational education and training. Project Title: AI tools for VET schools
 
-Release: 1.7.0 (2026-03-05)
+Release: 2.0.0 (2026-11-01)
 A block plugin that provides an AI prompt builder for teachers on a per‑course basis. Students cannot access it.
 https://moodle.org/plugins/block_aipromptgen
 
 Compatibility
-- Moodle 4.3+ and 5.x (tested with Moodle 5).
+- Moodle 4.1 to 5.3 (tested on Moodle 4.5, 5.0, 5.1, 5.2 and 5.3).
 - Optional: Competencies (Learning plans) and Gradebook Outcomes.
 
 Features
@@ -43,9 +43,9 @@ Install
    - Outcomes: Site administration → Advanced features → “Enable outcomes”.
    Then link competencies to the course (Course → More → Competencies) and/or define local/global outcomes.
 4. (Optional) Configure AI providers (Site administration → Plugins → Blocks → AI for Teachers):
-  - OpenAI: API key + model (default `gpt-4o-mini`).
-  - Gemini: API key + model (default `gemini-1.5-flash`).
-  - Claude: API key + model (default `claude-3-5-sonnet-latest`).
+  - OpenAI: API key + model (default `gpt-5-mini`).
+  - Gemini: API key + model (default `gemini-3.8-flash`).
+  - Claude: API key + model (default `claude-opus-5-5`; `claude-sonnet-5-5` and `claude-haiku-5-5` cost less).
   - DeepSeek: API key + model (default `deepseek-chat`).
   - Custom API: Endpoint URL + API key + model name.
   - Ollama: Local endpoint base URL (e.g. `http://localhost:11434`) + model name (e.g. `llama3`, `mistral`).

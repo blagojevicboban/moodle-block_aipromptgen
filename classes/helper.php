@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Helper class for the AI Prompt Generator.
+ *
+ * @package    block_aipromptgen
+ * @copyright  2025 AI4Teachers
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace block_aipromptgen;
 
 use core_competency\api as competency_api;
@@ -27,8 +35,7 @@ use stdClass;
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class helper
-{
+class helper {
     /**
      * Get list of formatted competencies and outcomes for a course.
      *
@@ -432,33 +439,35 @@ class helper
         }
 
         // Default templates if none configured.
-        return [
-            (object)[
-                'title' => 'Bloom\'s Taxonomy Questions',
-                'prompt' => 'Create a set of 5 questions based on Bloom\'s Taxonomy for: \n' .
-                           'Topic: {topic}\n' .
-                           'Audience: {audience}\n' .
-                           'Outcomes: {outcomes}',
-            ],
-            (object)[
-                'title' => 'Lesson Plan Draft',
-                'prompt' => 'Generate a structured lesson plan for a 45-minute session.\n' .
-                           'Subject: {subject}\n' .
-                           'Topic: {topic}\n' .
-                           'Pedagogical Style: {style}\n' .
-                           'Outcomes: {outcomes}',
-            ],
-            (object)[
-                'title' => 'Socratic Tutor',
-                'prompt' => 'You are a Socratic tutor. Help the user understand {topic} by asking guiding questions.\n' .
-                           'Current context: {subject}',
-            ],
-            (object)[
-                'title' => 'Executive Summary',
-                'prompt' => 'Provide a concise summary of the key concepts for {topic}, \n' .
-                           'tailored for students in the age range: {audience}.',
-            ],
-        ];
+        $templates = [];
+        foreach (['bloom', 'lessonplan', 'socratic', 'summary'] as $name) {
+            $templates[] = (object)[
+                'title' => get_string('template_' . $name . '_title', 'block_aipromptgen'),
+                'prompt' => get_string('template_' . $name . '_prompt', 'block_aipromptgen'),
+            ];
+        }
+        return $templates;
+    }
+
+    /**
+     * Check whether an endpoint URL points to localhost or a private/reserved IP address
+     * (e.g. a local Ollama or LM Studio server, which often uses a self-signed certificate).
+     *
+     * @param string $url The endpoint URL.
+     * @return bool True for localhost and private/reserved IP addresses.
+     */
+    public static function is_private_endpoint(string $url): bool {
+        $host = strtolower(trim((string)parse_url($url, PHP_URL_HOST), '[]'));
+        if ($host === '') {
+            return false;
+        }
+        if ($host === 'localhost' || substr($host, -10) === '.localhost') {
+            return true;
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     /**
@@ -473,17 +482,19 @@ class helper
             return true; // Disabled.
         }
 
-        global $SESSION;
+        global $USER;
 
-        $key = 'block_aipromptgen_requests_' . date('YmdH'); // Hourly window.
-        $current = isset($SESSION->{$key}) ? $SESSION->{$key} : 0;
+        // Count per user and hour in the application cache: a new session or login does not reset the counter.
+        $cache = \cache::make('block_aipromptgen', 'ratelimit');
+        $key = 'u' . (int)$USER->id . '_' . intdiv(time(), HOURSECS);
+        $current = (int)$cache->get($key);
 
         if ($current >= $limit) {
             return false;
         }
 
         if ($increment) {
-            $SESSION->{$key} = $current + 1;
+            $cache->set($key, $current + 1);
         }
 
         return true;

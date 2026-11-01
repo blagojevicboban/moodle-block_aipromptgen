@@ -14,91 +14,90 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * AI client: builds and sends requests to all supported AI providers.
+ *
+ * @package    block_aipromptgen
+ * @copyright  2025 AI4Teachers
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace block_aipromptgen;
 
 use curl;
+use moodle_exception;
 
 /**
- * AI Client class for the block_aipromptgen plugin.
+ * AI client for OpenAI, Gemini, Claude, DeepSeek, a custom OpenAI-compatible API and Ollama.
+ *
+ * The same request is used with and without streaming, so both paths send the same model,
+ * system prompt and limits.
  *
  * @package    block_aipromptgen
  * @copyright  2025 AI4Teachers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ai_client {
-    /** @var string OpenAI API Key */
-    private $openaikey;
+    /** @var string[] Supported providers. */
+    public const PROVIDERS = ['openai', 'gemini', 'claude', 'deepseek', 'custom', 'ollama'];
 
-    /** @var string OpenAI Model */
-    private $openaimodel;
+    /** @var string[] Model used when the admin setting is empty. */
+    public const DEFAULT_MODELS = [
+        'openai' => 'gpt-5-mini',
+        'gemini' => 'gemini-3.8-flash',
+        'claude' => 'claude-opus-5-5',
+        'deepseek' => 'deepseek-chat',
+        'custom' => '',
+        'ollama' => 'llama3',
+    ];
 
-    /** @var string Gemini API Key */
-    private $geminikey;
+    /** @var int Output token ceiling for models that reason before they answer (reasoning counts towards the limit). */
+    private const REASONING_MIN_TOKENS = 16000;
 
-    /** @var string Gemini Model */
-    private $geminimodel;
+    /** @var int Timeout in seconds for cloud providers. */
+    private const CLOUD_TIMEOUT = 300;
 
-    /** @var string Claude API Key */
-    private $claudekey;
+    /** @var \stdClass Plugin configuration. */
+    private $config;
 
-    /** @var string Claude Model */
-    private $claudemodel;
-
-    /** @var string DeepSeek API Key */
-    private $deepseekkey;
-
-    /** @var string DeepSeek Model */
-    private $deepseekmodel;
-
-    /** @var string Custom API Endpoint */
-    private $customendpoint;
-
-    /** @var string Custom API Key */
-    private $customapikey;
-
-    /** @var string Custom API Model */
-    private $custommodel;
-
-    /** @var string Ollama Endpoint */
-    private $ollamaendpoint;
-
-    /** @var string Ollama Model */
-    private $ollamamodel;
-
-    /** @var float AI response temperature (0.0 – 2.0) */
+    /** @var float AI response temperature (0.0 - 2.0). */
     private $temperature;
 
-    /** @var int Maximum tokens in AI response */
+    /** @var int Maximum tokens in the AI response. */
     private $maxtokens;
 
     /**
-     * Constructor. Retrieves configuration settings.
+     * Constructor. Reads the plugin configuration.
      */
     public function __construct() {
-        $this->openaikey = get_config('block_aipromptgen', 'openai_apikey');
-        $this->openaimodel = get_config('block_aipromptgen', 'openai_model') ?: 'gpt-3.5-turbo';
+        $this->config = get_config('block_aipromptgen');
 
-        $this->geminikey = get_config('block_aipromptgen', 'gemini_apikey');
-        $this->geminimodel = get_config('block_aipromptgen', 'gemini_model') ?: 'gemini-1.5-flash';
+        $rawtemp = $this->setting('temperature');
+        $this->temperature = $rawtemp !== '' ? (float)$rawtemp : 0.7;
 
-        $this->claudekey = get_config('block_aipromptgen', 'claude_apikey');
-        $this->claudemodel = get_config('block_aipromptgen', 'claude_model') ?: 'claude-3-5-sonnet-20240620';
+        $rawmax = $this->setting('max_tokens');
+        $this->maxtokens = ($rawmax !== '' && (int)$rawmax > 0) ? (int)$rawmax : 1024;
+    }
 
-        $this->deepseekkey = get_config('block_aipromptgen', 'deepseek_apikey');
-        $this->deepseekmodel = get_config('block_aipromptgen', 'deepseek_model') ?: 'deepseek-chat';
+    /**
+     * Read a trimmed plugin setting.
+     *
+     * @param string $name Setting name.
+     * @return string Value, or '' when not set.
+     */
+    private function setting(string $name): string {
+        return trim((string)($this->config->$name ?? ''));
+    }
 
-        $this->customendpoint = get_config('block_aipromptgen', 'custom_endpoint');
-        $this->customapikey = get_config('block_aipromptgen', 'custom_apikey');
-        $this->custommodel = get_config('block_aipromptgen', 'custom_model') ?: 'custom-model';
-
-        $this->ollamaendpoint = get_config('block_aipromptgen', 'ollama_endpoint');
-        $this->ollamamodel = get_config('block_aipromptgen', 'ollama_model') ?: 'llama3';
-
-        $rawtemp = get_config('block_aipromptgen', 'temperature');
-        $this->temperature = ($rawtemp !== false && $rawtemp !== '') ? (float)$rawtemp : 0.7;
-
-        $rawmax = get_config('block_aipromptgen', 'max_tokens');
-        $this->maxtokens = ($rawmax !== false && $rawmax !== '') ? (int)$rawmax : 1024;
+    /**
+     * Get the configured model for a provider, falling back to the default model.
+     *
+     * @param string $provider Provider name.
+     * @return string
+     */
+    private function model(string $provider): string {
+        $model = $this->setting($provider . '_model');
+        return $model !== '' ? $model : self::DEFAULT_MODELS[$provider];
     }
 
     /**
@@ -106,365 +105,429 @@ class ai_client {
      *
      * @return string
      */
-    private function get_system_prompt(): string {
-        $configured = get_config('block_aipromptgen', 'system_prompt');
-        if (!empty($configured)) {
-            return (string)$configured;
-        }
-        return get_string('system_role', 'block_aipromptgen');
+    public function get_system_prompt(): string {
+        $configured = $this->setting('system_prompt');
+        return $configured !== '' ? $configured : get_string('system_role', 'block_aipromptgen');
     }
 
     /**
-     * Send a prompt to the specified provider.
+     * Whether a provider has the settings it needs (API key or endpoint).
      *
-     * @param string $provider 'openai', 'gemini', 'claude', 'deepseek', 'custom' or 'ollama'
-     * @param string $prompt The prompt text
-     * @return string The AI response text
+     * @param string $provider Provider name.
+     * @return bool
      */
-    public function send_request(string $provider, string $prompt): string {
+    public function is_configured(string $provider): bool {
+        switch ($provider) {
+            case 'custom':
+                return $this->setting('custom_endpoint') !== '';
+            case 'ollama':
+                return $this->setting('ollama_endpoint') !== '';
+            default:
+                return in_array($provider, self::PROVIDERS) && $this->setting($provider . '_apikey') !== '';
+        }
+    }
+
+    /**
+     * Build the HTTP request for a provider.
+     *
+     * @param string $provider Provider name (one of self::PROVIDERS).
+     * @param string $prompt The user prompt.
+     * @param bool $stream Whether the response should be streamed.
+     * @return array url, headers, payload, format (chat|claude|gemini|ollama), selfhosted, timeout, schema
+     * @throws moodle_exception When the provider is unknown or not configured.
+     */
+    public function build_request(string $provider, string $prompt, bool $stream): array {
+        if (!in_array($provider, self::PROVIDERS)) {
+            throw new moodle_exception('error_unknownprovider', 'block_aipromptgen', '', s($provider));
+        }
+        if (!$this->is_configured($provider)) {
+            $missing = [
+                'openai' => 'error_noapikey',
+                'gemini' => 'error_nogeminiapikey',
+                'claude' => 'error_noclaudeapikey',
+                'deepseek' => 'error_nodeepseek_apikey',
+                'custom' => 'error_nocustom_endpoint',
+                'ollama' => 'error_noendpoint',
+            ];
+            throw new moodle_exception($missing[$provider], 'block_aipromptgen');
+        }
+
+        $model = $this->model($provider);
+        $system = $this->get_system_prompt();
+        $request = [
+            'headers' => ['Content-Type: application/json'],
+            'format' => 'chat',
+            'selfhosted' => false,
+            'timeout' => self::CLOUD_TIMEOUT,
+            'schema' => false,
+        ];
+        $messages = [
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user', 'content' => $prompt],
+        ];
+
         switch ($provider) {
             case 'openai':
-                return $this->send_to_openai($prompt);
-            case 'gemini':
-                return $this->send_to_gemini($prompt);
-            case 'claude':
-                return $this->send_to_claude($prompt);
+                $request['url'] = 'https://api.openai.com/v1/chat/completions';
+                $request['headers'][] = 'Authorization: Bearer ' . $this->setting('openai_apikey');
+                $body = ['model' => $model, 'messages' => $messages, 'max_completion_tokens' => $this->maxtokens];
+                // GPT-5 and o-series models reason first and accept only the default temperature.
+                if (preg_match('~^(o\d|gpt-5)(?!.*-chat)~i', $model)) {
+                    $body['max_completion_tokens'] = max($this->maxtokens, self::REASONING_MIN_TOKENS);
+                } else {
+                    $body['temperature'] = $this->temperature;
+                }
+                break;
+
             case 'deepseek':
-                return $this->send_to_deepseek($prompt);
             case 'custom':
-                return $this->send_to_custom($prompt);
+                if ($provider === 'deepseek') {
+                    $request['url'] = 'https://api.deepseek.com/v1/chat/completions';
+                    $apikey = $this->setting('deepseek_apikey');
+                } else {
+                    $request['url'] = $this->setting('custom_endpoint');
+                    $apikey = $this->setting('custom_apikey');
+                    $request['selfhosted'] = true;
+                }
+                if ($apikey !== '') {
+                    $request['headers'][] = 'Authorization: Bearer ' . $apikey;
+                }
+                $body = [
+                    'model' => $model,
+                    'messages' => $messages,
+                    'temperature' => $this->temperature,
+                    'max_tokens' => $this->maxtokens,
+                ];
+                break;
+
+            case 'claude':
+                $request['url'] = 'https://api.anthropic.com/v1/messages';
+                $request['format'] = 'claude';
+                $request['headers'][] = 'x-api-key: ' . $this->setting('claude_apikey');
+                $request['headers'][] = 'anthropic-version: 2023-06-01';
+                // Current Claude models always think before answering and reject a non-default temperature.
+                $body = [
+                    'model' => $model,
+                    'max_tokens' => max($this->maxtokens, self::REASONING_MIN_TOKENS),
+                    'system' => $system,
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                ];
+                break;
+
+            case 'gemini':
+                // The key goes in a header, not in the URL, so it cannot leak into error messages or logs.
+                $request['url'] = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) .
+                    ($stream ? ':streamGenerateContent?alt=sse' : ':generateContent');
+                $request['format'] = 'gemini';
+                $request['headers'][] = 'x-goog-api-key: ' . $this->setting('gemini_apikey');
+                $body = [
+                    'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                    'system_instruction' => ['parts' => [['text' => $system]]],
+                    'generationConfig' => [
+                        'temperature' => $this->temperature,
+                        // Thinking tokens of Gemini 2.5+ count towards this limit.
+                        'maxOutputTokens' => max($this->maxtokens, self::REASONING_MIN_TOKENS),
+                    ],
+                ];
+                break;
+
             case 'ollama':
-                return $this->send_to_ollama($prompt);
-            default:
-                return 'Unknown provider specified.';
+                $request['url'] = rtrim($this->setting('ollama_endpoint'), '/') . '/api/generate';
+                $request['format'] = 'ollama';
+                $request['selfhosted'] = true;
+                $timeout = (int)$this->setting('ollama_timeout');
+                $request['timeout'] = $timeout >= 30 ? $timeout : 180;
+                $numpredict = (int)$this->setting('ollama_num_predict');
+                $schema = json_decode($this->setting('ollama_schema'), true);
+                $request['schema'] = is_array($schema);
+                $body = [
+                    'model' => $model,
+                    'system' => $system,
+                    'prompt' => $prompt,
+                    'options' => [
+                        'num_predict' => $numpredict > 0 ? $numpredict : $this->maxtokens,
+                        // A JSON schema needs deterministic output.
+                        'temperature' => $request['schema'] ? 0 : $this->temperature,
+                    ],
+                ];
+                if ($request['schema']) {
+                    $body['format'] = $schema;
+                }
+                break;
         }
+
+        // Every provider has an explicit stream flag except Gemini, which uses a different URL.
+        if ($provider !== 'gemini') {
+            $body['stream'] = $stream;
+        }
+        $request['payload'] = json_encode($body, JSON_UNESCAPED_UNICODE);
+        return $request;
     }
 
     /**
-     * Send request to OpenAI.
+     * Create a curl client for a request.
      *
-     * @param string $prompt The prompt to send.
-     * @return string The API response.
+     * @param array $request Request from build_request().
+     * @return array [curl, options]
      */
-    private function send_to_openai(string $prompt): string {
-        if (empty($this->openaikey)) {
-            return get_string('error_noapikey', 'block_aipromptgen');
+    private function make_curl(array $request): array {
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
+
+        // Moodle's curl security blocks localhost and private networks, where self-hosted servers usually run.
+        $curl = new curl(['ignoresecurity' => $request['selfhosted']]);
+        foreach ($request['headers'] as $header) {
+            $curl->setHeader($header);
         }
-
-        $endpoint = 'https://api.openai.com/v1/chat/completions';
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->openaikey,
-        ];
-
-        $payload = json_encode([
-            'model' => $this->openaimodel,
-            'messages' => [
-                ['role' => 'system', 'content' => $this->get_system_prompt()],
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            'temperature' => $this->temperature,
-            'max_tokens' => $this->maxtokens,
-        ]);
-
-        return $this->perform_curl_request($endpoint, $payload, $headers, 60, false, 'openai');
-    }
-
-    /**
-     * Send request to Gemini.
-     *
-     * @param string $prompt
-     * @return string
-     */
-    private function send_to_gemini(string $prompt): string {
-        if (empty($this->geminikey)) {
-            return get_string('error_nogeminiapikey', 'block_aipromptgen');
-        }
-
-        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" .
-            "{$this->geminimodel}:generateContent?key={$this->geminikey}";
-        $headers = ['Content-Type: application/json'];
-
-        $payload = json_encode([
-            'contents' => [
-                ['parts' => [['text' => $prompt]]],
-            ],
-            'system_instruction' => [
-                'parts' => [['text' => $this->get_system_prompt()]],
-            ],
-            'generationConfig' => [
-                'temperature' => $this->temperature,
-                'maxOutputTokens' => $this->maxtokens,
-            ],
-        ]);
-
-        return $this->perform_curl_request($endpoint, $payload, $headers, 60, false, 'gemini');
-    }
-
-    /**
-     * Send request to Claude.
-     *
-     * @param string $prompt
-     * @return string
-     */
-    private function send_to_claude(string $prompt): string {
-        if (empty($this->claudekey)) {
-            return get_string('error_noclaudeapikey', 'block_aipromptgen');
-        }
-
-        $endpoint = 'https://api.anthropic.com/v1/messages';
-        $headers = [
-            'X-API-Key: ' . $this->claudekey,
-            'Anthropic-Version: 2023-06-01',
-            'Content-Type: application/json',
-        ];
-
-        $payload = json_encode([
-            'model' => $this->claudemodel,
-            'max_tokens' => $this->maxtokens,
-            'system' => $this->get_system_prompt(),
-            'messages' => [
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            'temperature' => $this->temperature,
-        ]);
-
-        return $this->perform_curl_request($endpoint, $payload, $headers, 60, false, 'claude');
-    }
-
-    /**
-     * Send request to DeepSeek (OpenAI-compatible API).
-     *
-     * @param string $prompt
-     * @return string
-     */
-    private function send_to_deepseek(string $prompt): string {
-        if (empty($this->deepseekkey)) {
-            return get_string('error_nodeepseek_apikey', 'block_aipromptgen');
-        }
-
-        $endpoint = 'https://api.deepseek.com/v1/chat/completions';
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->deepseekkey,
-        ];
-
-        $payload = json_encode([
-            'model' => $this->deepseekmodel,
-            'messages' => [
-                ['role' => 'system', 'content' => $this->get_system_prompt()],
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            'temperature' => $this->temperature,
-            'max_tokens' => $this->maxtokens,
-        ]);
-
-        return $this->perform_curl_request($endpoint, $payload, $headers, 60, false, 'deepseek');
-    }
-
-    /**
-     * Send request to a Custom OpenAI-compatible endpoint.
-     *
-     * @param string $prompt
-     * @return string
-     */
-    private function send_to_custom(string $prompt): string {
-        if (empty($this->customendpoint)) {
-            return get_string('error_nocustom_endpoint', 'block_aipromptgen');
-        }
-
-        $headers = ['Content-Type: application/json'];
-        if (!empty($this->customapikey)) {
-            $headers[] = 'Authorization: Bearer ' . $this->customapikey;
-        }
-
-        $payload = json_encode([
-            'model' => $this->custommodel,
-            'messages' => [
-                ['role' => 'system', 'content' => $this->get_system_prompt()],
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            'temperature' => $this->temperature,
-            'max_tokens' => $this->maxtokens,
-        ]);
-
-        $ignoresecurity = (bool)preg_match(
-            '~^https?://(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)~i',
-            $this->customendpoint
-        );
-
-        return $this->perform_curl_request(
-            $this->customendpoint,
-            $payload,
-            $headers,
-            60,
-            $ignoresecurity,
-            'custom'
-        );
-    }
-
-    /**
-     * Send request to Ollama (Synchronous Fallback).
-     *
-     * @param string $prompt The prompt to send.
-     * @return string The API response.
-     */
-    private function send_to_ollama(string $prompt): string {
-        if (empty($this->ollamaendpoint)) {
-            return get_string('error_noendpoint', 'block_aipromptgen');
-        }
-
-        $endpoint = rtrim($this->ollamaendpoint, '/') . '/api/generate';
-        $payload = json_encode([
-            'model' => $this->ollamamodel,
-            'prompt' => $prompt,
-            'stream' => false,
-            'options' => ['num_predict' => $this->maxtokens, 'temperature' => $this->temperature],
-        ]);
-
-        // Ollama usually runs on local network/localhost, SSL might be self-signed or HTTP.
-        return $this->perform_curl_request(
-            $endpoint,
-            $payload,
-            [],
-            60,
-            true,
-            'ollama'
-        );
-    }
-
-    /**
-     * Execute cURL request.
-     *
-     * @param string $endpoint
-     * @param string $payload
-     * @param array $headers
-     * @param int $timeout
-     * @param bool $ignoresecurity
-     * @param string $provider
-     * @return string
-     */
-    private function perform_curl_request(
-        string $endpoint,
-        string $payload,
-        array $headers = [],
-        int $timeout = 60,
-        bool $ignoresecurity = false,
-        string $provider = 'openai'
-    ): string {
-        $curl = new curl();
-
         $options = [
-            'CURLOPT_TIMEOUT' => $timeout,
+            'CURLOPT_TIMEOUT' => $request['timeout'],
             'CURLOPT_CONNECTTIMEOUT' => 20,
-            'CURLOPT_RETURNTRANSFER' => true,
         ];
-
-        if ($ignoresecurity) {
+        // Local servers often use a self-signed certificate.
+        if ($request['selfhosted'] && helper::is_private_endpoint($request['url'])) {
             $options['CURLOPT_SSL_VERIFYHOST'] = 0;
             $options['CURLOPT_SSL_VERIFYPEER'] = false;
         }
-
-        foreach ($headers as $h) {
-            $curl->setHeader($h);
-        }
-
-        $response = $curl->post($endpoint, $payload, $options);
-
-        if ($curl->errno > 0) {
-            return 'cURL Error (' . $curl->errno . '): ' . $curl->error;
-        }
-
-        if ($provider === 'ollama') {
-            return $this->process_ollama_response($response, false);
-        }
-
-        $json = json_decode($response, true);
-        if ($provider === 'openai') {
-            if (isset($json['choices'][0]['message']['content'])) {
-                return $json['choices'][0]['message']['content'];
-            }
-        } else if ($provider === 'gemini') {
-            if (isset($json['candidates'][0]['content']['parts'][0]['text'])) {
-                return $json['candidates'][0]['content']['parts'][0]['text'];
-            }
-        } else if ($provider === 'claude') {
-            if (isset($json['content'][0]['text'])) {
-                return $json['content'][0]['text'];
-            }
-        } else if ($provider === 'deepseek' || $provider === 'custom') {
-            if (isset($json['choices'][0]['message']['content'])) {
-                return $json['choices'][0]['message']['content'];
-            }
-        }
-
-        // Generic error handling.
-        if (isset($json['error']['message'])) {
-            return 'API Error: ' . $json['error']['message'];
-        } else if (isset($json['error'])) {
-            return 'API Error: ' . (is_array($json['error']) ? json_encode($json['error']) : $json['error']);
-        }
-
-        return 'Unknown response format: ' . substr($response, 0, 200) . '...';
+        return [$curl, $options];
     }
 
     /**
-     * Process Ollama response.
+     * Send a prompt to a provider and return the whole response.
      *
-     * @param string $rawresponse
-     * @param bool $hasschema
-     * @return string
+     * @param string $provider Provider name.
+     * @param string $prompt The prompt text.
+     * @return string The AI response text, or an error message.
      */
-    private function process_ollama_response(string $rawresponse, bool $hasschema): string {
-        $trim = trim($rawresponse);
-        // Check for simple JSON first (stream=false).
-        $firstchar = substr($trim, 0, 1);
-        if ($firstchar === '{') {
-            $json = json_decode($trim, true);
-            if (isset($json['response'])) {
-                $text = $json['response'];
-                if ($hasschema) {
-                    // Try to pretty print JSON if it is a schema response.
-                    $decoded = json_decode($text);
-                    if ($decoded) {
-                        return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    public function send_request(string $provider, string $prompt): string {
+        try {
+            $request = $this->build_request($provider, $prompt, false);
+        } catch (moodle_exception $e) {
+            return $e->getMessage();
+        }
+
+        [$curl, $options] = $this->make_curl($request);
+        $options['CURLOPT_RETURNTRANSFER'] = true;
+        $response = (string)$curl->post($request['url'], $request['payload'], $options);
+        if ($curl->get_errno()) {
+            return get_string('error_connection', 'block_aipromptgen', $curl->error);
+        }
+
+        if ($request['format'] === 'ollama') {
+            return $this->process_ollama_response($response, $request['schema']);
+        }
+
+        $json = json_decode($response, true);
+        $text = is_array($json) ? $this->extract_text($request['format'], $json, false) : null;
+        if ($text !== null) {
+            return $text;
+        }
+        return $this->error_from_body($response);
+    }
+
+    /**
+     * Send a prompt to a provider and pass the response text to a callback as it arrives.
+     *
+     * @param string $provider Provider name.
+     * @param string $prompt The prompt text.
+     * @param callable $onchunk Called with each piece of response text.
+     * @return string|null Error message, or null on success.
+     */
+    public function stream_request(string $provider, string $prompt, callable $onchunk): ?string {
+        try {
+            $request = $this->build_request($provider, $prompt, true);
+        } catch (moodle_exception $e) {
+            return $e->getMessage();
+        }
+
+        $format = $request['format'];
+        $buffer = '';
+        $other = '';
+        $emitted = false;
+        $error = null;
+
+        // Ollama sends NDJSON; the other providers send Server-Sent Events ("data: {...}" lines).
+        $handleline = function (string $line) use ($format, $onchunk, &$other, &$emitted, &$error): void {
+            $line = trim($line);
+            if ($line === '') {
+                return;
+            }
+            if ($format !== 'ollama') {
+                if (strpos($line, 'event:') === 0) {
+                    return;
+                }
+                if (strpos($line, 'data:') !== 0) {
+                    // Not an event: usually a JSON error body after an HTTP error status.
+                    $other .= $line . "\n";
+                    return;
+                }
+                $line = trim(substr($line, 5));
+                if ($line === '[DONE]') {
+                    return;
+                }
+            }
+            $obj = json_decode($line, true);
+            if (!is_array($obj)) {
+                $other .= $line . "\n";
+                return;
+            }
+            $message = $this->error_message($obj);
+            if ($message !== null) {
+                $error = get_string('error_api', 'block_aipromptgen', $message);
+                return;
+            }
+            $text = $this->extract_text($format, $obj, true);
+            if ($text !== null && $text !== '') {
+                $emitted = true;
+                $onchunk($text);
+            }
+        };
+
+        [$curl, $options] = $this->make_curl($request);
+        $options['CURLOPT_RETURNTRANSFER'] = false;
+        $options['CURLOPT_WRITEFUNCTION'] = function ($ch, $chunk) use (&$buffer, $handleline) {
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $handleline(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+            }
+            return strlen($chunk);
+        };
+
+        $curl->post($request['url'], $request['payload'], $options);
+        $handleline($buffer);
+
+        if ($curl->get_errno()) {
+            return get_string('error_connection', 'block_aipromptgen', $curl->error);
+        }
+        if ($error !== null) {
+            return $error;
+        }
+        if (!$emitted && trim($other) !== '') {
+            return $this->error_from_body($other);
+        }
+        return null;
+    }
+
+    /**
+     * Extract the response text from a decoded response or stream event.
+     *
+     * @param string $format Response format (chat, claude, gemini, ollama).
+     * @param array $obj Decoded JSON.
+     * @param bool $stream Whether $obj is a stream event.
+     * @return string|null Text, or null when $obj carries no text.
+     */
+    private function extract_text(string $format, array $obj, bool $stream): ?string {
+        switch ($format) {
+            case 'chat':
+                $key = $stream ? 'delta' : 'message';
+                $content = $obj['choices'][0][$key]['content'] ?? null;
+                return is_string($content) ? $content : null;
+
+            case 'claude':
+                if ($stream) {
+                    // Thinking blocks stream as thinking_delta events; show only the answer.
+                    $istext = ($obj['type'] ?? '') === 'content_block_delta' && ($obj['delta']['type'] ?? '') === 'text_delta';
+                    return $istext ? (string)$obj['delta']['text'] : null;
+                }
+                if (!isset($obj['content']) || !is_array($obj['content'])) {
+                    return null;
+                }
+                // The first content block can be a thinking block, so join all text blocks.
+                $text = '';
+                foreach ($obj['content'] as $block) {
+                    if (($block['type'] ?? '') === 'text') {
+                        $text .= $block['text'];
                     }
                 }
                 return $text;
+
+            case 'gemini':
+                $parts = $obj['candidates'][0]['content']['parts'] ?? null;
+                if (!is_array($parts)) {
+                    return null;
+                }
+                $text = '';
+                foreach ($parts as $part) {
+                    if (isset($part['text']) && empty($part['thought'])) {
+                        $text .= $part['text'];
+                    }
+                }
+                return $text;
+
+            case 'ollama':
+                return isset($obj['response']) ? (string)$obj['response'] : null;
+        }
+        return null;
+    }
+
+    /**
+     * Get the error message from a decoded API response, if it is an error.
+     *
+     * @param array $obj Decoded JSON.
+     * @return string|null
+     */
+    private function error_message(array $obj): ?string {
+        if (!isset($obj['error'])) {
+            return null;
+        }
+        if (is_array($obj['error'])) {
+            return (string)($obj['error']['message'] ?? json_encode($obj['error']));
+        }
+        return (string)$obj['error'];
+    }
+
+    /**
+     * Turn a response body without text into an error message.
+     *
+     * @param string $body Raw response body.
+     * @return string
+     */
+    private function error_from_body(string $body): string {
+        $json = json_decode(trim($body), true);
+        if (is_array($json)) {
+            // Some APIs wrap the error in an array.
+            $first = isset($json[0]) && is_array($json[0]) ? $json[0] : $json;
+            $message = $this->error_message($first);
+            if ($message !== null) {
+                return get_string('error_api', 'block_aipromptgen', $message);
             }
         }
+        return get_string('error_unknownresponse', 'block_aipromptgen', \core_text::substr(trim($body), 0, 200));
+    }
 
-        // Handle NDJSON stream accumulation (if it happened to return that way).
+    /**
+     * Process an Ollama response.
+     *
+     * @param string $rawresponse Raw response body.
+     * @param bool $hasschema Whether a JSON schema was requested.
+     * @return string
+     */
+    private function process_ollama_response(string $rawresponse, bool $hasschema): string {
         $fulltext = '';
-        foreach (preg_split("/(?:\r\n|\n|\r)/", $rawresponse) as $line) {
-            if ($line === '') {
-                continue;
-            }
+        foreach (preg_split("/(?:\r\n|\n|\r)/", trim($rawresponse)) as $line) {
             $obj = json_decode($line, true);
             if (!is_array($obj)) {
                 continue;
             }
-            if (isset($obj['response'])) {
-                $fulltext .= $obj['response'];
+            $message = $this->error_message($obj);
+            if ($message !== null) {
+                return get_string('error_api', 'block_aipromptgen', $message);
             }
-            if (isset($obj['error'])) {
-                return 'Ollama Error: ' . $obj['error'];
-            }
+            $fulltext .= (string)($obj['response'] ?? '');
         }
 
         if ($hasschema) {
-            // Try to find JSON blob in fulltext.
+            // Pretty print the JSON object of a schema response.
             $start = strpos($fulltext, '{');
             $end = strrpos($fulltext, '}');
             if ($start !== false && $end !== false) {
-                $cand = substr($fulltext, $start, $end - $start + 1);
-                $decoded = json_decode($cand);
+                $decoded = json_decode(substr($fulltext, $start, $end - $start + 1));
                 if ($decoded) {
                     return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                 }
             }
         }
 
-        return $fulltext ?: $rawresponse;
+        return $fulltext !== '' ? $fulltext : $this->error_from_body($rawresponse);
     }
 }

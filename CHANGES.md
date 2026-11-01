@@ -1,6 +1,26 @@
 Changes
 =======
 
+2.0.0 (2026-11-01)
+------------------
+* Security: The streaming endpoint accepts only POST requests with a valid sesskey (before, any link could start a paid AI request).
+* Security: Links and images in AI responses accept only http(s) and mailto URLs, and quotes are escaped (XSS).
+* Security: The Gemini API key is sent in the x-goog-api-key header instead of the URL.
+* Security: Moodle curl security applies to the cloud providers; only the admin-configured Ollama and Custom endpoints bypass it.
+* Security: The rate limit is counted per user in the Moodle application cache, and also applies without streaming.
+* Feature: OpenAI responses stream like the other providers; DeepSeek and Custom also work without streaming.
+* Feature: One AI client for all providers (same as tiny_aipromptgen 2.0.0); streaming and non-streaming share the settings.
+* Feature: Current default models (gpt-5-mini, gemini-3.8-flash, claude-opus-5-5); no temperature for Claude and GPT-5/o-series;
+  at least 16000 output tokens for reasoning models; Claude thinking is not shown.
+* Feature: Privacy provider declares the external AI services that receive prompts.
+* Fix: Missing error strings (for example a missing API key showed [[error_noapikey]]).
+* Fix: Ollama and Custom on local network endpoints were blocked without streaming; Gemini streaming broke on curly brackets;
+  API errors showed an empty response.
+* Change: Provider labels, purposes, audiences, class types, language names and default templates are language strings;
+  Serbian (sr_lt, sr_cr) translations are complete; the duplicate lang/sr folder was removed.
+* Change: Requires Moodle 4.1; supported 4.1 to 5.3; CI runs each Moodle branch with a PHP version it supports.
+* Change: GPL headers in all JavaScript files; editor and backup files removed from the repository.
+
 1.7.0 (2026-03-05)
 ------------------
 * Feature: Streaming Endpoint Refactor - Switched to POST-based fetch with ReadableStream for better reliability and to avoid URL length limits.

@@ -30,9 +30,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1']
-        moodle-branch: ['MOODLE_401_STABLE']
-        database: [pgsql, mariadb]
+        # Each Moodle branch with a PHP version it supports (Moodle 5.0+ needs PHP 8.2+).
+        # Grunt only on 4.5+: older branches build amd/build with an older Babel, so the output differs.
+        include:
+          - {php: '8.1', moodle-branch: 'MOODLE_401_STABLE', database: pgsql, grunt: false}
+          - {php: '8.1', moodle-branch: 'MOODLE_403_STABLE', database: mariadb, grunt: false}
+          - {php: '8.2', moodle-branch: 'MOODLE_405_STABLE', database: mariadb, grunt: true}
+          - {php: '8.2', moodle-branch: 'MOODLE_500_STABLE', database: pgsql, grunt: true}
+          - {php: '8.3', moodle-branch: 'MOODLE_501_STABLE', database: mariadb, grunt: true}
+          - {php: '8.3', moodle-branch: 'MOODLE_502_STABLE', database: pgsql, grunt: true}
+          - {php: '8.3', moodle-branch: 'MOODLE_503_STABLE', database: mariadb, grunt: true}
 
     steps:
       - name: Check out repository code
@@ -96,7 +103,7 @@ jobs:
         run: moodle-plugin-ci mustache
 
       - name: Grunt
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.grunt }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
       - name: PHPUnit tests
